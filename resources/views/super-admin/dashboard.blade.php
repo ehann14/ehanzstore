@@ -5,15 +5,25 @@
 @section('content')
 <div class="pt-28 pb-12 max-w-7xl mx-auto px-4 min-h-[calc(100vh-80px)]">
     
-    <!-- Header -->
+    <!-- Header dengan Tombol Logout -->
     <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
             <h1 class="text-3xl font-bold text-white mb-2">Dashboard Analitik</h1>
             <p class="text-slate-400">Ringkasan performa toko dan aktivitas pengunjung terkini.</p>
         </div>
-        <div class="glass-panel px-4 py-2 rounded-xl text-right">
-            <p class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Terakhir Diperbarui</p>
-            <p class="text-sm text-brand-400 font-mono">{{ now()->format('d M Y, H:i') }}</p>
+        
+        <div class="flex items-center gap-4 w-full sm:w-auto">
+            <div class="glass-panel px-4 py-2 rounded-xl text-right flex-grow sm:flex-grow-0">
+                <p class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Terakhir Diperbarui</p>
+                <p class="text-sm text-brand-400 font-mono">{{ now()->format('d M Y, H:i') }}</p>
+            </div>
+
+            <!-- Tombol Logout dengan Modal Konfirmasi -->
+            <button onclick="document.getElementById('logoutModal').classList.remove('hidden')" 
+                    class="shrink-0 flex items-center gap-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Keluar
+            </button>
         </div>
     </div>
 
@@ -76,6 +86,32 @@
                         Belum ada akun yang dilihat pengunjung.
                     </div>
                 @endforelse
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Konfirmasi Logout -->
+<div id="logoutModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
+    <div class="glass-panel w-full max-w-md rounded-3xl p-8 transform transition-all scale-100 border border-white/10 shadow-2xl">
+        <div class="text-center">
+            <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-red-400">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Yakin Ingin Keluar?</h3>
+            <p class="text-sm text-slate-400 mb-8">Anda harus login kembali untuk mengakses dashboard Super Admin.</p>
+            
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('logoutModal').classList.add('hidden')" 
+                        class="flex-1 py-3 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 font-medium transition">
+                    Batal
+                </button>
+                <form action="{{ route('logout') }}" method="POST" class="flex-1">
+                    @csrf
+                    <button type="submit" class="w-full py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition shadow-lg shadow-red-900/20">
+                        Ya, Keluar
+                    </button>
+                </form>
             </div>
         </div>
     </div>
