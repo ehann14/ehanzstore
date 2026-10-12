@@ -1,76 +1,70 @@
 @extends('layouts.app')
 
 @section('content')
-    <!-- Hero Section -->
-    <section class="hero-gradient pt-32 pb-20 relative overflow-hidden">
-        <!-- Decorative Elements -->
-        <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-            <div class="absolute top-10 left-10 w-64 h-64 bg-blue-400 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-10 right-10 w-96 h-96 bg-indigo-500 rounded-full blur-3xl"></div>
-        </div>
+    <!-- Hero Section: Fluid & Glowing -->
+    <section class="relative pt-40 pb-24 overflow-hidden">
+        <!-- Background Glow Effects -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-brand-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute bottom-0 right-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
         <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
-            <span class="inline-block py-1 px-3 rounded-full bg-white/10 text-blue-200 text-xs font-semibold mb-6 border border-white/20 backdrop-blur-sm">
-                 Marketplace Akun COC Terpercaya Sejak 2024
-            </span>
-            <h1 class="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-brand-400 text-xs font-semibold mb-8 backdrop-blur-md animate-fade-in-up">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                Marketplace Terpercaya Sejak 2024
+            </div>
+            
+            <h1 class="text-5xl md:text-7xl font-bold text-white mb-8 leading-[1.1] tracking-tight">
                 Upgrade Pasukanmu dengan <br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-white">Akun Sultan Terjamin</span>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-blue-300 to-white">Akun Sultan Terjamin</span>
             </h1>
-            <p class="text-lg md:text-xl text-blue-100 mb-10 max-w-2xl mx-auto font-light">
-                Temukan akun Clash of Clans dengan TH tinggi, hero max, dan keamanan terjamin. Proses cepat, aman, dan bergaransi resmi EHANZSTORE.
+            
+            <p class="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+                Temukan akun Clash of Clans TH Max, Hero Full, dan CN Original. Proses instan, aman, dan bergaransi resmi EHANZSTORE.
             </p>
+            
             <div class="flex flex-col sm:flex-row justify-center gap-4">
-                <a href="{{ route('catalog') }}" class="bg-white text-brand-navy px-8 py-4 rounded-full font-bold hover:bg-blue-50 transition shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
-                    Lihat Katalog Akun
+                <a href="{{ route('catalog') }}" class="group bg-white text-brand-950 px-8 py-4 rounded-full font-bold hover:bg-brand-50 transition-all shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:shadow-[0_0_60px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2">
+                    Lihat Katalog
+                    <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                 </a>
-                <a href="https://wa.me/6282130559126" class="bg-transparent border-2 border-white/30 text-white px-8 py-4 rounded-full font-bold hover:bg-white/10 transition backdrop-blur-sm">
+                <a href="https://wa.me/6282130559126" class="px-8 py-4 rounded-full font-bold text-slate-300 hover:text-white border border-white/10 hover:bg-white/5 transition-all backdrop-blur-sm">
                     Konsultasi Gratis
                 </a>
             </div>
         </div>
     </section>
 
-    <!-- Stats Bar -->
-    <div class="bg-white shadow-md relative z-20 -mt-10 max-w-5xl mx-auto rounded-2xl p-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center border border-gray-100">
-        <div>
-            <p class="text-3xl font-bold text-brand">500+</p>
-            <p class="text-gray-500 text-sm">Akun Terjual</p>
-        </div>
-        <div>
-            <p class="text-3xl font-bold text-brand">100%</p>
-            <p class="text-gray-500 text-sm">Garansi Aman</p>
-        </div>
-        <div>
-            <p class="text-3xl font-bold text-brand">24/7</p>
-            <p class="text-gray-500 text-sm">Support CS</p>
-        </div>
-        <div>
-            <p class="text-3xl font-bold text-brand">4.9</p>
-            <p class="text-gray-500 text-sm">Rating Toko</p>
+    <!-- Stats Bar: Floating Glass Cards -->
+    <div class="max-w-5xl mx-auto px-4 -mt-10 relative z-20 mb-24">
+        <div class="glass-panel rounded-4xl p-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+            @php $stats = [['val'=>'500+','lbl'=>'Terjual'],['val'=>'100%','lbl'=>'Garansi'],['val'=>'24/7','lbl'=>'Support'],['val'=>'4.9★','lbl'=>'Rating']]; @endphp
+            @foreach($stats as $stat)
+            <div class="bg-brand-950/50 rounded-3xl p-6 text-center hover:bg-white/5 transition-colors duration-300">
+                <p class="text-3xl font-bold text-white mb-1">{{ $stat['val'] }}</p>
+                <p class="text-slate-500 text-xs font-medium uppercase tracking-wider">{{ $stat['lbl'] }}</p>
+            </div>
+            @endforeach
         </div>
     </div>
 
-    <!-- Featured Accounts -->
-    <section class="py-20 max-w-7xl mx-auto px-4">
-        <div class="flex justify-between items-end mb-10">
+    <!-- Featured Accounts: Clean Grid -->
+    <section class="py-16 max-w-7xl mx-auto px-4">
+        <div class="flex justify-between items-end mb-12">
             <div>
-                <h2 class="text-3xl font-bold text-brand-navy">Akun Pilihan Minggu Ini</h2>
-                <p class="text-gray-500 mt-2">Koleksi terbaik dengan harga spesial</p>
+                <h2 class="text-3xl font-bold text-white mb-2">Rekomendasi Minggu Ini</h2>
+                <p class="text-slate-500">Pilihan terbaik dengan harga spesial</p>
             </div>
-            <a href="{{ route('catalog') }}" class="text-brand font-semibold hover:text-brand-dark hidden md:block">Lihat Semua &rarr;</a>
+            <a href="{{ route('catalog') }}" class="text-brand-400 hover:text-brand-300 font-medium text-sm flex items-center gap-1 transition">
+                Lihat Semua <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @forelse($featuredAccounts as $account)
                 @include('components.account-card', ['account' => $account])
             @empty
-                <div class="col-span-3 text-center py-10 text-gray-500">Belum ada akun tersedia saat ini.</div>
+                <div class="col-span-3 glass-panel rounded-4xl p-16 text-center text-slate-500">Belum ada akun tersedia.</div>
             @endforelse
-        </div>
-        
-        <div class="mt-10 text-center md:hidden">
-            <a href="{{ route('catalog') }}" class="inline-block bg-brand text-white px-6 py-3 rounded-full font-semibold">Lihat Semua Akun</a>
         </div>
     </section>
 @endsection
