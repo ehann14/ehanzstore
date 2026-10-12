@@ -7,18 +7,18 @@
     
     <!-- Breadcrumb -->
     <nav class="flex items-center gap-2 text-sm text-slate-500 mb-8">
-        <a href="{{ route('home') }}" class="hover:text-brand-400 transition">Beranda</a>
+        <a href="{{ route('home') }}" class="hover:text-electric transition">Beranda</a>
         <span>/</span>
-        <a href="{{ route('catalog') }}" class="hover:text-brand-400 transition">Katalog</a>
+        <a href="{{ route('catalog') }}" class="hover:text-electric transition">Katalog</a>
         <span>/</span>
         <span class="text-white font-medium truncate">{{ $account->name }}</span>
     </nav>
 
     <div class="grid lg:grid-cols-2 gap-12">
         
-        <!-- Galeri Foto Interaktif -->
+        <!-- Galeri Foto -->
         <div class="space-y-4">
-            <div class="aspect-[4/3] rounded-3xl overflow-hidden bg-brand-900/50 border border-white/10 relative group">
+            <div class="aspect-[4/3] rounded-3xl overflow-hidden bg-midnight border border-white/10 relative group">
                 @php 
                     $primaryImg = $account->images->firstWhere('is_primary', true) ?? $account->images->first(); 
                 @endphp
@@ -35,12 +35,11 @@
                 @endif
             </div>
 
-            <!-- Thumbnail List -->
             @if($account->images->count() > 1)
             <div class="grid grid-cols-5 gap-3">
                 @foreach($account->images as $img)
                 <button onclick="changeMainImage('{{ Storage::url($img->image_path) }}')" 
-                        class="aspect-square rounded-xl overflow-hidden border-2 {{ $img->id === ($primaryImg->id ?? null) ? 'border-brand-500' : 'border-transparent hover:border-white/30' }} transition-all thumbnail-btn">
+                        class="aspect-square rounded-xl overflow-hidden border-2 {{ $img->id === ($primaryImg->id ?? null) ? 'border-electric' : 'border-transparent hover:border-white/30' }} transition-all thumbnail-btn">
                     <img src="{{ Storage::url($img->image_path) }}" class="w-full h-full object-cover">
                 </button>
                 @endforeach
@@ -52,8 +51,8 @@
         <div class="space-y-8">
             <div>
                 <div class="flex items-start justify-between gap-4 mb-4">
-                    <h1 class="text-3xl md:text-4xl font-bold text-white leading-tight">{{ $account->name }}</h1>
-                    <span class="shrink-0 px-3 py-1.5 bg-brand-500/20 text-brand-300 text-xs font-bold rounded-lg border border-brand-500/30">
+                    <h1 class="text-3xl md:text-4xl font-display font-bold text-white leading-tight">{{ $account->name }}</h1>
+                    <span class="shrink-0 px-3 py-1.5 bg-electric/20 text-electric text-xs font-bold rounded-lg border border-electric/30">
                         TH {{ $account->town_hall }}
                     </span>
                 </div>
@@ -63,24 +62,24 @@
             </div>
 
             <!-- Harga & CTA -->
-            <div class="glass-panel rounded-2xl p-6 space-y-4 border-l-4 border-brand-500">
+            <div class="glass rounded-2xl p-6 space-y-4 border-l-4 border-electric">
                 <div>
                     <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Harga Jual</p>
-                    <p class="text-4xl font-bold text-white">Rp {{ number_format($account->price, 0, ',', '.') }}</p>
+                    <p class="text-4xl font-display font-bold text-white">Rp {{ number_format($account->price, 0, ',', '.') }}</p>
                 </div>
                 
                 <a href="https://wa.me/6282130559126?text=Halo%20Admin%20EHANZSTORE%2C%20saya%20tertarik%20dengan%20akun%20*{{ urlencode($account->name) }}*%20(Kode:%20{{ urlencode($account->account_code) }}).%20Apakah%20masih%20tersedia?" 
                    target="_blank"
                    class="flex items-center justify-center gap-3 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-900/20 hover:shadow-green-900/40 active:scale-[0.98]">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654z"/></svg>
                     Beli via WhatsApp
                 </a>
                 <p class="text-[10px] text-slate-500 text-center">Anda akan diarahkan ke chat admin dengan pesan otomatis.</p>
             </div>
 
-            <!-- Spesifikasi Detail -->
+            <!-- Spesifikasi -->
             <div class="space-y-4">
-                <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">Spesifikasi Akun</h3>
+                <h3 class="text-lg font-display font-bold text-white border-b border-white/10 pb-2">Spesifikasi Akun</h3>
                 <div class="grid grid-cols-2 gap-4">
                     @php
                         $specs = [
@@ -103,7 +102,7 @@
 
             <!-- Info Keamanan -->
             <div class="space-y-4">
-                <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">Informasi Keamanan</h3>
+                <h3 class="text-lg font-display font-bold text-white border-b border-white/10 pb-2">Informasi Keamanan</h3>
                 <div class="space-y-3">
                     <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                         <span class="text-sm text-slate-400">Status Proteksi</span>
@@ -118,10 +117,9 @@
                 </div>
             </div>
 
-            <!-- Deskripsi Tambahan -->
             @if($account->description)
             <div class="space-y-2">
-                <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">Deskripsi</h3>
+                <h3 class="text-lg font-display font-bold text-white border-b border-white/10 pb-2">Deskripsi</h3>
                 <p class="text-sm text-slate-300 leading-relaxed whitespace-pre-line">{{ $account->description }}</p>
             </div>
             @endif
@@ -133,14 +131,12 @@
 <script>
     function changeMainImage(src) {
         document.getElementById('mainImage').src = src;
-        
-        // Update active thumbnail border
         document.querySelectorAll('.thumbnail-btn').forEach(btn => {
-            btn.classList.remove('border-brand-500');
+            btn.classList.remove('border-electric');
             btn.classList.add('border-transparent');
         });
         event.currentTarget.classList.remove('border-transparent');
-        event.currentTarget.classList.add('border-brand-500');
+        event.currentTarget.classList.add('border-electric');
     }
 </script>
 @endpush
