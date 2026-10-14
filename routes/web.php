@@ -34,10 +34,10 @@ Route::middleware(['auth', 'role:admin'])
             'updateStatus'
         ])->name('accounts.status');
 
-        Route::post('accounts/{account}/images', [
+        Route::delete('accounts/{account}/images/{image}', [
             AccountController::class,
-            'uploadImage'
-        ])->name('accounts.images');
+            'destroyImage'
+        ])->name('accounts.images.destroy');
 
         // Banner beranda (slider)
         Route::resource('banners', BannerController::class)->except(['show']);

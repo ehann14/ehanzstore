@@ -121,6 +121,7 @@
         </div>
     </div>
 
+    @stack('outside-forms')
     @stack('scripts')
 </body>
 </html>

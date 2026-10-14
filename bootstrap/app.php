@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Foundation\Application;
@@ -23,5 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(VisitorTracking::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Total upload melebihi post_max_size PHP -> kembali ke form dengan pesan jelas
+        $exceptions->render(function (\Illuminate\Http\Exceptions\PostTooLargeException $e, $request) {
+            return back()->withInput($request->except('images'))->withErrors([
+                'images' => 'Total ukuran foto terlalu besar untuk server (post_max_size). Kurangi jumlah/ukuran foto.',
+            ]);
+        });
     })->create();

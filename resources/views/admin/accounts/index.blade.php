@@ -1,54 +1,86 @@
 @extends('layouts.admin')
 
-@section('title', 'Daftar Akun')
+@section('title', 'Kelola Akun')
 
 @section('content')
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Kelola Akun COC</h1>
-        <a href="{{ route('admin.accounts.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-            + Tambah Akun
+<div class="max-w-6xl mx-auto pb-20">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-white">Kelola Akun COC</h1>
+            <p class="text-sm text-slate-400 mt-1">{{ $accounts->total() }} akun &middot; akun berstatus draft tidak tampil di katalog.</p>
+        </div>
+        <a href="{{ route('admin.accounts.create') }}"
+           class="inline-flex items-center justify-center gap-2 bg-electric hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Tambah Akun
         </a>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TH</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @foreach($accounts as $account)
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $account->account_code }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $account->name }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $account->town_hall }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rp {{ number_format($account->price, 0, ',', '.') }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            {{ $account->sale_status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                            {{ ucfirst($account->sale_status) }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{{ route('admin.accounts.edit', $account) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                        <form action="{{ route('admin.accounts.destroy', $account) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus?')">
+    @if($accounts->isEmpty())
+        <div class="glass-panel rounded-3xl p-16 text-center">
+            <p class="text-slate-300 mb-1">Belum ada akun.</p>
+            <p class="text-sm text-slate-500">Klik "Tambah Akun" untuk memposting akun pertama.</p>
+        </div>
+    @else
+        <div class="space-y-3">
+            @foreach($accounts as $account)
+                @php
+                    $published = $account->publication_status === 'published';
+                    $saleBadge = [
+                        'available' => ['Tersedia', 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'],
+                        'sold'      => ['Terjual', 'bg-red-500/15 text-red-300 border-red-500/30'],
+                        'archived'  => ['Arsip', 'bg-slate-500/15 text-slate-300 border-slate-500/30'],
+                    ][$account->sale_status] ?? ['-', 'bg-slate-500/15 text-slate-300 border-slate-500/30'];
+                @endphp
+                <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div class="flex items-center gap-4 min-w-0 flex-1">
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden bg-midnight border border-white/10">
+                            @if($account->primaryImage)
+                                <img src="{{ Storage::url($account->primaryImage->image_path) }}" alt="{{ $account->name }}" loading="lazy" class="w-full h-full object-cover">
+                            @else
+                                <div class="w-full h-full flex items-center justify-center text-slate-700">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <span class="text-[11px] font-mono text-slate-500">{{ $account->account_code }}</span>
+                                <span class="px-2 py-0.5 rounded-md bg-electric/15 text-electric text-[11px] font-bold">TH {{ $account->town_hall }}</span>
+                            </div>
+                            <h3 class="font-semibold text-white truncate">{{ $account->name }}</h3>
+                            <p class="text-brand-400 font-bold text-sm mt-0.5">Rp {{ number_format($account->price, 0, ',', '.') }}</p>
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $published ? 'bg-electric/15 text-blue-300 border-electric/30' : 'bg-amber-500/15 text-amber-300 border-amber-500/30' }}">
+                                    {{ $published ? 'Terbit' : 'Draft' }}
+                                </span>
+                                <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $saleBadge[1] }}">{{ $saleBadge[0] }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 sm:flex gap-2 sm:shrink-0">
+                        <form action="{{ route('admin.accounts.status', $account) }}" method="POST">
                             @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
+                            <input type="hidden" name="publication_status" value="{{ $published ? 'draft' : 'published' }}">
+                            <button type="submit" class="w-full px-3 py-2 rounded-lg border border-white/10 text-xs sm:text-sm text-slate-300 hover:bg-white/5 transition whitespace-nowrap">
+                                {{ $published ? 'Sembunyikan' : 'Terbitkan' }}
+                            </button>
                         </form>
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    <div class="mt-4">
-        {{ $accounts->links() }}
-    </div>
+                        <a href="{{ route('admin.accounts.edit', $account) }}"
+                           class="text-center px-3 py-2 rounded-lg border border-white/10 text-xs sm:text-sm text-slate-300 hover:bg-white/5 transition">Edit</a>
+                        <form action="{{ route('admin.accounts.destroy', $account) }}" method="POST"
+                              onsubmit="return confirm('Hapus akun {{ $account->account_code }}? Foto ikut terhapus.')">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="w-full px-3 py-2 rounded-lg border border-red-500/20 text-xs sm:text-sm text-red-400 hover:bg-red-500/10 transition">Hapus</button>
+                        </form>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="mt-8">{{ $accounts->links() }}</div>
+    @endif
+</div>
 @endsection

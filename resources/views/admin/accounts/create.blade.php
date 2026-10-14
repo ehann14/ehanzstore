@@ -15,14 +15,23 @@
         </div>
     </div>
 
+    @if($errors->any())
+        <div class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm">
+            <p class="font-semibold mb-1">Data belum bisa disimpan:</p>
+            <ul class="list-disc pl-5 space-y-0.5">
+                @foreach($errors->all() as $err)<li>{{ $err }}</li>@endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- Form Card -->
-    <form action="{{ route('admin.accounts.store') }}" method="POST" enctype="multipart/form-data" class="glass-panel rounded-3xl p-6 md:p-8 space-y-8">
+    <form id="accountForm" action="{{ route('admin.accounts.store') }}" method="POST" enctype="multipart/form-data" class="glass-panel rounded-3xl p-6 md:p-8 space-y-8">
         @csrf
 
         <!-- Informasi Dasar -->
         <div class="space-y-4">
             <h3 class="text-sm font-bold text-brand-400 uppercase tracking-wider border-b border-white/5 pb-2">Informasi Dasar</h3>
-            
+
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 mb-2">Nama Akun <span class="text-red-400">*</span></label>
@@ -45,7 +54,7 @@
 
             <div>
                 <label class="block text-xs font-semibold text-slate-400 mb-2">Harga (Rp) <span class="text-red-400">*</span></label>
-                <input type="number" name="price" value="{{ old('price') }}" required min="0" placeholder="500000"
+                <input type="number" name="price" value="{{ old('price') }}" required min="0" max="999999999" placeholder="500000"
                        class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition @error('price') border-red-500 @enderror">
                 @error('price') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
@@ -54,7 +63,7 @@
         <!-- Spesifikasi Akun -->
         <div class="space-y-4">
             <h3 class="text-sm font-bold text-brand-400 uppercase tracking-wider border-b border-white/5 pb-2">Spesifikasi & Keamanan</h3>
-            
+
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 @php
                     $heroes = [
@@ -93,23 +102,7 @@
             </div>
         </div>
 
-        <!-- Upload Foto -->
-        <div class="space-y-4">
-            <h3 class="text-sm font-bold text-brand-400 uppercase tracking-wider border-b border-white/5 pb-2">Foto Akun</h3>
-            
-            <div class="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center hover:border-brand-500/50 transition-colors bg-brand-950/30">
-                <input type="file" name="images[]" multiple accept="image/jpeg,image/png,image/webp" id="photoInput" class="hidden">
-                <label for="photoInput" class="cursor-pointer flex flex-col items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-400">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    </div>
-                    <p class="text-sm text-slate-300 font-medium">Klik untuk upload foto</p>
-                    <p class="text-xs text-slate-500">Maksimal 5 foto (JPG, PNG, WebP)</p>
-                </label>
-            </div>
-            <div id="previewContainer" class="grid grid-cols-3 sm:grid-cols-5 gap-3 mt-4"></div>
-            @error('images.*') <p class="text-red-400 text-xs">{{ $message }}</p> @enderror
-        </div>
+        @include('admin.accounts._photos', ['account' => null])
 
         <!-- Deskripsi & Aksi -->
         <div class="space-y-6 pt-4">
@@ -120,7 +113,7 @@
             </div>
 
             <div class="flex items-center gap-4 pt-4 border-t border-white/5">
-                <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg shadow-brand-600/20 active:scale-95">
+                <button type="submit" id="submitBtn" class="bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg shadow-brand-600/20 active:scale-95">
                     Simpan Akun
                 </button>
                 <a href="{{ route('admin.accounts.index') }}" class="text-slate-400 hover:text-white text-sm font-medium transition">
@@ -131,26 +124,4 @@
     </form>
 </div>
 
-@push('scripts')
-<script>
-    // Preview Gambar Sederhana
-    document.getElementById('photoInput').addEventListener('change', function(e) {
-        const container = document.getElementById('previewContainer');
-        container.innerHTML = '';
-        
-        Array.from(e.target.files).forEach(file => {
-            if(container.children.length >= 5) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                const div = document.createElement('div');
-                div.className = 'aspect-square rounded-xl overflow-hidden border border-white/10 relative';
-                div.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
-                container.appendChild(div);
-            }
-            reader.readAsDataURL(file);
-        });
-    });
-</script>
-@endpush
 @endsection
