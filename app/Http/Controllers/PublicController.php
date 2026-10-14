@@ -31,7 +31,12 @@ class PublicController extends Controller
 
         $totalAvailable = CocAccount::available()->count();
 
-        return view('public.home', compact('banners', 'featuredAccounts', 'townHalls', 'totalAvailable'));
+        return view('public.home', compact(
+            'banners',
+            'featuredAccounts',
+            'townHalls',
+            'totalAvailable'
+        ));
     }
 
     /**
@@ -44,6 +49,7 @@ class PublicController extends Controller
         // Pencarian berdasarkan nama atau kode akun
         if ($request->filled('search')) {
             $search = $request->input('search');
+
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%')
                   ->orWhere('account_code', 'like', '%' . $search . '%');
@@ -60,9 +66,11 @@ class PublicController extends Controller
             case 'price_asc':
                 $query->orderBy('price', 'asc');
                 break;
+
             case 'price_desc':
                 $query->orderBy('price', 'desc');
                 break;
+
             default:
                 $query->orderBy('created_at', 'desc');
                 break;
@@ -84,7 +92,11 @@ class PublicController extends Controller
             ->firstOrFail();
 
         // Catat kunjungan ke detail akun
-        $this->trackEvent('view_account', request()->path(), $account->id);
+        $this->trackEvent(
+            'view_account',
+            request()->path(),
+            $account->id
+        );
 
         return view('public.detail', compact('account'));
     }
@@ -92,8 +104,11 @@ class PublicController extends Controller
     /**
      * Mencatat aktivitas pengunjung.
      */
-    public function trackEvent(string $type, ?string $path = null, ?int $accountId = null)
-    {
+    public function trackEvent(
+        string $type,
+        ?string $path = null,
+        ?int $accountId = null
+    ) {
         return VisitorEvent::create([
             'anonymous_session_id' => session()->getId(),
             'event_type' => $type,
@@ -106,5 +121,35 @@ class PublicController extends Controller
     public function howToBuy()
     {
         return view('public.how-to-buy');
+    }
+
+    /**
+     * Menampilkan file upload jika file fisiknya tidak ditemukan oleh Apache.
+     * Hanya mengizinkan gambar dari folder accounts dan banners.
+     */
+    public function upload(string $path)
+    {
+        $root = realpath(config('filesystems.disks.public.root'));
+
+        $file = $root
+            ? realpath($root . DIRECTORY_SEPARATOR . $path)
+            : false;
+
+        $allowed = $file
+            && str_starts_with(
+                $file,
+                $root . DIRECTORY_SEPARATOR
+            )
+            && preg_match(
+                '#^(accounts|banners)[/\\\\]#',
+                ltrim(substr($file, strlen($root)), '/\\')
+            )
+            && preg_match('/\.(jpe?g|png|webp|gif)$/i', $file);
+
+        abort_unless($allowed && is_file($file), 404);
+
+        return response()->file($file, [
+            'Cache-Control' => 'public, max-age=604800',
+        ]);
     }
 }

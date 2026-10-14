@@ -3,13 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class Banner extends Model
 {
     protected $fillable = [
-        'title', 'image_path', 'link_type', 'link_value',
-        'link_url', 'is_active', 'sort_order', 'created_by',
+        'title',
+        'image_path',
+        'link_type',
+        'link_value',
+        'link_url',
+        'is_active',
+        'sort_order',
+        'created_by',
     ];
 
     protected $casts = [
@@ -26,7 +31,7 @@ class Banner extends Model
 
     public function getImageUrlAttribute(): string
     {
-        return Storage::url($this->image_path);
+        return upload_url($this->image_path);
     }
 
     /**
@@ -42,17 +47,25 @@ class Banner extends Model
 
         if ($type === 'whatsapp') {
             $digits = preg_replace('/\D+/', '', $value);
+
             if (str_starts_with($digits, '0')) {
                 $digits = '62' . substr($digits, 1);
             }
+
             return $digits ? 'https://wa.me/' . $digits : null;
         }
 
         if ($type === 'instagram') {
-            // terima "@user", "user", atau URL instagram lengkap
-            $user = preg_replace('#^https?://(www\.)?instagram\.com/#i', '', $value);
+            // Terima "@user", "user", atau URL Instagram lengkap.
+            $user = preg_replace(
+                '#^https?://(www\.)?instagram\.com/#i',
+                '',
+                $value
+            );
+
             $user = trim(ltrim($user, '@'), '/');
             $user = explode('?', $user)[0];
+
             return $user ? 'https://instagram.com/' . $user : null;
         }
 

@@ -5,6 +5,13 @@
         'GW' => $account->grand_warden_level,
         'RC' => $account->royal_champion_level,
     ]);
+    
+    // Pastikan path gambar aman
+    $imageUrl = null;
+    if ($account->primaryImage && !empty($account->primaryImage->image_path)) {
+        // Menggunakan asset() lebih stabil daripada Storage::url() di beberapa konfigurasi server
+        $imageUrl = asset('storage/' . $account->primaryImage->image_path);
+    }
 @endphp
 
 <a href="{{ route('account.detail', $account->account_code) }}"
@@ -12,13 +19,25 @@
 
     <!-- Gambar -->
     <div class="relative aspect-[4/3] overflow-hidden bg-midnight">
-        @if($account->primaryImage)
-            <img src="{{ Storage::url($account->primaryImage->image_path) }}"
+        @if($imageUrl)
+            <img src="{{ $imageUrl }}"
                  alt="{{ $account->name }}"
                  loading="lazy"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
 
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+            <!-- Fallback jika gambar gagal load (hidden by default) -->
+            <div class="hidden w-full h-full absolute inset-0 items-center justify-center text-slate-700 bg-slate-900/50">
+                <svg class="w-12 h-12 opacity-50"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
         @else
             <div class="w-full h-full flex items-center justify-center text-slate-700 bg-slate-900/50">
                 <svg class="w-12 h-12 opacity-50"
@@ -33,14 +52,16 @@
             </div>
         @endif
 
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent pointer-events-none"></div>
+
         <!-- Badge Town Hall -->
-        <span class="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-electric text-white text-[10px] sm:text-[11px] font-bold rounded-md shadow-lg uppercase tracking-wide">
+        <span class="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-electric text-white text-[10px] sm:text-[11px] font-bold rounded-md shadow-lg uppercase tracking-wide z-10">
             TH {{ $account->town_hall }}
         </span>
 
         <!-- Badge Email Bisa Ganti -->
         @if($account->email_change_status === 'Changeable')
-            <span class="hidden sm:block absolute top-3 right-3 px-2 py-1 bg-emerald-500/90 text-white text-[10px] font-semibold rounded-md">
+            <span class="hidden sm:block absolute top-3 right-3 px-2 py-1 bg-emerald-500/90 text-white text-[10px] font-semibold rounded-md z-10">
                 Email Bisa Ganti
             </span>
         @endif

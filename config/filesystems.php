@@ -16,8 +16,9 @@ return [
 
         'public' => [
             'driver' => 'local',
-            // Gambar disimpan langsung di public/uploads (tanpa storage:link)
-            'root' => public_path('uploads'),
+            // DirectAdmin: arahkan ke public_html/uploads
+            // Bisa diubah melalui UPLOADS_PATH pada file .env
+            'root' => env('UPLOADS_PATH', public_path('uploads')),
             'url' => '/uploads',
             'visibility' => 'public',
             'throw' => false,
@@ -39,7 +40,7 @@ return [
 
     ],
 
-    // Tidak ada symlink: file upload langsung ada di public/uploads
+    // Tidak menggunakan symlink; file upload disimpan langsung di folder uploads
     'links' => [],
 
 ];

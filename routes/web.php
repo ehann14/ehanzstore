@@ -14,6 +14,11 @@ Route::get('/akun/{account_code}', [PublicController::class, 'detail'])->name('a
 Route::post('/track/event', [PublicController::class, 'trackEvent'])->name('track.event');
 Route::get('/cara-membeli', [PublicController::class, 'howToBuy'])->name('how.to.buy');
 
+// Upload fallback: digunakan jika Apache tidak menemukan file fisiknya
+Route::get('/uploads/{path}', [PublicController::class, 'upload'])
+    ->where('path', '(accounts|banners)/.*')
+    ->name('uploads.fallback');
+
 // Auth Routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
@@ -41,8 +46,11 @@ Route::middleware(['auth', 'role:admin'])
 
         // Banner beranda (slider)
         Route::resource('banners', BannerController::class)->except(['show']);
-        Route::post('banners/{banner}/toggle', [BannerController::class, 'toggle'])
-            ->name('banners.toggle');
+
+        Route::post('banners/{banner}/toggle', [
+            BannerController::class,
+            'toggle'
+        ])->name('banners.toggle');
     });
 
 // Super Admin Routes
