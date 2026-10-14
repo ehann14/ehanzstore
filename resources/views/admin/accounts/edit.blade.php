@@ -54,6 +54,14 @@
             </div>
 
             <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-2">Kode Akun <span class="text-red-400">*</span></label>
+                <input type="text" name="account_code" value="{{ old('account_code', $account->account_code) }}" required maxlength="30" placeholder="Contoh: EHZ-001"
+                       class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white font-mono uppercase focus:border-brand-500 outline-none transition @error('account_code') border-red-500 @enderror">
+                <p class="text-[11px] text-slate-500 mt-1">Isi manual. Hanya huruf, angka, tanda minus (-) dan underscore (_). Kode harus unik karena dipakai di link akun.</p>
+                @error('account_code') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
                 <label class="block text-xs font-semibold text-slate-400 mb-2">Harga (Rp) <span class="text-red-400">*</span></label>
                 <input type="number" name="price" value="{{ old('price', (int) $account->price) }}" required min="0" max="999999999" placeholder="500000"
                        class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition @error('price') border-red-500 @enderror">
@@ -84,23 +92,7 @@
                 @endforeach
             </div>
 
-            <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-2">Status Proteksi</label>
-                    <select name="protection_status" class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition">
-                        <option value="Unprotected" {{ old('protection_status', $account->protection_status) == 'Unprotected' ? 'selected' : '' }}>Tidak Terproteksi</option>
-                        <option value="Protected" {{ old('protection_status', $account->protection_status) == 'Protected' ? 'selected' : '' }}>Terproteksi</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-2">Status Email/Gmail</label>
-                    <select name="email_change_status" class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition">
-                        <option value="Original" {{ old('email_change_status', $account->email_change_status) == 'Original' ? 'selected' : '' }}>Email Original</option>
-                        <option value="Changed" {{ old('email_change_status', $account->email_change_status) == 'Changed' ? 'selected' : '' }}>Sudah Diganti</option>
-                        <option value="Unknown" {{ old('email_change_status', $account->email_change_status) == 'Unknown' ? 'selected' : '' }}>Tidak Diketahui</option>
-                    </select>
-                </div>
-            </div>
+            @include('admin.accounts._status', ['account' => $account])
         </div>
 
         @include('admin.accounts._photos', ['account' => $account])
@@ -146,5 +138,3 @@
         </div>
     </form>
 </div>
-
-@endsection

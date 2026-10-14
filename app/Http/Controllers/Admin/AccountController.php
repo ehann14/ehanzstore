@@ -8,7 +8,7 @@ use App\Models\CocAccountImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class AccountController extends Controller
 {
@@ -35,11 +35,15 @@ class AccountController extends Controller
 
     public function store(Request $request)
     {
+        $this->normalizeCode($request);
+
         $validated = $request->validate($this->rules(), $this->messages());
         unset($validated['images']);
 
+        $validated['protection_status']   ??= 'Unprotected';
+        $validated['email_change_status'] ??= 'Unchangeable';
+
         $account = CocAccount::create([
-            'account_code'       => 'EHZ-' . strtoupper(Str::random(6)),
             'created_by'         => Auth::id(),
             'sale_status'        => 'available',
             'publication_status' => 'draft', // draft dulu agar admin bisa cek
@@ -63,7 +67,9 @@ class AccountController extends Controller
     {
         $this->authorizeAccount($account);
 
-        $rules = $this->rules();
+        $this->normalizeCode($request);
+
+        $rules = $this->rules($account);
         $rules['publication_status'] = 'required|in:draft,published';
         $rules['sale_status']        = 'required|in:available,sold,archived';
 
@@ -138,9 +144,23 @@ class AccountController extends Controller
         }
     }
 
-    private function rules(): array
+    /** Kode dibuat manual oleh admin: rapikan spasi & jadikan huruf besar. */
+    private function normalizeCode(Request $request): void
+    {
+        $request->merge([
+            'account_code' => strtoupper(trim((string) $request->input('account_code'))),
+        ]);
+    }
+
+    private function rules(?CocAccount $account = null): array
     {
         return [
+            // unique dicek ke semua baris (termasuk akun yang sudah dihapus/soft delete)
+            // karena kolom di database memang UNIQUE.
+            'account_code'         => [
+                'required', 'string', 'max:30', 'regex:/^[A-Z0-9_-]+$/',
+                Rule::unique('coc_accounts', 'account_code')->ignore($account?->id),
+            ],
             'name'                 => 'required|string|max:255',
             'town_hall'            => 'required|integer|min:1|max:16',
             // kolom DB decimal(12,2) -> jaga di bawah batas supaya tidak error 1264
@@ -151,7 +171,7 @@ class AccountController extends Controller
             'grand_warden_level'   => 'nullable|integer|min:0|max:100',
             'royal_champion_level' => 'nullable|integer|min:0|max:100',
             'protection_status'    => 'nullable|in:Protected,Unprotected',
-            'email_change_status'  => 'nullable|in:Original,Changed,Unknown',
+            'email_change_status'  => 'nullable|in:Changeable,Unchangeable',
             'images'               => 'nullable|array|max:' . self::MAX_IMAGES,
             // 5 MB per foto; foto dari browser sudah dikompres otomatis (~0.5 MB)
             'images.*'             => 'image|mimes:jpeg,png,jpg,webp|max:5120',
@@ -166,6 +186,10 @@ class AccountController extends Controller
             'images.*.mimes'    => 'Format foto harus JPG, PNG, atau WebP.',
             'images.*.max'      => 'Ukuran tiap foto maksimal 5 MB.',
             'images.*.uploaded' => 'Foto gagal diunggah: ukuran melebihi batas server (upload_max_filesize di php.ini).',
+            'account_code.required' => 'Kode akun wajib diisi.',
+            'account_code.regex'    => 'Kode akun hanya boleh huruf, angka, minus (-) dan underscore (_), tanpa spasi.',
+            'account_code.unique'   => 'Kode akun sudah dipakai, gunakan kode lain.',
+            'account_code.max'      => 'Kode akun maksimal 30 karakter.',
             'price.max'         => 'Harga terlalu besar (maksimal Rp 999.999.999).',
         ];
     }

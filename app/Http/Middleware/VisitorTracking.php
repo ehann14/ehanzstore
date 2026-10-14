@@ -13,7 +13,7 @@ class VisitorTracking
         $response = $next($request);
 
         // Hanya track jika method GET dan bukan asset/admin
-        if ($request->isMethod('GET') && !$request->is('admin/*') && !$request->is('super-admin/*') && !$request->is('storage/*')) {
+        if ($request->isMethod('GET') && !$request->is('admin/*') && !$request->is('super-admin/*') && !$request->is('uploads/*')) {
             
             // Cek apakah ini page_view atau event spesifik (misal klik WA)
             $eventType = 'page_view';
