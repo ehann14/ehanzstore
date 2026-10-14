@@ -16,10 +16,8 @@ return [
 
         'public' => [
             'driver' => 'local',
-            // DirectAdmin: arahkan ke public_html/uploads
-            // Bisa diubah melalui UPLOADS_PATH pada file .env
-            'root' => env('UPLOADS_PATH', public_path('uploads')),
-            'url' => '/uploads',
+            'root' => storage_path('app/public'),
+            'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -40,7 +38,8 @@ return [
 
     ],
 
-    // Tidak menggunakan symlink; file upload disimpan langsung di folder uploads
-    'links' => [],
+    'links' => [
+        public_path('storage') => storage_path('app/public'),
+    ],
 
 ];
