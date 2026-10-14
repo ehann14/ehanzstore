@@ -4,7 +4,7 @@
 
 @section('content')
 
-    {{-- ===================== BANNER SLIDER ===================== --}}
+    {{-- ===================== BANNER SLIDER (CLEAN & SMOOTH) ===================== --}}
     <section class="pt-20 sm:pt-28 px-4">
         <div class="max-w-7xl mx-auto">
 
@@ -12,69 +12,69 @@
                 <div x-data="bannerSlider({{ $banners->count() }})"
                      @mouseenter="pause()" @mouseleave="play()"
                      @touchstart.passive="touchStart($event)" @touchend.passive="touchEnd($event)"
-                     class="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/40 md:aspect-[8/3]">
+                     class="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/40 w-full aspect-[16/9] md:aspect-[21/9] group cursor-grab active:cursor-grabbing">
 
-                    @foreach($banners as $i => $banner)
-                        @php
-                            $tag   = $banner->link_url ? 'a' : 'div';
-                            $attrs = $banner->link_url ? 'href="' . e($banner->link_url) . '" target="_blank" rel="noopener"' : '';
-                        @endphp
-                        <{{ $tag }} {!! $attrs !!}
-                            x-show="current === {{ $i }}"
-                            x-transition:enter="transition-opacity duration-700"
-                            x-transition:enter-start="opacity-0"
-                            x-transition:enter-end="opacity-100"
-                            x-transition:leave="transition-opacity duration-700 absolute inset-0"
-                            x-transition:leave-start="opacity-100"
-                            x-transition:leave-end="opacity-0"
-                            @if($i > 0) x-cloak @endif
-                            class="relative md:absolute md:inset-0 block {{ $banner->link_url ? 'cursor-pointer' : '' }}">
-                            <img src="{{ $banner->image_url }}" alt="{{ $banner->title }}"
-                                 class="w-full h-auto md:h-full block object-cover" {{ $i > 0 ? 'loading=lazy' : '' }}>
-                        </{{ $tag }}>
-                    @endforeach
+                    {{-- CONTAINER GAMBAR GESER --}}
+                    <div class="flex h-full w-full transition-transform duration-500 ease-out will-change-transform"
+                         :style="'transform: translateX(-' + (current * 100) + '%)'">
+                        
+                        @foreach($banners as $i => $banner)
+                            @php
+                                $tag   = $banner->link_url ? 'a' : 'div';
+                                $attrs = $banner->link_url ? 'href="' . e($banner->link_url) . '" target="_blank" rel="noopener"' : '';
+                            @endphp
+                            
+                            <{{ $tag }} {!! $attrs !!} class="shrink-0 w-full h-full relative block {{ $banner->link_url ? 'cursor-pointer' : '' }}">
+                                <img src="{{ $banner->image_url }}" 
+                                     alt="{{ $banner->title }}"
+                                     loading="{{ $i === 0 ? 'eager' : 'lazy' }}"
+                                     draggable="false"
+                                     class="w-full h-full object-cover object-center select-none pointer-events-none">
+                            </{{ $tag }}>
+                        @endforeach
+                    </div>
 
                     @if($banners->count() > 1)
-                        <!-- Panah -->
-                        <button @click="prev()" aria-label="Sebelumnya"
-                                class="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur text-white items-center justify-center transition z-10">
+                        <!-- Panah (Desktop Only) -->
+                        <button @click.stop="prev()" aria-label="Sebelumnya"
+                                class="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-electric backdrop-blur text-white items-center justify-center transition z-20 border border-white/10 opacity-0 group-hover:opacity-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                         </button>
-                        <button @click="next()" aria-label="Berikutnya"
-                                class="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur text-white items-center justify-center transition z-10">
+                        <button @click.stop="next()" aria-label="Berikutnya"
+                                class="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-electric backdrop-blur text-white items-center justify-center transition z-20 border border-white/10 opacity-0 group-hover:opacity-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         </button>
 
-                        <!-- Indikator -->
-                        <div class="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                        <!-- Indikator Dots -->
+                        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
                             @foreach($banners as $i => $banner)
-                                <button @click="go({{ $i }})" aria-label="Banner {{ $i + 1 }}"
-                                        :class="current === {{ $i }} ? 'w-7 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'"
-                                        class="h-2 rounded-full transition-all duration-300"></button>
+                                <button @click.stop="go({{ $i }})" aria-label="Banner {{ $i + 1 }}"
+                                        :class="current === {{ $i }} ? 'w-8 bg-electric' : 'w-2 bg-white/30 hover:bg-white/60'"
+                                        class="h-2 rounded-full transition-all duration-300 shadow-sm"></button>
                             @endforeach
                         </div>
                     @endif
                 </div>
             @else
-                {{-- Fallback jika belum ada banner yang diposting admin --}}
-                <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-gradient-to-br from-royal via-[#123B8A] to-midnight py-10 md:py-0 md:aspect-[8/3] flex items-center">
-                    <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-electric/30 blur-3xl"></div>
-                    <div class="relative px-6 sm:px-12 max-w-2xl">
-                        <p class="text-xs font-bold tracking-widest text-blue-200 uppercase mb-3">EHANZSTORE.ID</p>
-                        <h1 class="font-display text-2xl sm:text-4xl md:text-5xl font-bold text-white leading-tight">
+                {{-- Fallback Banner Statis --}}
+                <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-gradient-to-br from-royal via-[#123B8A] to-midnight py-12 md:py-0 flex items-center min-h-[250px] md:aspect-[21/9]">
+                    <div class="absolute -right-20 -top-20 w-64 h-64 md:w-96 md:h-96 rounded-full bg-electric/20 blur-3xl animate-pulse"></div>
+                    <div class="relative px-6 sm:px-12 max-w-2xl w-full z-10">
+                        <p class="text-[10px] sm:text-xs font-bold tracking-widest text-blue-200 uppercase mb-2">EHANZSTORE.ID</p>
+                        <h1 class="font-display text-2xl sm:text-4xl md:text-5xl font-bold text-white leading-tight drop-shadow-lg">
                             Akun Clash of Clans Terpercaya
                         </h1>
-                        <p class="hidden sm:block text-blue-100/80 mt-3">Transaksi aman via WhatsApp, akun dicek sebelum listing, ada garansi.</p>
+                        <p class="text-blue-100/80 mt-2 text-sm sm:text-base">Transaksi aman via WhatsApp, akun dicek sebelum listing, ada garansi.</p>
                         <a href="{{ $storeWaUrl }}" target="_blank" rel="noopener"
-                           class="inline-flex mt-5 bg-white text-royal font-semibold px-5 py-2.5 rounded-xl text-sm hover:bg-blue-50 transition">
+                           class="inline-flex mt-5 bg-white text-royal font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-blue-50 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                             Chat Admin
                         </a>
                     </div>
                 </div>
             @endif
 
-            {{-- Jaminan singkat --}}
-            <div class="flex md:grid md:grid-cols-4 gap-3 mt-4 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 md:mx-0 md:px-0">
+            {{-- Jaminan singkat (Trust Badges) --}}
+            <div class="flex md:grid md:grid-cols-4 gap-3 mt-4 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0 pb-2 no-scrollbar">
                 @php
                     $perks = [
                         ['t' => 'Garansi 7 Hari',     'd' => 'Perlindungan setelah beli'],
@@ -84,9 +84,9 @@
                     ];
                 @endphp
                 @foreach($perks as $p)
-                    <div class="snap-start shrink-0 md:shrink min-w-[200px] md:min-w-0 flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3">
-                        <span class="w-8 h-8 shrink-0 rounded-lg bg-electric/10 text-electric flex items-center justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    <div class="snap-center shrink-0 w-[240px] md:w-auto flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 hover:bg-white/[0.06] transition-colors">
+                        <span class="w-9 h-9 shrink-0 rounded-lg bg-electric/10 text-electric flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                         </span>
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-white leading-tight">{{ $p['t'] }}</p>
@@ -108,19 +108,18 @@
                 </h2>
                 <p class="text-sm text-slate-500 mt-1">{{ $totalAvailable }} akun siap kirim, diurutkan dari yang terbaru.</p>
             </div>
-            <a href="{{ route('catalog') }}" class="inline-flex items-center gap-2 text-sm font-medium text-electric hover:text-white transition">
+            <a href="{{ route('catalog') }}" class="inline-flex items-center gap-2 text-sm font-medium text-electric hover:text-white transition self-start sm:self-auto">
                 Lihat semua
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
         </div>
 
-        {{-- Filter cepat Town Hall --}}
         @if($townHalls->count())
-            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-6">
-                <a href="{{ route('catalog') }}" class="shrink-0 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide bg-electric text-white">Semua</a>
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                <a href="{{ route('catalog') }}" class="snap-start shrink-0 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide bg-electric text-white shadow-lg shadow-electric/20">Semua</a>
                 @foreach($townHalls as $th)
                     <a href="{{ route('catalog', ['th' => $th]) }}"
-                       class="shrink-0 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white transition">
+                       class="snap-start shrink-0 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white transition">
                         TH {{ $th }}
                     </a>
                 @endforeach
@@ -149,15 +148,15 @@
 
     {{-- ===================== CTA ===================== --}}
     <section class="max-w-7xl mx-auto px-4 pb-16 sm:pb-20">
-        <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-royal to-[#123B8A] px-6 sm:px-12 py-8 sm:py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-royal to-[#123B8A] px-6 sm:px-12 py-8 sm:py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 border border-white/10">
             <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="relative">
+            <div class="relative z-10">
                 <h3 class="font-display text-xl sm:text-2xl font-bold text-white">Tidak menemukan akun yang dicari?</h3>
                 <p class="text-blue-100/80 text-sm mt-1">Sebutkan kebutuhan dan budgetmu, admin bantu carikan.</p>
             </div>
-            <div class="relative flex flex-wrap gap-3">
+            <div class="relative z-10 flex flex-wrap gap-3">
                 <a href="{{ $storeWaUrl }}" target="_blank" rel="noopener"
-                   class="px-6 py-3 rounded-xl bg-white text-royal font-semibold text-sm hover:bg-blue-50 transition">WhatsApp</a>
+                   class="px-6 py-3 rounded-xl bg-white text-royal font-semibold text-sm hover:bg-blue-50 transition shadow-lg">WhatsApp</a>
                 <a href="{{ $storeIgUrl }}" target="_blank" rel="noopener"
                    class="px-6 py-3 rounded-xl border border-white/30 text-white font-semibold text-sm hover:bg-white/10 transition">Instagram</a>
             </div>
@@ -173,19 +172,32 @@
             total: total,
             timer: null,
             startX: 0,
+            isDragging: false,
+            
             init() { this.play(); },
             go(i) { this.current = (i + this.total) % this.total; },
             next() { this.go(this.current + 1); },
             prev() { this.go(this.current - 1); },
+            
             play() {
                 this.pause();
                 if (this.total > 1) this.timer = setInterval(() => this.next(), 5000);
             },
             pause() { if (this.timer) { clearInterval(this.timer); this.timer = null; } },
-            touchStart(e) { this.startX = e.changedTouches[0].clientX; },
+            
+            touchStart(e) { 
+                this.startX = e.changedTouches[0].clientX; 
+                this.isDragging = true;
+                this.pause(); 
+            }, 
+            
             touchEnd(e) {
-                const dx = e.changedTouches[0].clientX - this.startX;
-                if (Math.abs(dx) > 50) { dx < 0 ? this.next() : this.prev(); this.play(); }
+                if (!this.isDragging) return;
+                const endX = e.changedTouches[0].clientX;
+                const dx = endX - this.startX;
+                if (Math.abs(dx) > 50) { dx < 0 ? this.next() : this.prev(); }
+                this.isDragging = false;
+                this.play(); 
             },
         };
     }
