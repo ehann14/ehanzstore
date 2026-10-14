@@ -1,10 +1,10 @@
-
 <?php
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\Admin\AccountController;
+use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboard;
 
 // Public Routes
@@ -19,7 +19,7 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// Admin Routes (Regular Admin)
+// Admin Routes (Regular Admin + Super Admin)
 Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
@@ -38,6 +38,11 @@ Route::middleware(['auth', 'role:admin'])
             AccountController::class,
             'uploadImage'
         ])->name('accounts.images');
+
+        // Banner beranda (slider)
+        Route::resource('banners', BannerController::class)->except(['show']);
+        Route::post('banners/{banner}/toggle', [BannerController::class, 'toggle'])
+            ->name('banners.toggle');
     });
 
 // Super Admin Routes

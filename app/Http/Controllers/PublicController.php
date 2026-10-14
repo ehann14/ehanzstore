@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Banner;
 use App\Models\CocAccount;
 use App\Models\VisitorEvent;
 use Illuminate\Http\Request;
@@ -9,17 +10,28 @@ use Illuminate\Http\Request;
 class PublicController extends Controller
 {
     /**
-     * Halaman utama.
+     * Halaman utama: banner slider di atas, daftar akun dijual di bawahnya.
      */
     public function home()
     {
+        $banners = Banner::active()->get();
+
         $featuredAccounts = CocAccount::available()
             ->with('primaryImage')
             ->orderBy('created_at', 'desc')
-            ->take(6)
+            ->take(8)
             ->get();
 
-        return view('public.home', compact('featuredAccounts'));
+        // Chip filter Town Hall yang stoknya memang ada
+        $townHalls = CocAccount::available()
+            ->select('town_hall')
+            ->distinct()
+            ->orderByDesc('town_hall')
+            ->pluck('town_hall');
+
+        $totalAvailable = CocAccount::available()->count();
+
+        return view('public.home', compact('banners', 'featuredAccounts', 'townHalls', 'totalAvailable'));
     }
 
     /**
@@ -90,9 +102,9 @@ class PublicController extends Controller
             'created_at' => now(),
         ]);
     }
-    public function howToBuy()
-{
-    return view('public.how-to-buy');
-}
 
+    public function howToBuy()
+    {
+        return view('public.how-to-buy');
+    }
 }

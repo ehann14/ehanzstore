@@ -1,38 +1,63 @@
-<div class="group relative glass rounded-3xl overflow-hidden hover:border-electric/40 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_-12px_rgba(59,130,246,0.2)] flex flex-col h-full">
-    <!-- Image Area -->
-    <div class="relative h-56 overflow-hidden bg-midnight">
+@php
+    $heroes = array_filter([
+        'BK' => $account->barbarian_king_level,
+        'AQ' => $account->archer_queen_level,
+        'GW' => $account->grand_warden_level,
+        'RC' => $account->royal_champion_level,
+    ]);
+@endphp
+
+<a href="{{ route('account.detail', $account->account_code) }}"
+   class="group relative flex flex-col h-full rounded-2xl overflow-hidden bg-slate-900/60 border border-white/[0.07] hover:border-electric/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-15px_rgba(59,130,246,0.35)]">
+
+    <!-- Gambar -->
+    <div class="relative aspect-[4/3] overflow-hidden bg-midnight">
         @if($account->primaryImage)
-            <img src="{{ Storage::url($account->primaryImage->image_path) }}" 
-                 alt="{{ $account->name }}" 
-                 class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100">
-            <div class="absolute inset-0 bg-gradient-to-t from-midnight via-midnight/50 to-transparent opacity-90"></div>
+            <img src="{{ Storage::url($account->primaryImage->image_path) }}"
+                 alt="{{ $account->name }}" loading="lazy"
+                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
         @else
-            <div class="w-full h-full flex flex-col items-center justify-center text-slate-700 bg-slate-900/50">
-                <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <div class="w-full h-full flex items-center justify-center text-slate-700 bg-slate-900/50">
+                <svg class="w-12 h-12 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             </div>
         @endif
-        
-        <div class="absolute top-4 left-4">
-            <span class="px-3 py-1.5 bg-electric/90 backdrop-blur text-white text-[10px] font-bold rounded-lg shadow-lg shadow-electric/30 border border-white/20 uppercase tracking-wider">
-                Town Hall {{ $account->town_hall }}
+
+        <span class="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-electric text-white text-[10px] sm:text-[11px] font-bold rounded-md shadow-lg uppercase tracking-wide">
+            TH {{ $account->town_hall }}
+        </span>
+
+        @if($account->email_change_status === 'Original')
+            <span class="hidden sm:block absolute top-3 right-3 px-2 py-1 bg-emerald-500/90 text-white text-[10px] font-semibold rounded-md">
+                Email Original
+            </span>
+        @endif
+    </div>
+
+    <!-- Konten -->
+    <div class="p-3 sm:p-4 flex flex-col flex-grow">
+        <h3 class="font-display font-bold text-sm sm:text-base text-white line-clamp-1 group-hover:text-electric transition-colors">{{ $account->name }}</h3>
+        <p class="text-[10px] sm:text-[11px] font-mono text-slate-500 mt-0.5 sm:mt-1 truncate">{{ $account->account_code }}</p>
+
+        @if(count($heroes))
+            <div class="hidden sm:flex flex-wrap gap-1.5 mt-3">
+                @foreach($heroes as $abbr => $lvl)
+                    <span class="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-[11px] text-slate-300">
+                        <span class="text-slate-500">{{ $abbr }}</span> {{ $lvl }}
+                    </span>
+                @endforeach
+            </div>
+        @endif
+
+        <div class="mt-auto pt-3 sm:pt-4 flex items-end justify-between">
+            <div>
+                <p class="text-[10px] text-slate-500 uppercase tracking-wider">Harga</p>
+                <p class="text-sm sm:text-lg font-display font-bold text-white">Rp {{ number_format($account->price, 0, ',', '.') }}</p>
+            </div>
+            <span class="hidden sm:inline text-xs font-semibold text-electric group-hover:text-white group-hover:bg-electric border border-electric/40 px-3 py-1.5 rounded-lg transition">
+                Detail
             </span>
         </div>
     </div>
-
-    <!-- Content -->
-    <div class="p-5 flex flex-col flex-grow relative z-10">
-        <h3 class="font-display font-bold text-lg text-white mb-1 line-clamp-1 group-hover:text-electric transition-colors">{{ $account->name }}</h3>
-        <p class="text-[10px] font-mono text-slate-500 bg-white/5 inline-block px-2 py-1 rounded border border-white/5 w-fit mb-4">CODE: {{ $account->account_code }}</p>
-        
-        <div class="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Harga</p>
-                <p class="text-xl font-display font-bold text-white">Rp {{ number_format($account->price, 0, ',', '.') }}</p>
-            </div>
-            <a href="{{ route('account.detail', $account->account_code) }}" 
-               class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 transition-all group-hover:bg-electric group-hover:text-white group-hover:border-electric group-hover:rotate-45">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-            </a>
-        </div>
-    </div>
-</div>
+    <div class="h-1 bg-electric/70 group-hover:bg-electric transition"></div>
+</a>
