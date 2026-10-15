@@ -3,6 +3,7 @@
         ['route' => 'home',       'label' => 'Beranda'],
         ['route' => 'catalog',    'label' => 'Katalog'],
         ['route' => 'how.to.buy', 'label' => 'Cara Beli'],
+        ['route' => 'warranty',   'label' => 'Garansi'],
     ];
 @endphp
 

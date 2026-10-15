@@ -13,6 +13,7 @@ Route::get('/katalog', [PublicController::class, 'catalog'])->name('catalog');
 Route::get('/akun/{account_code}', [PublicController::class, 'detail'])->name('account.detail');
 Route::post('/track/event', [PublicController::class, 'trackEvent'])->name('track.event');
 Route::get('/cara-membeli', [PublicController::class, 'howToBuy'])->name('how.to.buy');
+Route::get('/garansi', [PublicController::class, 'warranty'])->name('warranty');
 
 // Upload fallback: digunakan jika Apache tidak menemukan file fisiknya
 Route::get('/uploads/{path}', [PublicController::class, 'upload'])

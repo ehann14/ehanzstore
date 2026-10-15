@@ -5,7 +5,7 @@
 @section('content')
 <div class="pt-28 pb-20 max-w-7xl mx-auto px-4">
 
-    <!-- Breadcrumb -->
+    {{-- Breadcrumb --}}
     <nav class="flex items-center gap-2 text-sm text-slate-500 mb-8">
         <a href="{{ route('home') }}" class="hover:text-electric transition">Beranda</a>
         <span>/</span>
@@ -16,56 +16,55 @@
 
     <div class="grid lg:grid-cols-2 gap-12">
 
-        <!-- Galeri Foto -->
+        {{-- Galeri Foto --}}
         <div class="space-y-4">
-            <div class="aspect-[4/3] rounded-3xl overflow-hidden bg-midnight border border-white/10 relative group">
-                @php
-                    $primaryImg = $account->images->firstWhere('is_primary', true)
-                        ?? $account->images->first();
-                @endphp
+            @php
+                $primaryImg = $account->images->firstWhere('is_primary', true)
+                    ?? $account->images->first();
+            @endphp
 
+            <div class="aspect-[4/3] rounded-3xl overflow-hidden bg-midnight border border-white/10 relative group">
                 @if($primaryImg)
-                    <img id="mainImage"
-                         src="{{ Storage::url($primaryImg->image_path) }}"
-                         alt="{{ $account->name }}"
-                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                    <img
+                        id="mainImage"
+                        src="{{ Storage::url($primaryImg->image_path) }}"
+                        alt="{{ $account->name }}"
+                        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    >
                 @else
                     <div class="w-full h-full flex flex-col items-center justify-center text-slate-600">
-                        <svg class="w-16 h-16 mb-2 opacity-50"
-                             fill="none"
-                             stroke="currentColor"
-                             viewBox="0 0 24 24">
-                            <path stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="1.5"
-                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-                            </path>
+                        <svg class="w-16 h-16 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                         <p class="text-sm">Tidak ada foto tersedia</p>
                     </div>
                 @endif
             </div>
 
-            <!-- Thumbnail Foto -->
+            {{-- Thumbnail Foto --}}
             @if($account->images->count() > 1)
                 <div class="grid grid-cols-5 gap-3">
                     @foreach($account->images as $img)
-                        <button type="button"
-                                onclick="changeMainImage('{{ Storage::url($img->image_path) }}', this)"
-                                class="aspect-square rounded-xl overflow-hidden border-2 {{ $img->id === ($primaryImg->id ?? null) ? 'border-electric' : 'border-transparent hover:border-white/30' }} transition-all thumbnail-btn">
-                            <img src="{{ Storage::url($img->image_path) }}"
-                                 alt="Foto {{ $account->name }}"
-                                 class="w-full h-full object-cover">
+                        <button
+                            type="button"
+                            onclick="changeMainImage('{{ Storage::url($img->image_path) }}', this)"
+                            class="aspect-square rounded-xl overflow-hidden border-2 {{ $img->id === ($primaryImg->id ?? null) ? 'border-electric' : 'border-transparent hover:border-white/30' }} transition-all thumbnail-btn"
+                        >
+                            <img
+                                src="{{ Storage::url($img->image_path) }}"
+                                alt="Foto {{ $account->name }}"
+                                class="w-full h-full object-cover"
+                            >
                         </button>
                     @endforeach
                 </div>
             @endif
         </div>
 
-        <!-- Informasi Produk -->
+        {{-- Informasi Produk --}}
         <div class="space-y-8">
 
-            <!-- Nama Akun -->
+            {{-- Nama Akun --}}
             <div>
                 <div class="flex items-start justify-between gap-4 mb-4">
                     <h1 class="text-3xl md:text-4xl font-display font-bold text-white leading-tight">
@@ -82,7 +81,7 @@
                 </p>
             </div>
 
-            <!-- Harga & CTA -->
+            {{-- Harga dan Tombol Pembelian --}}
             <div class="glass rounded-2xl p-6 space-y-4 border-l-4 border-electric">
                 <div>
                     <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">
@@ -94,14 +93,13 @@
                     </p>
                 </div>
 
-                <a href="https://wa.me/6282130559126?text=Halo%20Admin%20EHANZSTORE%2C%20saya%20tertarik%20dengan%20akun%20*{{ urlencode($account->name) }}*%20(Kode:%20{{ urlencode($account->account_code) }}).%20Apakah%20masih%20tersedia?"
-                   target="_blank"
-                   rel="noopener noreferrer"
-                   class="flex items-center justify-center gap-3 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-900/20 hover:shadow-green-900/40 active:scale-[0.98]">
-
-                    <svg class="w-6 h-6"
-                         fill="currentColor"
-                         viewBox="0 0 24 24">
+                <a
+                    href="https://wa.me/6282130559126?text={{ urlencode('Halo Admin EHANZSTORE, saya tertarik dengan akun ' . $account->name . ' (Kode: ' . $account->account_code . '). Apakah masih tersedia?') }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="flex items-center justify-center gap-3 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-900/20 hover:shadow-green-900/40 active:scale-[0.98]"
+                >
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654z"/>
                     </svg>
 
@@ -111,9 +109,21 @@
                 <p class="text-[10px] text-slate-500 text-center">
                     Anda akan diarahkan ke chat admin dengan pesan otomatis.
                 </p>
+
+                {{-- Informasi Garansi --}}
+                <a
+                    href="{{ route('warranty') }}"
+                    class="flex items-center justify-center gap-2 text-xs text-green-400 hover:text-green-300 transition pt-1"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+
+                    Bergaransi 7 hari, lihat ketentuannya
+                </a>
             </div>
 
-            <!-- Spesifikasi Akun -->
+            {{-- Spesifikasi Akun --}}
             <div class="space-y-4">
                 <h3 class="text-lg font-display font-bold text-white border-b border-white/10 pb-2">
                     Spesifikasi Akun
@@ -163,15 +173,13 @@
                 </div>
             </div>
 
-            <!-- Informasi Keamanan -->
+            {{-- Informasi Keamanan --}}
             <div class="space-y-4">
                 <h3 class="text-lg font-display font-bold text-white border-b border-white/10 pb-2">
                     Informasi Keamanan
                 </h3>
 
                 <div class="space-y-3">
-
-                    <!-- Status Proteksi -->
                     <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                         <span class="text-sm text-slate-400">
                             Status Proteksi
@@ -182,7 +190,6 @@
                         </span>
                     </div>
 
-                    <!-- Status Email/Gmail -->
                     <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                         <span class="text-sm text-slate-400">
                             Status Email/Gmail
@@ -192,11 +199,10 @@
                             {{ $account->email_change_status === 'Changeable' ? 'Bisa Ganti' : 'Tidak Bisa Ganti' }}
                         </span>
                     </div>
-
                 </div>
             </div>
 
-            <!-- Deskripsi -->
+            {{-- Deskripsi --}}
             @if($account->description)
                 <div class="space-y-2">
                     <h3 class="text-lg font-display font-bold text-white border-b border-white/10 pb-2">
@@ -210,6 +216,7 @@
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script>
@@ -230,4 +237,3 @@
     }
 </script>
 @endpush
-@endsection

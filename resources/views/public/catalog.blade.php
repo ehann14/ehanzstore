@@ -8,10 +8,8 @@
         <div class="absolute inset-0 bg-gradient-to-b from-royal/10 to-transparent pointer-events-none"></div>
         <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
             <h1 class="font-display text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight">
-                Gudang Akun <span class="text-electric glow-text">TH 9 - TH 16</span>
+                Gudang Akun
             </h1>
-            <p class="text-slate-400 max-w-xl mx-auto">Filter berdasarkan Town Hall, harga, atau kelengkapan hero. Semua akun sudah dicek real-time sebelum listing.</p>
-        </div>
     </section>
 
     <!-- Floating Filter Bar -->

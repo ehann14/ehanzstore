@@ -122,6 +122,11 @@ class PublicController extends Controller
     {
         return view('public.how-to-buy');
     }
+    
+    public function warranty()
+    {
+        return view('public.warranty');
+    }
 
     /**
      * Menampilkan file upload jika file fisiknya tidak ditemukan oleh Apache.
