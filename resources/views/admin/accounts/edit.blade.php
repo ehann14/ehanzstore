@@ -24,6 +24,9 @@
         </div>
     @endif
 
+    {{-- Bagikan akun (link + teks promosi) --}}
+    @include('admin.accounts._share', ['account' => $account])
+
     <!-- Form Card -->
     <form id="accountForm" action="{{ route('admin.accounts.update', $account) }}" method="POST" enctype="multipart/form-data" class="glass-panel rounded-3xl p-6 md:p-8 space-y-8">
         @csrf

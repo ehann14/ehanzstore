@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'EHANZSTORE.ID - Marketplace Akun Clash of Clans')</title>
     <meta name="description" content="@yield('description', 'Marketplace akun Clash of Clans terpercaya. Akun TH tinggi, hero upgrade, transaksi aman via WhatsApp dengan garansi.')">
+    @stack('meta')
     @include('layouts.partials.favicon')
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

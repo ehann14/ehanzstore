@@ -2,6 +2,37 @@
 
 @section('title', $account->name . ' - EHANZSTORE.ID')
 
+@php
+    $shareUrl   = route('account.detail', $account->account_code);
+    $sharePrice = 'Rp ' . number_format($account->price, 0, ',', '.');
+    $shareTitle = $account->name . ' (TH ' . $account->town_hall . ') - ' . $sharePrice;
+    $shareText  = 'Akun Clash of Clans ' . $account->name . ' | TH ' . $account->town_hall
+                . ' | Kode ' . $account->account_code . ' | ' . $sharePrice . ' - EHANZSTORE.ID';
+    
+    // Perbaikan: Menggunakan asset('storage/...') untuk kompatibilitas symlink & hosting
+    $ogImage    = ($account->primaryImage && !empty($account->primaryImage->image_path))
+                ? asset('storage/' . $account->primaryImage->image_path)
+                : null;
+@endphp
+
+@push('meta')
+    <link rel="canonical" href="{{ $shareUrl }}">
+    <meta property="og:type" content="product">
+    <meta property="og:site_name" content="EHANZSTORE.ID">
+    <meta property="og:title" content="{{ $shareTitle }}">
+    <meta property="og:description" content="{{ $shareText }}">
+    <meta property="og:url" content="{{ $shareUrl }}">
+    @if($ogImage)
+        <meta property="og:image" content="{{ $ogImage }}">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:image" content="{{ $ogImage }}">
+    @else
+        <meta name="twitter:card" content="summary">
+    @endif
+    <meta name="twitter:title" content="{{ $shareTitle }}">
+    <meta name="twitter:description" content="{{ $shareText }}">
+@endpush
+
 @section('content')
 <div class="pt-28 pb-20 max-w-7xl mx-auto px-4">
 
@@ -27,7 +58,7 @@
                 @if($primaryImg)
                     <img
                         id="mainImage"
-                        src="{{ Storage::url($primaryImg->image_path) }}"
+                        src="{{ asset('storage/' . $primaryImg->image_path) }}"
                         alt="{{ $account->name }}"
                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     >
@@ -47,11 +78,11 @@
                     @foreach($account->images as $img)
                         <button
                             type="button"
-                            onclick="changeMainImage('{{ Storage::url($img->image_path) }}', this)"
+                            onclick="changeMainImage('{{ asset('storage/' . $img->image_path) }}', this)"
                             class="aspect-square rounded-xl overflow-hidden border-2 {{ $img->id === ($primaryImg->id ?? null) ? 'border-electric' : 'border-transparent hover:border-white/30' }} transition-all thumbnail-btn"
                         >
                             <img
-                                src="{{ Storage::url($img->image_path) }}"
+                                src="{{ asset('storage/' . $img->image_path) }}"
                                 alt="Foto {{ $account->name }}"
                                 class="w-full h-full object-cover"
                             >
@@ -121,6 +152,50 @@
 
                     Bergaransi 7 hari, lihat ketentuannya
                 </a>
+
+                {{-- Bagikan --}}
+                <div class="pt-4 mt-1 border-t border-white/10">
+                    <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-3">Bagikan akun ini</p>
+
+                    <button type="button" id="nativeShareBtn"
+                            class="hidden w-full mb-2 items-center justify-center gap-2 bg-electric hover:bg-blue-500 text-white text-sm font-semibold py-3 rounded-xl transition active:scale-[0.98]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                        Bagikan
+                    </button>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" id="copyLinkBtn"
+                                class="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold py-2.5 rounded-xl transition">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                            <span>Salin Link</span>
+                        </button>
+
+                        <a href="https://wa.me/?text={{ rawurlencode($shareText . "\n" . $shareUrl) }}" target="_blank" rel="noopener noreferrer"
+                           class="flex items-center justify-center gap-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 text-green-300 text-xs font-semibold py-2.5 rounded-xl transition">
+                            WhatsApp
+                        </a>
+
+                        <a href="https://t.me/share/url?url={{ rawurlencode($shareUrl) }}&text={{ rawurlencode($shareText) }}" target="_blank" rel="noopener noreferrer"
+                           class="flex items-center justify-center gap-2 bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/30 text-sky-300 text-xs font-semibold py-2.5 rounded-xl transition">
+                            Telegram
+                        </a>
+
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($shareUrl) }}" target="_blank" rel="noopener noreferrer"
+                           class="flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 text-xs font-semibold py-2.5 rounded-xl transition">
+                            Facebook
+                        </a>
+
+                        <a href="https://twitter.com/intent/tweet?url={{ rawurlencode($shareUrl) }}&text={{ rawurlencode($shareText) }}" target="_blank" rel="noopener noreferrer"
+                           class="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold py-2.5 rounded-xl transition">
+                            X
+                        </a>
+
+                        <a href="mailto:?subject={{ rawurlencode($shareTitle) }}&body={{ rawurlencode($shareText . "\n" . $shareUrl) }}"
+                           class="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold py-2.5 rounded-xl transition">
+                            Email
+                        </a>
+                    </div>
+                </div>
             </div>
 
             {{-- Spesifikasi Akun --}}
@@ -235,5 +310,54 @@
         button.classList.remove('border-transparent');
         button.classList.add('border-electric');
     }
+
+    // ---- Fitur bagikan ----
+    (function () {
+        const shareData = {
+            title: @json($shareTitle),
+            text: @json($shareText),
+            url: @json($shareUrl)
+        };
+
+        // Tombol "Bagikan" bawaan perangkat (muncul di HP / browser yang mendukung)
+        const nativeBtn = document.getElementById('nativeShareBtn');
+        if (nativeBtn && navigator.share) {
+            nativeBtn.classList.remove('hidden');
+            nativeBtn.classList.add('flex');
+            nativeBtn.addEventListener('click', function () {
+                navigator.share(shareData).catch(function () {});
+            });
+        }
+
+        // Salin link
+        const copyBtn = document.getElementById('copyLinkBtn');
+        if (!copyBtn) return;
+        const label = copyBtn.querySelector('span');
+
+        function done() {
+            label.textContent = 'Tersalin!';
+            setTimeout(function () { label.textContent = 'Salin Link'; }, 1800);
+        }
+
+        function fallbackCopy() {
+            const ta = document.createElement('textarea');
+            ta.value = shareData.url;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); done(); }
+            catch (e) { window.prompt('Salin link ini:', shareData.url); }
+            document.body.removeChild(ta);
+        }
+
+        copyBtn.addEventListener('click', function () {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(shareData.url).then(done).catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+        });
+    })();
 </script>
 @endpush

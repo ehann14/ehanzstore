@@ -21,6 +21,30 @@ class CocAccount extends Model
         'price' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        // Sinkronkan tabel transaksi dengan status penjualan akun.
+        static::updated(function (CocAccount $account) {
+            if (! $account->wasChanged('sale_status')) {
+                return;
+            }
+
+            if ($account->sale_status === 'sold') {
+                // Akun ditandai terjual -> pastikan ada transaksi selesai
+                Sale::recordForAccount($account);
+            } elseif ($account->getOriginal('sale_status') === 'sold') {
+                // Status terjual dibatalkan -> transaksi lama dibatalkan
+                // agar pendapatan tidak dihitung dua kali
+                $account->sales()
+                    ->where('transaction_status', 'completed')
+                    ->update([
+                        'transaction_status' => 'cancelled',
+                        'payment_status'     => 'unpaid',
+                    ]);
+            }
+        });
+    }
+
     public function images()
     {
         return $this->hasMany(CocAccountImage::class)->orderBy('sort_order');
@@ -40,7 +64,7 @@ class CocAccount extends Model
     {
         return $this->hasMany(Sale::class);
     }
-    
+
     // Scope untuk publik
     public function scopeAvailable($query)
     {
