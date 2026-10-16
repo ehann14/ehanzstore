@@ -71,6 +71,10 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::get('/admins', [SuperAdminDashboard::class, 'manageAdmins'])
             ->name('admins');
 
+        // Riwayat aktivitas admin
+        Route::get('/activity-logs', [SuperAdminDashboard::class, 'activityLogs'])
+            ->name('activity-logs');
+
         // Konfirmasi penjualan oleh Super Admin
         Route::post('/sales/confirm', [
             SuperAdminDashboard::class,

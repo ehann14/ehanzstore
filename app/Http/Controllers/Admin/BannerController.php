@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Banner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,7 +33,9 @@ class BannerController extends Controller
         $data['created_by'] = Auth::id();
         unset($data['image']);
 
-        Banner::create($data);
+        $banner = Banner::create($data);
+
+        ActivityLog::record('create_banner', $banner, 'Banner "' . $banner->title . '"');
 
         return redirect()->route('admin.banners.index')->with('success', 'Banner berhasil diposting.');
     }
@@ -57,6 +60,8 @@ class BannerController extends Controller
 
         $banner->update($data);
 
+        ActivityLog::record('update_banner', $banner, 'Banner "' . $banner->title . '"');
+
         return redirect()->route('admin.banners.index')->with('success', 'Banner diperbarui.');
     }
 
@@ -65,6 +70,10 @@ class BannerController extends Controller
     {
         $banner->update(['is_active' => ! $banner->is_active]);
 
+        ActivityLog::record('toggle_banner', $banner, 'Banner "' . $banner->title . '"', [
+            'is_active' => $banner->is_active,
+        ]);
+
         return back()->with('success', $banner->is_active ? 'Banner ditampilkan.' : 'Banner disembunyikan.');
     }
 
@@ -72,6 +81,9 @@ class BannerController extends Controller
     public function destroy(Banner $banner)
     {
         Storage::disk('public')->delete($banner->image_path);
+
+        ActivityLog::record('delete_banner', $banner, 'Banner "' . $banner->title . '"');
+
         $banner->delete();
 
         return back()->with('success', 'Banner dihapus.');

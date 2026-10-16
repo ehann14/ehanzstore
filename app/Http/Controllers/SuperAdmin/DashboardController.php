@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\CocAccount;
 use App\Models\Sale;
 use App\Models\User;
@@ -159,6 +160,51 @@ class DashboardController extends Controller
     }
 
     /**
+     * Riwayat aktivitas admin, dengan filter pengguna, aksi, dan tanggal.
+     */
+    public function activityLogs(Request $request)
+    {
+        $filters = $request->validate([
+            'user_id' => 'nullable|integer',
+            'action'  => 'nullable|string|max:50',
+            'from'    => 'nullable|date',
+            'to'      => 'nullable|date',
+        ]);
+
+        $query = ActivityLog::with('user')->latest('id');
+
+        if (! empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        if (! empty($filters['action']) && array_key_exists($filters['action'], ActivityLog::ACTIONS)) {
+            $query->where('action', $filters['action']);
+        }
+
+        if (! empty($filters['from'])) {
+            $query->whereDate('created_at', '>=', $filters['from']);
+        }
+
+        if (! empty($filters['to'])) {
+            $query->whereDate('created_at', '<=', $filters['to']);
+        }
+
+        $logs = $query->paginate(25)->withQueryString();
+
+        $stats = [
+            'total'        => ActivityLog::count(),
+            'today'        => ActivityLog::whereDate('created_at', today())->count(),
+            'active_today' => ActivityLog::whereDate('created_at', today())->distinct()->count('user_id'),
+        ];
+
+        $users = User::whereIn('role', ['admin', 'super_admin'])
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('super-admin.activity-logs', compact('logs', 'stats', 'users'));
+    }
+
+    /**
      * Konfirmasi penjualan manual oleh Super Admin.
      */
     public function confirmSale(Request $request)
@@ -202,6 +248,11 @@ class DashboardController extends Controller
                 ->withInput()
                 ->withErrors(['account_id' => 'Akun tersebut sudah berstatus terjual.']);
         }
+
+        $soldAccount = CocAccount::find($data['account_id']);
+        ActivityLog::record('confirm_sale', $soldAccount, 'Akun ' . $soldAccount?->account_code, [
+            'price' => $data['price'],
+        ]);
 
         return back()->with('success', 'Penjualan berhasil dikonfirmasi dan stok telah diperbarui.');
     }

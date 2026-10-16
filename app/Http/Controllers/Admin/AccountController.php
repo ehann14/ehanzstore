@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\CocAccount;
 use App\Models\CocAccountImage;
 use Illuminate\Http\Request;
@@ -52,6 +53,8 @@ class AccountController extends Controller
 
         $this->storeImages($request, $account);
 
+        ActivityLog::record('create_account', $account, 'Akun ' . $account->account_code);
+
         return redirect()->route('admin.accounts.index')->with('success', 'Akun berhasil ditambahkan (status: draft).');
     }
 
@@ -85,6 +88,11 @@ class AccountController extends Controller
         }
 
         $account->update($validated);
+
+        ActivityLog::record('update_account', $account, 'Akun ' . $account->account_code, [
+            'changed' => array_values(array_diff(array_keys($account->getChanges()), ['updated_at'])),
+        ]);
+
         $this->storeImages($request, $account);
 
         return redirect()->route('admin.accounts.index')->with('success', 'Data akun diperbarui.');
@@ -101,6 +109,10 @@ class AccountController extends Controller
         ]);
 
         $account->update(array_filter($data));
+
+        ActivityLog::record('update_status', $account, 'Akun ' . $account->account_code, [
+            'changes' => array_filter($data),
+        ]);
 
         return back()->with('success', 'Status akun diperbarui.');
     }
@@ -119,6 +131,8 @@ class AccountController extends Controller
             $account->images()->first()?->update(['is_primary' => true]);
         }
 
+        ActivityLog::record('delete_image', $account, 'Akun ' . $account->account_code);
+
         return back()->with('success', 'Foto dihapus.');
     }
 
@@ -129,6 +143,8 @@ class AccountController extends Controller
         foreach ($account->images as $image) {
             Storage::disk('public')->delete($image->image_path);
         }
+
+        ActivityLog::record('delete_account', $account, 'Akun ' . $account->account_code);
 
         $account->delete();
 
