@@ -26,6 +26,7 @@ class PublicController extends Controller
 
         // Chip filter Town Hall yang stoknya memang ada
         $townHalls = CocAccount::available()
+            ->where('listing_type', 'account')
             ->select('town_hall')
             ->distinct()
             ->orderByDesc('town_hall')
@@ -61,10 +62,19 @@ class PublicController extends Controller
             });
         }
 
-        // Filter Town Hall
-        if ($request->filled('th')) {
-            $query->where('town_hall', $request->input('th'));
+        // Jenis: akun pemain / clan (kosong = semua)
+        $type = in_array($request->input('type'), ['account', 'clan'], true) ? $request->input('type') : null;
+        if ($type) {
+            $query->where('listing_type', $type);
         }
+
+        // Filter Town Hall (tidak berlaku untuk clan)
+        if ($request->filled('th') && $type !== 'clan') {
+            $query->where('town_hall', (int) $request->input('th'));
+        }
+
+        // Filter lanjutan: harga, level hero minimum, email, proteksi
+        $this->applyAdvancedFilters($query, $request);
 
         // Pengurutan katalog
         switch ($request->input('sort')) {
@@ -83,7 +93,89 @@ class PublicController extends Controller
 
         $accounts = $query->paginate(12)->withQueryString();
 
-        return view('public.catalog', compact('accounts'));
+        return view('public.catalog', compact('accounts', 'type'));
+    }
+
+    /** Hero yang bisa difilter => kolom di database. */
+    public const HERO_COLUMNS = [
+        'bk' => 'barbarian_king_level',
+        'aq' => 'archer_queen_level',
+        'mp' => 'minion_prince_level',
+        'gw' => 'grand_warden_level',
+        'rc' => 'royal_champion_level',
+        'dd' => 'dragon_duke_level',
+    ];
+
+    /**
+     * Filter lanjutan katalog. Semua input dibersihkan dulu (angka saja),
+     * jadi nilai aneh dari URL tidak akan membuat error.
+     */
+    private function applyAdvancedFilters($query, Request $request): void
+    {
+        $min = $this->digits($request->input('price_min'));
+        $max = $this->digits($request->input('price_max'));
+
+        if ($min !== null) {
+            $query->where('price', '>=', $min);
+        }
+        if ($max !== null) {
+            $query->where('price', '<=', $max);
+        }
+
+        // Filter khusus clan: level, capital hall, member, liga minimum
+        if ($request->input('type') === 'clan') {
+            $lv = $this->digits($request->input('clan_level_min'));
+            $ch = $this->digits($request->input('capital_min'));
+            $mb = $this->digits($request->input('members_min'));
+
+            if ($lv) {
+                $query->where('clan_level', '>=', $lv);
+            }
+            if ($ch) {
+                $query->where('capital_hall_level', '>=', $ch);
+            }
+            if ($mb) {
+                $query->where('clan_members', '>=', $mb);
+            }
+
+            $league = $request->input('league_min');
+            $idx    = is_string($league) ? array_search($league, CocAccount::CLAN_LEAGUES, true) : false;
+            if ($idx !== false && $idx > 0) {
+                $query->whereIn('clan_league', array_slice(CocAccount::CLAN_LEAGUES, $idx));
+            }
+
+            return; // filter hero / email / proteksi tidak relevan untuk clan
+        }
+
+        // Level hero minimum, contoh: Archer Queen minimal 60
+        $heroKey = $request->input('hero');
+        $heroMin = $this->digits($request->input('hero_min'));
+
+        if ($heroMin !== null && $heroMin > 0) {
+            if (isset(self::HERO_COLUMNS[$heroKey])) {
+                $query->where(self::HERO_COLUMNS[$heroKey], '>=', $heroMin);
+            }
+        }
+
+        if ($request->boolean('email')) {
+            $query->where('email_change_status', 'Changeable');
+        }
+
+        if ($request->boolean('protected')) {
+            $query->where('protection_status', 'Protected');
+        }
+    }
+
+    /** Ambil angka bulat dari input (mis. "1.500.000" atau "Rp 1500000"); kosong -> null. */
+    private function digits($value): ?int
+    {
+        if ($value === null || is_array($value)) {
+            return null;
+        }
+
+        $clean = preg_replace('/\D+/', '', (string) $value);
+
+        return $clean === '' ? null : (int) min((int) $clean, 999999999);
     }
 
     /**

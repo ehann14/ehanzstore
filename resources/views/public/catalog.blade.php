@@ -1,15 +1,26 @@
 @extends('layouts.app')
 
-@section('title', 'Jual Beli Akun COC TH Max - EHANZSTORE.ID')
+@section('title', ($type ?? null) === 'clan' ? 'Jual Beli Clan COC - EHANZSTORE.ID' : 'Jual Beli Akun COC TH Max - EHANZSTORE.ID')
 
 @section('content')
     <!-- Hero Catalog -->
     <section class="relative pt-28 sm:pt-40 pb-8 sm:pb-16 overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-b from-royal/10 to-transparent pointer-events-none"></div>
         <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
-            <h1 class="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight">
-                Gudang Akun
+            <h1 class="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
+                {{ $type === 'clan' ? 'Gudang Clan' : 'Gudang Akun' }}
             </h1>
+
+            <!-- Tab jenis: Semua / Akun / Clan -->
+            <div class="inline-flex p-1 rounded-2xl glass-strong border border-white/10">
+                @foreach(['' => 'Semua', 'account' => 'Akun COC', 'clan' => 'Clan COC'] as $key => $label)
+                    <a href="{{ route('catalog', array_filter(['type' => $key, 'search' => request('search'), 'sort' => request('sort')])) }}"
+                       class="px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-semibold transition {{ ($type ?? '') === (string) $key ? 'bg-electric text-white shadow-lg shadow-electric/25' : 'text-slate-400 hover:text-white' }}">
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
+        </div>
     </section>
 
     <!-- Floating Filter Bar -->
@@ -21,11 +32,12 @@
                 <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-electric transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 <form action="{{ route('catalog') }}" method="GET" class="w-full">
                     @foreach(request()->except(['search', 'page']) as $k => $v) <input type="hidden" name="{{ $k }}" value="{{ $v }}"> @endforeach
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari TH16, Max Hero..." 
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ $type === 'clan' ? 'Cari nama clan...' : 'Cari TH16, Max Hero...' }}" 
                            class="w-full bg-midnight/50 border border-white/5 rounded-xl pl-12 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:border-electric focus:ring-1 focus:ring-electric outline-none transition-all">
                 </form>
             </div>
 
+            @if($type !== 'clan')
             <div class="hidden md:block w-px h-8 bg-white/10"></div>
 
             <!-- TH Filter Pills -->
@@ -40,7 +52,7 @@
                         Semua TH
                     </button>
                     
-                    @for($i = 9; $i <= 16; $i++)
+                    @for($i = 9; $i <= 18; $i++)
                         <button type="submit" name="th" value="{{ $i }}" 
                                 class="shrink-0 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border {{ request('th') == $i ? 'bg-electric text-white border-electric shadow-[0_0_15px_rgba(59,130,246,0.4)]' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white' }}">
                             TH {{ $i }}
@@ -48,6 +60,7 @@
                     @endfor
                 </form>
             </div>
+            @endif
 
             <!-- Sort Dropdown (custom) -->
             @php
@@ -91,11 +104,136 @@
         </div>
     </div>
 
+    <!-- Filter Lanjutan -->
+    @php
+        $isClanTab = $type === 'clan';
+        $advKeys   = ['price_min', 'price_max', 'hero', 'hero_min', 'email', 'protected', 'clan_level_min', 'capital_min', 'members_min', 'league_min'];
+        $advCount  = collect([
+            request()->filled('price_min') || request()->filled('price_max'),
+            !$isClanTab && request()->filled('hero') && request()->filled('hero_min'),
+            !$isClanTab && request()->boolean('email'),
+            !$isClanTab && request()->boolean('protected'),
+            $isClanTab && request()->filled('clan_level_min'),
+            $isClanTab && request()->filled('capital_min'),
+            $isClanTab && request()->filled('members_min'),
+            $isClanTab && request()->filled('league_min'),
+        ])->filter()->count();
+        $heroOpts  = [
+            'bk' => 'Barbarian King (Raja Barbar)',
+            'aq' => 'Archer Queen (Ratu Pemanah)',
+            'mp' => 'Minion Prince',
+            'gw' => 'Grand Warden',
+            'rc' => 'Royal Champion (Jawara Royal)',
+            'dd' => 'Dragon Duke (Adipati Naga)',
+        ];
+        $fieldCls = 'w-full bg-midnight/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:border-electric focus:ring-1 focus:ring-electric outline-none transition';
+        $lblCls   = 'block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5';
+    @endphp
+    <div class="max-w-5xl mx-auto px-4 -mt-4 md:-mt-6 mb-8 md:mb-10">
+        <button type="button" id="advToggle" aria-expanded="{{ $advCount ? 'true' : 'false' }}"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-semibold transition {{ $advCount ? 'border-electric/50 bg-electric/10 text-white' : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white' }}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 12h12m-8 8h4"/></svg>
+            Filter Lanjutan
+            @if($advCount)
+                <span class="min-w-[18px] h-[18px] px-1 rounded-full bg-electric text-white text-[10px] font-bold flex items-center justify-center">{{ $advCount }}</span>
+            @endif
+            <svg id="advChevron" class="w-3.5 h-3.5 transition-transform {{ $advCount ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+
+        <form action="{{ route('catalog') }}" method="GET" id="advPanel"
+              class="{{ $advCount ? '' : 'hidden' }} mt-3 glass-strong rounded-2xl p-4 sm:p-5 border border-white/10 shadow-xl shadow-black/30">
+            @foreach(request()->except(array_merge($advKeys, ['page'])) as $k => $v)
+                @if(!is_array($v)) <input type="hidden" name="{{ $k }}" value="{{ $v }}"> @endif
+            @endforeach
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Rentang harga -->
+                <div>
+                    <label class="{{ $lblCls }}">Rentang Harga (Rp)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" inputmode="numeric" name="price_min" value="{{ request('price_min') }}" placeholder="Minimal" class="{{ $fieldCls }} money">
+                        <span class="text-slate-600">&ndash;</span>
+                        <input type="text" inputmode="numeric" name="price_max" value="{{ request('price_max') }}" placeholder="Maksimal" class="{{ $fieldCls }} money">
+                    </div>
+                </div>
+
+                @if($isClanTab)
+                <!-- Level clan & capital hall -->
+                <div>
+                    <label class="{{ $lblCls }}">Level Clan Minimum</label>
+                    <input type="number" name="clan_level_min" min="1" max="100" value="{{ request('clan_level_min') }}" placeholder="Contoh: 15" class="{{ $fieldCls }}">
+                </div>
+                <div>
+                    <label class="{{ $lblCls }}">Capital Hall Minimum</label>
+                    <input type="number" name="capital_min" min="1" max="15" value="{{ request('capital_min') }}" placeholder="Contoh: 8" class="{{ $fieldCls }}">
+                </div>
+                <div>
+                    <label class="{{ $lblCls }}">Member Minimum</label>
+                    <input type="number" name="members_min" min="1" max="{{ \App\Models\CocAccount::CLAN_MAX_MEMBERS }}" value="{{ request('members_min') }}" placeholder="Contoh: 40" class="{{ $fieldCls }}">
+                </div>
+                <div>
+                    <label class="{{ $lblCls }}">Liga Clan Minimum</label>
+                    <select name="league_min" class="{{ $fieldCls }}">
+                        <option value="" class="bg-slate-900">Semua liga</option>
+                        @foreach(\App\Models\CocAccount::CLAN_LEAGUES as $league)
+                            @if($league !== 'Unranked')
+                                <option value="{{ $league }}" class="bg-slate-900" @selected(request('league_min') === $league)>{{ $league }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                </div>
+                @else
+                <!-- Hero minimum -->
+                <div>
+                    <label class="{{ $lblCls }}">Level Hero Minimum</label>
+                    <div class="flex items-center gap-2">
+                        <select name="hero" class="{{ $fieldCls }}">
+                            <option value="" class="bg-slate-900">Pilih hero</option>
+                            @foreach($heroOpts as $key => $label)
+                                <option value="{{ $key }}" class="bg-slate-900" @selected(request('hero') === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <input type="number" name="hero_min" min="1" max="100" value="{{ request('hero_min') }}" placeholder="Lv" class="{{ $fieldCls }} !w-24 shrink-0">
+                    </div>
+                </div>
+                @endif
+            </div>
+
+            @unless($isClanTab)
+            <!-- Toggle email & proteksi -->
+            <div class="flex flex-wrap gap-3 mt-4">
+                <label class="cursor-pointer select-none">
+                    <input type="checkbox" name="email" value="1" class="peer sr-only" @checked(request()->boolean('email'))>
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-slate-300 transition peer-checked:border-emerald-400/50 peer-checked:bg-emerald-500/15 peer-checked:text-emerald-300 peer-focus-visible:ring-2 peer-focus-visible:ring-electric">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        Email Bisa Ganti
+                    </span>
+                </label>
+                <label class="cursor-pointer select-none">
+                    <input type="checkbox" name="protected" value="1" class="peer sr-only" @checked(request()->boolean('protected'))>
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-slate-300 transition peer-checked:border-emerald-400/50 peer-checked:bg-emerald-500/15 peer-checked:text-emerald-300 peer-focus-visible:ring-2 peer-focus-visible:ring-electric">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        Proteksi Aktif
+                    </span>
+                </label>
+            </div>
+            @endunless
+
+            <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 mt-5 pt-4 border-t border-white/5">
+                @if($advCount)
+                    <a href="{{ route('catalog', request()->except(array_merge($advKeys, ['page']))) }}"
+                       class="text-center px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition">Reset Filter Lanjutan</a>
+                @endif
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-electric hover:bg-blue-500 text-white text-sm font-bold transition">Terapkan Filter</button>
+            </div>
+        </form>
+    </div>
+
     <!-- Product Grid -->
     <div class="max-w-7xl mx-auto px-4 pb-20">
         <div class="flex justify-between items-center mb-8 px-2">
-            <p class="text-sm text-slate-500">Ditemukan <span class="text-electric font-bold">{{ $accounts->total() }}</span> akun siap kirim</p>
-            @if(request()->anyFilled(['search','th','sort']))
+            <p class="text-sm text-slate-500">Ditemukan <span class="text-electric font-bold">{{ $accounts->total() }}</span> {{ $type === 'clan' ? 'clan' : ($type === 'account' ? 'akun' : 'akun & clan') }} siap kirim</p>
+            @if(request()->anyFilled(['search','th','sort','price_min','price_max','hero_min','clan_level_min','capital_min','members_min','league_min']) || request()->boolean('email') || request()->boolean('protected'))
                 <a href="{{ route('catalog') }}" class="text-xs text-red-400 hover:text-red-300 font-medium flex items-center gap-1 transition">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Reset Filter
                 </a>
@@ -193,6 +331,27 @@
         });
         document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) setOpen(false); });
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+    })();
+    // Filter lanjutan: buka/tutup panel + format ribuan di kolom harga
+    (function () {
+        const btn = document.getElementById('advToggle');
+        const panel = document.getElementById('advPanel');
+        const chev = document.getElementById('advChevron');
+        if (btn && panel) {
+            btn.addEventListener('click', () => {
+                const open = panel.classList.toggle('hidden') === false;
+                btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                chev.classList.toggle('rotate-180', open);
+            });
+        }
+        document.querySelectorAll('#advPanel .money').forEach((el) => {
+            const fmt = () => {
+                const d = el.value.replace(/\D+/g, '');
+                el.value = d ? Number(d).toLocaleString('id-ID') : '';
+            };
+            fmt();
+            el.addEventListener('input', fmt);
+        });
     })();
 </script>
 @endpush

@@ -195,7 +195,7 @@
                     <option value="" disabled {{ old('account_id') ? '' : 'selected' }} class="bg-slate-900">Pilih akun yang terjual&hellip;</option>
                     @foreach($availableAccounts as $acc)
                         <option value="{{ $acc->id }}" data-price="{{ (int) $acc->price }}" class="bg-slate-900" @selected(old('account_id') == $acc->id)>
-                            {{ $acc->account_code }} &mdash; TH {{ $acc->town_hall }} &mdash; {{ $acc->name }}
+                            {{ $acc->account_code }} &mdash; {{ $acc->badgeLabel() }} &mdash; {{ $acc->name }}
                         </option>
                     @endforeach
                 </select>

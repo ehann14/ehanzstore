@@ -46,11 +46,20 @@ class DashboardController extends Controller
             ->groupBy('coc_account_id')
             ->orderByDesc('views')
             ->take(5)
-            ->with('account:id,name,account_code,price,town_hall')
+            ->with('account:id,name,account_code,price,town_hall,listing_type')
             ->get();
 
         // Transaksi terbaru
         $recentSales = Sale::with('account')->latest()->take(5)->get();
+
+        // Pengingat garansi: transaksi selesai yang garansinya habis dalam 2 hari ke depan
+        $warrantyAlerts = Sale::with('account:id,name,account_code,town_hall')
+            ->where('transaction_status', 'completed')
+            ->whereNotNull('warranty_expires_at')
+            ->where('warranty_expires_at', '>', now())
+            ->where('warranty_expires_at', '<=', now()->addDays(2))
+            ->orderBy('warranty_expires_at')
+            ->get();
 
         return view('super-admin.dashboard', compact(
             'totalVisitors',
@@ -63,7 +72,8 @@ class DashboardController extends Controller
             'monthRevenue',
             'visitorStats',
             'topAccounts',
-            'recentSales'
+            'recentSales',
+            'warrantyAlerts'
         ));
     }
 
@@ -106,13 +116,18 @@ class DashboardController extends Controller
             ->get();
 
         $topAccounts = $base()
-            ->select('coc_account_id', DB::raw('COUNT(*) as views'))
+            ->select(
+                'coc_account_id',
+                DB::raw('COUNT(*) as views'),
+                DB::raw('COUNT(DISTINCT anonymous_session_id) as unique_visitors'),
+                DB::raw('MAX(created_at) as last_viewed_at')
+            )
             ->where('event_type', 'view_account')
             ->whereNotNull('coc_account_id')
             ->groupBy('coc_account_id')
             ->orderByDesc('views')
             ->take(10)
-            ->with('account:id,name,account_code,price,town_hall,sale_status')
+            ->with('account:id,name,account_code,price,town_hall,listing_type,sale_status')
             ->get();
 
         return view('super-admin.analytics', compact(
@@ -142,7 +157,7 @@ class DashboardController extends Controller
 
         $availableAccounts = CocAccount::where('sale_status', 'available')
             ->orderBy('account_code')
-            ->get(['id', 'account_code', 'name', 'town_hall', 'price']);
+            ->get(['id', 'account_code', 'name', 'town_hall', 'listing_type', 'price']);
 
         return view('super-admin.sales', compact('sales', 'stats', 'availableAccounts'));
     }

@@ -121,14 +121,16 @@
                 <p class="text-sm text-slate-500 text-center py-8">Belum ada akun yang dilihat pada rentang ini.</p>
             @else
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm min-w-[520px]">
+                    <table class="w-full text-sm min-w-[680px]">
                         <thead>
                             <tr class="text-left text-[11px] uppercase tracking-wider text-slate-500">
                                 <th class="pb-3 font-semibold w-10">#</th>
                                 <th class="pb-3 font-semibold">Akun</th>
                                 <th class="pb-3 font-semibold">Harga</th>
                                 <th class="pb-3 font-semibold">Status</th>
+                                <th class="pb-3 font-semibold text-right">Pengunjung</th>
                                 <th class="pb-3 font-semibold text-right">Dilihat</th>
+                                <th class="pb-3 font-semibold text-right whitespace-nowrap">Terakhir</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
@@ -137,7 +139,7 @@
                                     <td class="py-3 text-slate-500 font-mono text-xs">{{ $i + 1 }}</td>
                                     <td class="py-3">
                                         <p class="text-white font-medium">{{ $item->account?->name ?? 'Akun dihapus' }}</p>
-                                        <p class="text-[11px] text-slate-500 font-mono">{{ $item->account?->account_code ?? '-' }}@if($item->account) &middot; TH {{ $item->account->town_hall }}@endif</p>
+                                        <p class="text-[11px] text-slate-500 font-mono">{{ $item->account?->account_code ?? '-' }}@if($item->account) &middot; {{ $item->account->badgeLabel() }}@endif</p>
                                     </td>
                                     <td class="py-3 text-brand-400 font-semibold">
                                         {{ $item->account ? 'Rp ' . number_format($item->account->price, 0, ',', '.') : '-' }}
@@ -150,7 +152,14 @@
                                             </span>
                                         @endif
                                     </td>
-                                    <td class="py-3 text-right font-bold text-white">{{ $n($item->views) }}x</td>
+                                    <td class="py-3 text-right text-slate-300">{{ $n($item->unique_visitors) }}</td>
+                                    <td class="py-3 text-right">
+                                        <span class="font-bold text-white">{{ $n($item->views) }}x</span>
+                                        <div class="mt-1 h-1.5 w-20 ml-auto rounded-full bg-white/5 overflow-hidden">
+                                            <div class="h-full rounded-full bg-electric" style="width: {{ round($item->views / max(1, $topAccounts->max('views')) * 100) }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 text-right text-[11px] text-slate-500 whitespace-nowrap">{{ \Carbon\Carbon::parse($item->last_viewed_at)->diffForHumans() }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

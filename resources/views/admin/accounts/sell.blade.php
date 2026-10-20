@@ -45,7 +45,7 @@
         <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2 mb-0.5">
                 <span class="text-[11px] font-mono text-slate-500">{{ $account->account_code }}</span>
-                <span class="px-2 py-0.5 rounded-md bg-electric/15 text-electric text-[11px] font-bold">TH {{ $account->town_hall }}</span>
+                <span class="px-2 py-0.5 rounded-md bg-electric/15 text-electric text-[11px] font-bold">{{ $account->badgeLabel() }}</span>
                 @if($isEdit)
                     <span class="text-[11px] font-mono text-slate-500">{{ $sale->transaction_code }}</span>
                 @endif

@@ -14,6 +14,7 @@ class CocAccount extends Model
         'barbarian_king_level', 'archer_queen_level', 'minion_prince_level',
         'grand_warden_level', 'royal_champion_level', 'dragon_duke_level',
         'builder_count', 'gems', 'cn_information',
+        'listing_type', 'clan_level', 'capital_hall_level', 'clan_members', 'clan_league',
         'protection_status', 'email_change_status', 'price', 'description',
         'publication_status', 'sale_status', 'created_by'
     ];
@@ -21,6 +22,36 @@ class CocAccount extends Model
     protected $casts = [
         'price' => 'decimal:2',
     ];
+
+    /** Liga Clan War League dari yang terendah ke tertinggi (urutan dipakai untuk filter "liga minimum"). */
+    public const CLAN_LEAGUES = [
+        'Unranked',
+        'Bronze League III', 'Bronze League II', 'Bronze League I',
+        'Silver League III', 'Silver League II', 'Silver League I',
+        'Gold League III', 'Gold League II', 'Gold League I',
+        'Crystal League III', 'Crystal League II', 'Crystal League I',
+        'Master League III', 'Master League II', 'Master League I',
+        'Champion League III', 'Champion League II', 'Champion League I',
+    ];
+
+    public const CLAN_MAX_MEMBERS = 50;
+
+    public function isClan(): bool
+    {
+        return $this->listing_type === 'clan';
+    }
+
+    /** Label singkat untuk badge: "CLAN" atau "TH 16". */
+    public function badgeLabel(): string
+    {
+        return $this->isClan() ? 'CLAN' : 'TH ' . $this->town_hall;
+    }
+
+    /** Kata benda untuk teks: "clan" atau "akun". */
+    public function noun(): string
+    {
+        return $this->isClan() ? 'clan' : 'akun';
+    }
 
     protected static function booted(): void
     {

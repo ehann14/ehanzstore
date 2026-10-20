@@ -64,7 +64,7 @@
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2 mb-1">
                                 <span class="text-[11px] font-mono text-slate-500">{{ $account->account_code }}</span>
-                                <span class="px-2 py-0.5 rounded-md bg-electric/15 text-electric text-[11px] font-bold">TH {{ $account->town_hall }}</span>
+                                <span class="px-2 py-0.5 rounded-md bg-electric/15 text-electric text-[11px] font-bold">{{ $account->badgeLabel() }}</span>
                             </div>
                             <h3 class="font-semibold text-white truncate text-lg">{{ $account->name }}</h3>
                             <p class="text-brand-400 font-bold text-sm mt-0.5">Rp {{ number_format($account->price, 0, ',', '.') }}</p>

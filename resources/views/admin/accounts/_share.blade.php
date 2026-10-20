@@ -3,23 +3,38 @@
     $isLive     = $account->publication_status === 'published' && $account->sale_status === 'available';
     $rupiahShare = 'Rp ' . number_format($account->price, 0, ',', '.');
 
-    $shareText = "🔥 AKUN CLASH OF CLANS DIJUAL 🔥\n"
-        . "{$account->name} | TH {$account->town_hall}\n"
-        . "Kode: {$account->account_code}\n"
-        . "\n"
-        . "👑 BK Lv. " . ($account->barbarian_king_level ?? 0)
-        . " | AQ Lv. " . ($account->archer_queen_level ?? 0)
-        . " | MP Lv. " . ($account->minion_prince_level ?? 0) . "\n"
-        . "🛡️ GW Lv. " . ($account->grand_warden_level ?? 0)
-        . " | RC Lv. " . ($account->royal_champion_level ?? 0)
-        . " | DD Lv. " . ($account->dragon_duke_level ?? 0) . "\n"
-        . "🔒 Proteksi: " . ($account->protection_status === 'Protected' ? 'ON' : 'OFF') . "\n"
-        . "📧 Email: " . ($account->email_change_status === 'Changeable' ? 'Bisa Ganti' : 'Tidak Bisa Ganti') . "\n"
-        . "\n"
-        . "💰 Harga: {$rupiahShare}\n"
-        . "🛒 Detail & foto: {$shareUrl}\n"
-        . "\n"
-        . "Bergaransi 7 hari - EHANZSTORE.ID";
+    if ($account->isClan()) {
+        $shareText = "🔥 CLAN CLASH OF CLANS DIJUAL 🔥\n"
+            . "{$account->name} | Clan Lv. " . ($account->clan_level ?? 0) . "\n"
+            . "Kode: {$account->account_code}\n"
+            . "\n"
+            . "🏰 Capital Hall Lv. " . ($account->capital_hall_level ?? 0)
+            . " | 👥 Member " . ($account->clan_members ?? 0) . "/" . \App\Models\CocAccount::CLAN_MAX_MEMBERS . "\n"
+            . "🏆 Liga: " . ($account->clan_league ?: 'Unranked') . "\n"
+            . "\n"
+            . "💰 Harga: {$rupiahShare}\n"
+            . "🛒 Detail & foto: {$shareUrl}\n"
+            . "\n"
+            . "Bergaransi 7 hari - EHANZSTORE.ID";
+    } else {
+        $shareText = "🔥 AKUN CLASH OF CLANS DIJUAL 🔥\n"
+            . "{$account->name} | TH {$account->town_hall}\n"
+            . "Kode: {$account->account_code}\n"
+            . "\n"
+            . "👑 BK Lv. " . ($account->barbarian_king_level ?? 0)
+            . " | AQ Lv. " . ($account->archer_queen_level ?? 0)
+            . " | MP Lv. " . ($account->minion_prince_level ?? 0) . "\n"
+            . "🛡️ GW Lv. " . ($account->grand_warden_level ?? 0)
+            . " | RC Lv. " . ($account->royal_champion_level ?? 0)
+            . " | DD Lv. " . ($account->dragon_duke_level ?? 0) . "\n"
+            . "🔒 Proteksi: " . ($account->protection_status === 'Protected' ? 'ON' : 'OFF') . "\n"
+            . "📧 Email: " . ($account->email_change_status === 'Changeable' ? 'Bisa Ganti' : 'Tidak Bisa Ganti') . "\n"
+            . "\n"
+            . "💰 Harga: {$rupiahShare}\n"
+            . "🛒 Detail & foto: {$shareUrl}\n"
+            . "\n"
+            . "Bergaransi 7 hari - EHANZSTORE.ID";
+    }
 @endphp
 
 <div class="glass-panel rounded-3xl p-6 md:p-8 mb-6" id="sharePanel">

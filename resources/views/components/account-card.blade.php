@@ -1,7 +1,13 @@
 @php
     $isSold = $account->sale_status === 'sold';
     $warrantyLeft = $isSold ? $account->latestCompletedSale?->warrantyRemainingText() : null;
-    $heroes = array_filter([
+    $isClan = $account->isClan();
+    $heroes = $isClan ? array_filter([
+        'Lv'     => $account->clan_level,
+        'CH'     => $account->capital_hall_level,
+        'Member' => $account->clan_members,
+        'Liga'   => $account->clan_league && $account->clan_league !== 'Unranked' ? $account->clan_league : null,
+    ]) : array_filter([
         'BK' => $account->barbarian_king_level,
         'AQ' => $account->archer_queen_level,
         'MP' => $account->minion_prince_level,
@@ -72,11 +78,11 @@
 
         <!-- Badge Town Hall -->
         <span class="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-electric text-white text-[10px] sm:text-[11px] font-bold rounded-md shadow-lg uppercase tracking-wide z-10">
-            TH {{ $account->town_hall }}
+            {{ $account->badgeLabel() }}
         </span>
 
         <!-- Badge Email Bisa Ganti -->
-        @if($account->email_change_status === 'Changeable')
+        @if(!$isClan && $account->email_change_status === 'Changeable')
             <span class="hidden sm:block absolute top-3 right-3 px-2 py-1 bg-emerald-500/90 text-white text-[10px] font-semibold rounded-md z-10">
                 Email Bisa Ganti
             </span>

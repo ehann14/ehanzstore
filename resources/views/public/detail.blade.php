@@ -5,8 +5,11 @@
 @php
     $shareUrl   = route('account.detail', $account->account_code);
     $sharePrice = 'Rp ' . number_format($account->price, 0, ',', '.');
-    $shareTitle = $account->name . ' (TH ' . $account->town_hall . ') - ' . $sharePrice;
-    $shareText  = 'Akun Clash of Clans ' . $account->name . ' | TH ' . $account->town_hall
+    $isClan     = $account->isClan();
+    $noun       = $account->noun();
+    $shareTitle = $account->name . ' (' . ($isClan ? 'Clan Lv. ' . $account->clan_level : 'TH ' . $account->town_hall) . ') - ' . $sharePrice;
+    $shareText  = ($isClan ? 'Clan Clash of Clans ' : 'Akun Clash of Clans ') . $account->name
+                . ' | ' . ($isClan ? 'Lv. ' . $account->clan_level . ' | ' . $account->clan_league : 'TH ' . $account->town_hall)
                 . ' | Kode ' . $account->account_code . ' | ' . $sharePrice . ' - EHANZSTORE.ID';
     
     // Perbaikan: Menggunakan asset('storage/...') untuk kompatibilitas symlink & hosting
@@ -110,7 +113,7 @@
                     </h1>
 
                     <span class="shrink-0 px-3 py-1.5 bg-electric/20 text-electric text-xs font-bold rounded-lg border border-electric/30">
-                        TH {{ $account->town_hall }}
+                        {{ $account->badgeLabel() }}
                     </span>
                 </div>
 
@@ -133,18 +136,18 @@
 
                 @if($account->sale_status !== 'available')
                     <div class="w-full text-center bg-red-500/10 border border-red-500/30 text-red-300 font-bold py-4 rounded-xl">
-                        Akun ini sudah terjual
+                        {{ ucfirst($noun) }} ini sudah terjual
                     </div>
                     @php $warrantyLeft = $account->latestCompletedSale?->warrantyRemainingText(); @endphp
                     @if($warrantyLeft)
                         <p class="text-center text-xs text-emerald-300">Garansi pembeli masih aktif &middot; {{ $warrantyLeft }}</p>
                     @endif
                     <a href="{{ route('catalog') }}" class="block text-center text-sm text-electric hover:text-white transition">
-                        Lihat akun lain yang tersedia
+                        Lihat {{ $noun }} lain yang tersedia
                     </a>
                 @else
                 <a
-                    href="https://wa.me/6282130559126?text={{ urlencode('Halo Admin EHANZSTORE, saya tertarik dengan akun ' . $account->name . ' (Kode: ' . $account->account_code . '). Apakah masih tersedia?') }}"
+                    href="https://wa.me/6282130559126?text={{ urlencode('Halo Admin EHANZSTORE, saya tertarik dengan ' . $noun . ' ' . $account->name . ' (Kode: ' . $account->account_code . '). Apakah masih tersedia?') }}"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="flex items-center justify-center gap-3 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-900/20 hover:shadow-green-900/40 active:scale-[0.98]"
@@ -221,11 +224,16 @@
             {{-- Spesifikasi Akun --}}
             <div class="space-y-4">
                 <h3 class="text-lg font-display font-bold text-white border-b border-white/10 pb-2">
-                    Spesifikasi Akun
+                    Spesifikasi {{ $isClan ? 'Clan' : 'Akun' }}
                 </h3>
 
                 @php
-                    $specs = [
+                    $specs = $isClan ? [
+                        ['label' => 'Level Clan', 'val' => 'Lv. ' . ($account->clan_level ?? 0)],
+                        ['label' => 'Capital Hall', 'val' => 'Lv. ' . ($account->capital_hall_level ?? 0)],
+                        ['label' => 'Member', 'val' => ($account->clan_members ?? 0) . ' / ' . \App\Models\CocAccount::CLAN_MAX_MEMBERS],
+                        ['label' => 'Liga Clan', 'val' => $account->clan_league ?: 'Unranked'],
+                    ] : [
                         [
                             'label' => 'Barbarian King',
                             'val' => 'Lv. ' . ($account->barbarian_king_level ?? 0),
@@ -276,7 +284,8 @@
                 </div>
             </div>
 
-            {{-- Informasi Keamanan --}}
+            {{-- Informasi Keamanan (hanya akun pemain) --}}
+            @unless($isClan)
             <div class="space-y-4">
                 <h3 class="text-lg font-display font-bold text-white border-b border-white/10 pb-2">
                     Informasi Keamanan
@@ -304,6 +313,7 @@
                     </div>
                 </div>
             </div>
+            @endunless
 
             {{-- Deskripsi --}}
             @if($account->description)

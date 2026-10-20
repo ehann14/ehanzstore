@@ -10,8 +10,8 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
         </a>
         <div>
-            <h1 class="text-2xl font-bold text-white">Edit Akun {{ $account->account_code }}</h1>
-            <p class="text-sm text-slate-400">Perbarui data, foto, dan status akun.</p>
+            <h1 class="text-2xl font-bold text-white">Edit {{ $account->isClan() ? 'Clan' : 'Akun' }} {{ $account->account_code }}</h1>
+            <p class="text-sm text-slate-400">Perbarui data, foto, dan status {{ $account->noun() }}.</p>
         </div>
     </div>
 
@@ -38,22 +38,24 @@
 
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-2">Nama Akun <span class="text-red-400">*</span></label>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2">{{ $account->isClan() ? 'Nama Clan' : 'Nama Akun' }} <span class="text-red-400">*</span></label>
                     <input type="text" name="name" value="{{ old('name', $account->name) }}" required placeholder="Contoh: TH16 Max Hero Full"
                            class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition @error('name') border-red-500 @enderror">
                     @error('name') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
+                @unless($account->isClan())
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 mb-2">Town Hall <span class="text-red-400">*</span></label>
                     <select name="town_hall" required class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition @error('town_hall') border-red-500 @enderror">
                         <option value="">Pilih Level TH</option>
-                        @for($i = 1; $i <= 16; $i++)
+                        @for($i = 1; $i <= 18; $i++)
                             <option value="{{ $i }}" {{ old('town_hall', $account->town_hall) == $i ? 'selected' : '' }}>TH {{ $i }}</option>
                         @endfor
                     </select>
                     @error('town_hall') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+                @endunless
             </div>
 
             <div>
@@ -76,6 +78,9 @@
         <div class="space-y-4">
             <h3 class="text-sm font-bold text-brand-400 uppercase tracking-wider border-b border-white/5 pb-2">Spesifikasi & Keamanan</h3>
 
+            @if($account->isClan())
+                @include('admin.accounts._clan-fields', ['account' => $account])
+            @else
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 @php
                     $heroes = [
@@ -98,6 +103,7 @@
             </div>
 
             @include('admin.accounts._status', ['account' => $account])
+            @endif
         </div>
 
         @include('admin.accounts._photos', ['account' => $account])

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Support\Watermark;
 
 class AccountController extends Controller
 {
@@ -39,11 +40,22 @@ class AccountController extends Controller
     {
         $this->normalizeCode($request);
 
-        $validated = $request->validate($this->rules(), $this->messages());
+        $type = $request->input('listing_type') === 'clan' ? 'clan' : 'account';
+
+        $rules = $this->rules(null, $type);
+        $rules['listing_type'] = 'required|in:account,clan';
+
+        $validated = $request->validate($rules, $this->messages());
         unset($validated['images']);
 
+        $validated['listing_type']        = $type;
         $validated['protection_status']   ??= 'Unprotected';
         $validated['email_change_status'] ??= 'Unchangeable';
+
+        // Clan tidak punya Town Hall (kolom database wajib diisi, jadi 0)
+        if ($type === 'clan') {
+            $validated['town_hall'] = 0;
+        }
 
         $account = CocAccount::create([
             'created_by'         => Auth::id(),
@@ -56,7 +68,7 @@ class AccountController extends Controller
 
         ActivityLog::record('create_account', $account, 'Akun ' . $account->account_code);
 
-        return redirect()->route('admin.accounts.index')->with('success', 'Akun berhasil ditambahkan (status: draft).');
+        return redirect()->route('admin.accounts.index')->with('success', ($type === 'clan' ? 'Clan' : 'Akun') . ' berhasil ditambahkan (status: draft).');
     }
 
     public function edit(CocAccount $account)
@@ -73,7 +85,8 @@ class AccountController extends Controller
 
         $this->normalizeCode($request);
 
-        $rules = $this->rules($account);
+        // Jenis (akun/clan) tidak bisa diubah setelah dibuat
+        $rules = $this->rules($account, $account->listing_type ?? 'account');
         $rules['publication_status'] = 'required|in:draft,published';
         $rules['sale_status']        = 'required|in:available,sold,archived';
 
@@ -277,9 +290,9 @@ class AccountController extends Controller
         ]);
     }
 
-    private function rules(?CocAccount $account = null): array
+    private function rules(?CocAccount $account = null, string $type = 'account'): array
     {
-        return [
+        $common = [
             // unique dicek ke semua baris (termasuk akun yang sudah dihapus/soft delete)
             // karena kolom di database memang UNIQUE.
             'account_code'         => [
@@ -287,10 +300,25 @@ class AccountController extends Controller
                 Rule::unique('coc_accounts', 'account_code')->ignore($account?->id),
             ],
             'name'                 => 'required|string|max:255',
-            'town_hall'            => 'required|integer|min:1|max:16',
             // kolom DB decimal(12,2) -> jaga di bawah batas supaya tidak error 1264
             'price'                => 'required|numeric|min:0|max:999999999',
             'description'          => 'nullable|string|max:5000',
+            'images'               => 'nullable|array|max:' . self::MAX_IMAGES,
+            // 5 MB per foto; foto dari browser sudah dikompres otomatis (~0.5 MB)
+            'images.*'             => 'image|mimes:jpeg,png,jpg,webp|max:5120',
+        ];
+
+        if ($type === 'clan') {
+            return $common + [
+                'clan_level'         => 'required|integer|min:1|max:100',
+                'capital_hall_level' => 'required|integer|min:0|max:15',
+                'clan_members'       => 'required|integer|min:0|max:' . CocAccount::CLAN_MAX_MEMBERS,
+                'clan_league'        => ['required', Rule::in(CocAccount::CLAN_LEAGUES)],
+            ];
+        }
+
+        return $common + [
+            'town_hall'            => 'required|integer|min:1|max:18',
             'barbarian_king_level' => 'nullable|integer|min:0|max:100',
             'archer_queen_level'   => 'nullable|integer|min:0|max:100',
             'minion_prince_level'  => 'nullable|integer|min:0|max:100',
@@ -299,9 +327,6 @@ class AccountController extends Controller
             'dragon_duke_level'    => 'nullable|integer|min:0|max:100',
             'protection_status'    => 'nullable|in:Protected,Unprotected',
             'email_change_status'  => 'nullable|in:Changeable,Unchangeable',
-            'images'               => 'nullable|array|max:' . self::MAX_IMAGES,
-            // 5 MB per foto; foto dari browser sudah dikompres otomatis (~0.5 MB)
-            'images.*'             => 'image|mimes:jpeg,png,jpg,webp|max:5120',
         ];
     }
 
@@ -334,7 +359,7 @@ class AccountController extends Controller
             $order++;
             CocAccountImage::create([
                 'coc_account_id' => $account->id,
-                'image_path'     => $file->store('accounts', 'public'),
+                'image_path'     => Watermark::store($file, 'accounts'),
                 'is_primary'     => !$hasPrimary,
                 'sort_order'     => $order,
             ]);
