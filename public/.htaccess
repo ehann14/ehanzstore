@@ -4,8 +4,10 @@ Options -Indexes -ExecCGI
     Require all granted
 </IfModule>
 
-# Blokir akses langsung ke file script PHP tertentu demi keamanan
-<FilesMatch "\.(php|phtml|phar|pl|py|cgi)$">
+# Blokir akses langsung ke file script (php, dll) demi keamanan.
+# index.php dikecualikan: itu pintu masuk Laravel, kalau ikut diblokir seluruh
+# website akan 403 Forbidden.
+<FilesMatch "^(?!index\.php$).*\.(php|phtml|phar|pl|py|cgi)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

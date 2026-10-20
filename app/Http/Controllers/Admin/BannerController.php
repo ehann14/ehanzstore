@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Banner;
 use Illuminate\Http\Request;
+use App\Support\Uploads;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class BannerController extends Controller
 {
+    private const UPLOAD_FAILED = 'Gambar gagal disimpan di server. Periksa izin tulis folder uploads, lalu coba lagi.';
+
     public function index()
     {
         $banners = Banner::orderBy('sort_order')->orderByDesc('id')->get();
@@ -27,7 +29,14 @@ class BannerController extends Controller
     {
         $data = $this->validated($request, true);
 
-        $data['image_path'] = $request->file('image')->store('banners', 'public');
+        try {
+            $data['image_path'] = Uploads::store($request->file('image'), 'banners');
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->withErrors(['image' => self::UPLOAD_FAILED]);
+        }
+
         $data['link_url']   = Banner::buildLink($data['link_type'], $data['link_value'] ?? null);
         $data['is_active']  = $request->boolean('is_active', true);
         $data['created_by'] = Auth::id();
@@ -50,8 +59,15 @@ class BannerController extends Controller
         $data = $this->validated($request, false);
 
         if ($request->hasFile('image')) {
-            Storage::disk('public')->delete($banner->image_path);
-            $data['image_path'] = $request->file('image')->store('banners', 'public');
+            $oldImage = $banner->image_path;
+
+            try {
+                $data['image_path'] = Uploads::store($request->file('image'), 'banners');
+            } catch (\Throwable $e) {
+                report($e);
+
+                return back()->withInput()->withErrors(['image' => self::UPLOAD_FAILED]);
+            }
         }
 
         $data['link_url']  = Banner::buildLink($data['link_type'], $data['link_value'] ?? null);
@@ -59,6 +75,11 @@ class BannerController extends Controller
         unset($data['image']);
 
         $banner->update($data);
+
+        // Hapus gambar lama hanya setelah yang baru tersimpan dan database ter-update
+        if (isset($oldImage)) {
+            Uploads::delete($oldImage);
+        }
 
         ActivityLog::record('update_banner', $banner, 'Banner "' . $banner->title . '"');
 
@@ -80,7 +101,7 @@ class BannerController extends Controller
     /** Tombol X di pojok kanan banner. */
     public function destroy(Banner $banner)
     {
-        Storage::disk('public')->delete($banner->image_path);
+        Uploads::delete($banner->image_path);
 
         ActivityLog::record('delete_banner', $banner, 'Banner "' . $banner->title . '"');
 

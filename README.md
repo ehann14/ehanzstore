@@ -204,12 +204,19 @@ public/
 
 ## Upload Gambar
 
-Foto akun dan banner disimpan di folder `uploads` (`accounts/` dan `banners/`). Jika server tidak menemukan file fisiknya, route fallback `/uploads/{path}` akan menyajikannya (hanya gambar dari kedua folder itu).
+Foto akun dan banner disimpan langsung di folder publik `uploads` (`uploads/accounts/` dan `uploads/banners/`) lewat disk `uploads` (`config/filesystems.php`). **Tidak memakai symlink `storage`**, jadi aman di shared hosting / DirectAdmin.
 
-Pastikan folder berikut bisa ditulis oleh web server:
+- Path di database selalu relatif, contoh `accounts/xxx.jpg`. URL publik dibuat oleh helper `upload_url()` (atau `$image->url` / `$banner->image_url`) menjadi `/uploads/accounts/xxx.jpg`.
+- Semua upload/hapus lewat class `App\Support\Uploads`. Jangan memakai `asset('storage/...')` atau `Storage::url()` untuk gambar.
+- Lokasi folder: otomatis `<document root>/uploads`. Jika aplikasi dipisah dari `public_html`, isi `UPLOADS_PATH` di `.env` dengan path absolut ke folder `public_html/uploads`.
+- Folder `accounts/` dan `banners/` serta `.htaccess` pelindung (tanpa eksekusi script, tanpa daftar folder) dibuat otomatis saat upload pertama.
+- Foto lama yang masih ada di `storage/app/public/` tetap tampil: route fallback `/uploads/{path}` menyajikannya dan menyalinnya ke `uploads/` secara otomatis.
+
+Pastikan folder berikut bisa ditulis oleh web server (755 sudah cukup jika PHP berjalan sebagai pemilik akun; jangan pakai 777):
 
 ```bash
-chmod -R 775 storage bootstrap/cache public/uploads
+chmod -R 755 public/uploads        # atau public_html/uploads
+chmod -R 775 storage bootstrap/cache
 ```
 
 ---

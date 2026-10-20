@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -28,15 +27,17 @@ class Watermark
     private const JPEG_QUALITY = 86;
 
     /**
-     * Simpan foto ke disk "public" dengan watermark. Mengembalikan path relatif
-     * (contoh: accounts/abc123.jpg), sama seperti $file->store().
+     * Simpan foto ke disk "uploads" (public_html/uploads/...) dengan watermark.
+     * Mengembalikan path relatif (contoh: accounts/abc123.jpg) yang disimpan di database.
+     * Melempar RuntimeException jika file gagal ditulis, supaya tidak ada baris
+     * database yang menunjuk ke file yang tidak ada.
      */
     public static function store(UploadedFile $file, string $dir = 'accounts'): string
     {
         $logo = public_path('images/logo.png');
 
         if (! extension_loaded('gd') || ! is_file($logo)) {
-            return $file->store($dir, 'public');
+            return Uploads::store($file, $dir);
         }
 
         try {
@@ -44,7 +45,7 @@ class Watermark
 
             if ($binary !== null) {
                 $path = $dir . '/' . Str::random(40) . '.jpg';
-                Storage::disk('public')->put($path, $binary);
+                Uploads::put($path, $binary);
 
                 return $path;
             }
@@ -52,7 +53,7 @@ class Watermark
             report($e);
         }
 
-        return $file->store($dir, 'public');
+        return Uploads::store($file, $dir);
     }
 
     /** Mengembalikan isi JPEG yang sudah diberi watermark, atau null kalau gagal. */

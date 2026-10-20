@@ -12,9 +12,9 @@
                 . ' | ' . ($isClan ? 'Lv. ' . $account->clan_level . ' | ' . $account->clan_league : 'TH ' . $account->town_hall)
                 . ' | Kode ' . $account->account_code . ' | ' . $sharePrice . ' - EHANZSTORE.ID';
     
-    // Perbaikan: Menggunakan asset('storage/...') untuk kompatibilitas symlink & hosting
+    // og:image harus URL absolut (untuk preview WhatsApp/Instagram); file ada di /uploads/accounts/
     $ogImage    = ($account->primaryImage && !empty($account->primaryImage->image_path))
-                ? asset('storage/' . $account->primaryImage->image_path)
+                ? upload_url($account->primaryImage->image_path, true)
                 : null;
 @endphp
 
@@ -63,7 +63,7 @@
                             class="block w-full h-full cursor-zoom-in">
                         <img
                             id="mainImage"
-                            src="{{ asset('storage/' . $primaryImg->image_path) }}"
+                            src="{{ upload_url($primaryImg->image_path) }}"
                             alt="{{ $account->name }}"
                             class="w-full h-full object-contain"
                         >
@@ -88,11 +88,11 @@
                     @foreach($account->images as $img)
                         <button
                             type="button"
-                            onclick="changeMainImage('{{ asset('storage/' . $img->image_path) }}', this)"
+                            onclick="changeMainImage('{{ upload_url($img->image_path) }}', this)"
                             class="aspect-square rounded-xl overflow-hidden border-2 {{ $img->id === ($primaryImg->id ?? null) ? 'border-electric' : 'border-transparent hover:border-white/30' }} transition-all thumbnail-btn"
                         >
                             <img
-                                src="{{ asset('storage/' . $img->image_path) }}"
+                                src="{{ upload_url($img->image_path) }}"
                                 alt="Foto {{ $account->name }}"
                                 class="w-full h-full object-cover"
                             >
@@ -334,7 +334,7 @@
 @push('scripts')
 @php
     $galleryUrls = $account->images->map(function ($i) {
-        return asset('storage/' . $i->image_path);
+        return upload_url($i->image_path);
     })->values();
 
     $startImg   = $account->images->firstWhere('is_primary', true) ?? $account->images->first();

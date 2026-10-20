@@ -9,8 +9,8 @@ use App\Models\CocAccountImage;
 use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Support\Uploads;
 use App\Support\Watermark;
 
 class AccountController extends Controller
@@ -64,11 +64,14 @@ class AccountController extends Controller
             ...$validated,
         ]);
 
-        $this->storeImages($request, $account);
+        $failed = $this->storeImages($request, $account);
 
         ActivityLog::record('create_account', $account, 'Akun ' . $account->account_code);
 
-        return redirect()->route('admin.accounts.index')->with('success', ($type === 'clan' ? 'Clan' : 'Akun') . ' berhasil ditambahkan (status: draft).');
+        return $this->withUploadWarning(
+            redirect()->route('admin.accounts.index')->with('success', ($type === 'clan' ? 'Clan' : 'Akun') . ' berhasil ditambahkan (status: draft).'),
+            $failed
+        );
     }
 
     public function edit(CocAccount $account)
@@ -114,15 +117,21 @@ class AccountController extends Controller
             'changed' => array_values(array_diff(array_keys($account->getChanges()), ['updated_at'])),
         ]);
 
-        $this->storeImages($request, $account);
+        $failed = $this->storeImages($request, $account);
 
         if ($goingToSold) {
-            return redirect()
-                ->route('admin.accounts.sell', $account)
-                ->with('success', 'Perubahan data tersimpan. Lengkapi data pembeli untuk menandai akun terjual.');
+            return $this->withUploadWarning(
+                redirect()
+                    ->route('admin.accounts.sell', $account)
+                    ->with('success', 'Perubahan data tersimpan. Lengkapi data pembeli untuk menandai akun terjual.'),
+                $failed
+            );
         }
 
-        return redirect()->route('admin.accounts.index')->with('success', 'Data akun diperbarui.');
+        return $this->withUploadWarning(
+            redirect()->route('admin.accounts.index')->with('success', 'Data akun diperbarui.'),
+            $failed
+        );
     }
 
     /** Ubah status terbit / penjualan dari daftar akun. */
@@ -228,10 +237,10 @@ class AccountController extends Controller
     public function destroyImage(CocAccount $account, CocAccountImage $image)
     {
         $this->authorizeAccount($account);
-        abort_if($image->coc_account_id !== $account->id, 404);
+        abort_if((int) $image->coc_account_id !== (int) $account->id, 404);
 
         $wasPrimary = $image->is_primary;
-        Storage::disk('public')->delete($image->image_path);
+        Uploads::delete($image->image_path);
         $image->delete();
 
         // Jika foto utama dihapus, jadikan foto pertama yang tersisa sebagai utama
@@ -249,7 +258,7 @@ class AccountController extends Controller
         $this->authorizeAccount($account);
 
         foreach ($account->images as $image) {
-            Storage::disk('public')->delete($image->image_path);
+            Uploads::delete($image->image_path);
         }
 
         ActivityLog::record('delete_account', $account, 'Akun ' . $account->account_code);
@@ -346,24 +355,54 @@ class AccountController extends Controller
         ];
     }
 
-    private function storeImages(Request $request, CocAccount $account): void
+    /**
+     * Simpan foto ke folder uploads dan catat path-nya di database.
+     * Foto pertama otomatis menjadi foto utama bila akun belum punya.
+     * Foto yang gagal ditulis ke disk TIDAK dicatat di database (supaya tidak
+     * ada gambar rusak); jumlah yang gagal dikembalikan untuk ditampilkan ke admin.
+     */
+    private function storeImages(Request $request, CocAccount $account): int
     {
         if (!$request->hasFile('images')) {
-            return;
+            return 0;
         }
 
         $hasPrimary = $account->images()->where('is_primary', true)->exists();
         $order      = (int) $account->images()->max('sort_order');
+        $failed     = 0;
 
         foreach ($request->file('images') as $file) {
+            try {
+                $path = Watermark::store($file, 'accounts');
+            } catch (\Throwable $e) {
+                report($e);
+                $failed++;
+                continue;
+            }
+
             $order++;
             CocAccountImage::create([
                 'coc_account_id' => $account->id,
-                'image_path'     => Watermark::store($file, 'accounts'),
+                'image_path'     => $path,
                 'is_primary'     => !$hasPrimary,
                 'sort_order'     => $order,
             ]);
             $hasPrimary = true;
         }
+
+        return $failed;
+    }
+
+    /** Tambahkan pesan error ke redirect bila ada foto yang gagal disimpan. */
+    private function withUploadWarning($redirect, int $failed)
+    {
+        if ($failed < 1) {
+            return $redirect;
+        }
+
+        return $redirect->with(
+            'error',
+            $failed . ' foto gagal disimpan di server. Periksa izin tulis folder uploads, lalu unggah ulang foto tersebut.'
+        );
     }
 }

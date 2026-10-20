@@ -16,12 +16,8 @@
         'DD' => $account->dragon_duke_level,
     ]);
     
-    // Pastikan path gambar aman
-    $imageUrl = null;
-    if ($account->primaryImage && !empty($account->primaryImage->image_path)) {
-        // Menggunakan asset() lebih stabil daripada Storage::url() di beberapa konfigurasi server
-        $imageUrl = asset('storage/' . $account->primaryImage->image_path);
-    }
+    // URL foto utama: /uploads/accounts/xxx.jpg (lewat CocAccountImage::url -> upload_url())
+    $imageUrl = $account->primaryImage?->url ?: null;
 @endphp
 
 <a href="{{ route('account.detail', $account->account_code) }}"

@@ -1,0 +1,16 @@
+# Folder upload: hanya untuk gambar. Script tidak boleh dijalankan di sini.
+Options -Indexes
+
+<FilesMatch "\.(php\d?|phtml|phar|pl|py|cgi|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>

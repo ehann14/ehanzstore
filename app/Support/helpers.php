@@ -3,25 +3,34 @@
 if (! function_exists('upload_url')) {
     /**
      * URL publik untuk file di folder uploads (public_html/uploads/...).
-     * Menerima "accounts/xxx.jpg" / "banners/xxx.png", termasuk data lama
-     * berawalan "storage/", "public/" atau "uploads/".
+     *
+     * Menerima path dari database seperti "accounts/xxx.jpg" / "banners/xxx.png",
+     * termasuk data lama berawalan "storage/", "public/" atau "uploads/".
+     * Hasilnya "/uploads/accounts/xxx.jpg" (relatif ke domain, jadi aman dari
+     * masalah http/https). Gunakan $absolute = true untuk URL lengkap, misalnya
+     * untuk meta og:image.
      */
-    function upload_url(?string $path): string
+    function upload_url(?string $path, bool $absolute = false): string
     {
-        $path = trim((string) $path);
+        $raw = trim((string) $path);
 
-        if ($path === '') {
+        if ($raw === '') {
             return '';
         }
 
-        if (preg_match('#^(https?:)?//#i', $path)) {
-            return $path;
+        // URL eksternal dipakai apa adanya
+        if (preg_match('#^(https?:)?//#i', $raw)) {
+            return $raw;
         }
 
-        $path = ltrim(str_replace('\\', '/', $path), '/');
-        $path = preg_replace('#^(public/)?(storage/|uploads/)#i', '', $path);
-        $path = preg_replace('#^public/#i', '', $path);
+        $relative = \App\Support\Uploads::normalize($raw);
 
-        return '/uploads/' . $path;
+        if ($relative === '') {
+            return '';
+        }
+
+        $url = '/uploads/' . $relative;
+
+        return $absolute ? url($url) : $url;
     }
 }

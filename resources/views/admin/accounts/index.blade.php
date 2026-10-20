@@ -35,11 +35,8 @@
                         'archived'  => ['Arsip', 'bg-slate-500/15 text-slate-300 border-slate-500/30'],
                     ][$account->sale_status] ?? ['-', 'bg-slate-500/15 text-slate-300 border-slate-500/30'];
                     
-                    // Perbaikan path gambar
-                    $imageUrl = null;
-                    if ($account->primaryImage && !empty($account->primaryImage->image_path)) {
-                        $imageUrl = asset('storage/' . $account->primaryImage->image_path);
-                    }
+                    // URL foto utama: /uploads/accounts/xxx.jpg (lewat CocAccountImage::url -> upload_url())
+                    $imageUrl = $account->primaryImage?->url ?: null;
                 @endphp
                 <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-4 border border-white/5 hover:border-electric/30 transition-colors">
                     <div class="flex items-center gap-4 min-w-0 flex-1">

@@ -4,7 +4,7 @@
     /** @var \App\Models\CocAccount $account */
     /** @var \App\Models\Sale|null $sale */
     $isEdit = isset($sale) && $sale;
-    $imageUrl = $account->primaryImage?->image_path ? asset('storage/' . $account->primaryImage->image_path) : null;
+    $imageUrl = $account->primaryImage?->url ?: null;
 @endphp
 
 @section('title', $isEdit ? 'Data Pembeli' : 'Konfirmasi Penjualan')

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Banner;
 use App\Models\CocAccount;
 use App\Models\VisitorEvent;
+use App\Support\Uploads;
 use Illuminate\Http\Request;
 
 class PublicController extends Controller
@@ -226,32 +227,24 @@ class PublicController extends Controller
     }
 
     /**
-     * Menampilkan file upload jika file fisiknya tidak ditemukan oleh Apache.
+     * Menampilkan file upload jika file fisiknya tidak ditemukan oleh Apache
+     * (mis. foto lama yang masih ada di storage/app/public).
      * Hanya mengizinkan gambar dari folder accounts dan banners.
      */
     public function upload(string $path)
     {
-        $root = realpath(config('filesystems.disks.public.root'));
+        abort_unless(
+            preg_match('#^(accounts|banners)/[A-Za-z0-9._-]+\.(jpe?g|png|webp|gif)$#i', $path),
+            404
+        );
 
-        $file = $root
-            ? realpath($root . DIRECTORY_SEPARATOR . $path)
-            : false;
+        $file = Uploads::locate($path);
 
-        $allowed = $file
-            && str_starts_with(
-                $file,
-                $root . DIRECTORY_SEPARATOR
-            )
-            && preg_match(
-                '#^(accounts|banners)[/\\\\]#',
-                ltrim(substr($file, strlen($root)), '/\\')
-            )
-            && preg_match('/\.(jpe?g|png|webp|gif)$/i', $file);
-
-        abort_unless($allowed && is_file($file), 404);
+        abort_unless($file, 404);
 
         return response()->file($file, [
-            'Cache-Control' => 'public, max-age=604800',
+            'Cache-Control'          => 'public, max-age=604800',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 }
