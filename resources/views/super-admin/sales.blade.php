@@ -58,16 +58,16 @@
         <!-- Tabel (desktop) -->
         <div class="hidden md:block glass-panel rounded-2xl overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full min-w-[860px] text-sm">
                     <thead>
-                        <tr class="text-left text-[11px] uppercase tracking-wider text-slate-500 border-b border-white/5">
-                            <th class="px-5 py-4 font-semibold">Kode</th>
-                            <th class="px-5 py-4 font-semibold">Akun</th>
-                            <th class="px-5 py-4 font-semibold">Pembeli &amp; Garansi</th>
-                            <th class="px-5 py-4 font-semibold">Harga</th>
-                            <th class="px-5 py-4 font-semibold">Status</th>
-                            <th class="px-5 py-4 font-semibold">Diproses</th>
-                            <th class="px-5 py-4 font-semibold text-right">Tanggal</th>
+                        <tr class="text-left text-[11px] uppercase tracking-wider text-slate-500 border-b border-white/5 whitespace-nowrap">
+                            <th class="px-4 py-3.5 font-semibold">Kode</th>
+                            <th class="px-4 py-3.5 font-semibold">Akun</th>
+                            <th class="px-4 py-3.5 font-semibold">Pembeli &amp; Garansi</th>
+                            <th class="px-4 py-3.5 font-semibold">Harga</th>
+                            <th class="px-4 py-3.5 font-semibold">Status</th>
+                            <th class="px-4 py-3.5 font-semibold">Diproses</th>
+                            <th class="px-4 py-3.5 font-semibold text-right">Tanggal</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
@@ -77,15 +77,15 @@
                                 $pb = $payBadge[$sale->payment_status] ?? ['-', 'bg-slate-500/15 text-slate-300 border-slate-500/30'];
                             @endphp
                             <tr class="hover:bg-white/[0.03] transition align-top">
-                                <td class="px-5 py-4 font-mono text-xs text-slate-400">{{ $sale->transaction_code }}</td>
-                                <td class="px-5 py-4">
+                                <td class="px-4 py-4 font-mono text-xs text-slate-400 whitespace-nowrap">{{ $sale->transaction_code }}</td>
+                                <td class="px-4 py-4 min-w-[150px]">
                                     <p class="text-white font-medium">{{ $sale->account?->name ?? 'Akun dihapus' }}</p>
                                     <p class="text-[11px] text-slate-500 font-mono">{{ $sale->account_code_snapshot }}</p>
                                     @if($sale->notes)
-                                        <p class="text-[11px] text-slate-500 mt-1 max-w-xs truncate" title="{{ $sale->notes }}">{{ $sale->notes }}</p>
+                                        <p class="text-[11px] text-slate-500 mt-1 max-w-[180px] truncate" title="{{ $sale->notes }}">{{ $sale->notes }}</p>
                                     @endif
                                 </td>
-                                <td class="px-5 py-4">
+                                <td class="px-4 py-4 min-w-[190px]">
                                     @if($sale->hasBuyerData())
                                         <p class="text-white text-sm">{{ $sale->buyer_name }}</p>
                                         @if($sale->buyer_phone)
@@ -99,24 +99,24 @@
 
                                     @if($sale->transaction_status === 'completed')
                                         @php [$wText, $wCls] = $sale->warrantyBadge(); @endphp
-                                        <span class="mt-1.5 inline-flex px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
+                                        <span class="mt-1.5 inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
                                         @if($sale->warranty_expires_at)
-                                            <p class="text-[11px] text-slate-500 mt-1">s/d {{ $sale->warrantyUntilLabel() }}</p>
+                                            <p class="text-[11px] text-slate-500 mt-1 whitespace-nowrap">s/d {{ $sale->warrantyUntilLabel() }}</p>
                                         @endif
                                         <a href="{{ route('admin.sales.buyer', $sale) }}" class="block text-[11px] text-electric hover:underline mt-1">
                                             {{ $sale->hasBuyerData() ? 'Ubah data pembeli' : 'Isi data pembeli' }}
                                         </a>
                                     @endif
                                 </td>
-                                <td class="px-5 py-4 font-semibold text-brand-400 whitespace-nowrap">{{ $rupiah($sale->sale_price) }}</td>
-                                <td class="px-5 py-4">
-                                    <div class="flex flex-wrap gap-1.5">
-                                        <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $sb[1] }}">{{ $sb[0] }}</span>
-                                        <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $pb[1] }}">{{ $pb[0] }}</span>
+                                <td class="px-4 py-4 font-semibold text-brand-400 whitespace-nowrap">{{ $rupiah($sale->sale_price) }}</td>
+                                <td class="px-4 py-4">
+                                    <div class="flex flex-col items-start gap-1.5">
+                                        <span class="whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-medium {{ $sb[1] }}">{{ $sb[0] }}</span>
+                                        <span class="whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-medium {{ $pb[1] }}">{{ $pb[0] }}</span>
                                     </div>
                                 </td>
-                                <td class="px-5 py-4 text-slate-300">{{ $sale->processor?->name ?? '-' }}</td>
-                                <td class="px-5 py-4 text-right text-xs text-slate-500 whitespace-nowrap">{{ ($sale->sold_at ?? $sale->created_at)->format('d M Y, H:i') }}</td>
+                                <td class="px-4 py-4 text-slate-300 whitespace-nowrap">{{ $sale->processor?->name ?? '-' }}</td>
+                                <td class="px-4 py-4 text-right text-xs text-slate-500 whitespace-nowrap">{{ ($sale->sold_at ?? $sale->created_at)->format('d M Y, H:i') }}</td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -73,8 +73,10 @@
     <!-- Sidebar (desktop) -->
     <aside class="w-72 fixed h-full glass-strong border-r border-white/5 hidden lg:flex flex-col z-40">
         <div class="p-6 flex items-center gap-3 border-b border-white/5">
-            <div class="w-10 h-10 bg-gradient-to-br from-royal to-electric rounded-xl flex items-center justify-center shadow-lg shadow-electric/20">
-                <img src="{{ asset('images/logo.png') }}" class="w-6 h-6 brightness-0 invert" alt="">
+            <div class="relative w-11 h-11 shrink-0 flex items-center justify-center bg-white rounded-xl overflow-hidden shadow-lg shadow-electric/20">
+                <img src="{{ asset('images/logo.png') }}" class="w-10 h-10 object-contain" alt="EHANZSTORE"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="hidden absolute inset-0 bg-electric text-white font-display font-bold text-xl items-center justify-center">E</div>
             </div>
             <div>
                 <h1 class="font-display font-bold text-white leading-none">EHANZSTORE</h1>

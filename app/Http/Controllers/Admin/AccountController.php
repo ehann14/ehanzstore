@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 
 class AccountController extends Controller
 {
-    private const MAX_IMAGES = 5;
+    private const MAX_IMAGES = 8;
 
     public function index()
     {
@@ -293,8 +293,10 @@ class AccountController extends Controller
             'description'          => 'nullable|string|max:5000',
             'barbarian_king_level' => 'nullable|integer|min:0|max:100',
             'archer_queen_level'   => 'nullable|integer|min:0|max:100',
+            'minion_prince_level'  => 'nullable|integer|min:0|max:100',
             'grand_warden_level'   => 'nullable|integer|min:0|max:100',
             'royal_champion_level' => 'nullable|integer|min:0|max:100',
+            'dragon_duke_level'    => 'nullable|integer|min:0|max:100',
             'protection_status'    => 'nullable|in:Protected,Unprotected',
             'email_change_status'  => 'nullable|in:Changeable,Unchangeable',
             'images'               => 'nullable|array|max:' . self::MAX_IMAGES,

@@ -235,12 +235,20 @@
                             'val' => 'Lv. ' . ($account->archer_queen_level ?? 0),
                         ],
                         [
+                            'label' => 'Minion Prince',
+                            'val' => 'Lv. ' . ($account->minion_prince_level ?? 0),
+                        ],
+                        [
                             'label' => 'Grand Warden',
                             'val' => 'Lv. ' . ($account->grand_warden_level ?? 0),
                         ],
                         [
                             'label' => 'Royal Champion',
                             'val' => 'Lv. ' . ($account->royal_champion_level ?? 0),
+                        ],
+                        [
+                            'label' => 'Dragon Duke',
+                            'val' => 'Lv. ' . ($account->dragon_duke_level ?? 0),
                         ],
                         [
                             'label' => 'Builder',

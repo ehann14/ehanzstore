@@ -76,13 +76,15 @@
         <div class="space-y-4">
             <h3 class="text-sm font-bold text-brand-400 uppercase tracking-wider border-b border-white/5 pb-2">Spesifikasi & Keamanan</h3>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 @php
                     $heroes = [
                         ['name' => 'barbarian_king_level', 'label' => 'Barbarian King'],
                         ['name' => 'archer_queen_level', 'label' => 'Archer Queen'],
+                        ['name' => 'minion_prince_level', 'label' => 'Minion Prince'],
                         ['name' => 'grand_warden_level', 'label' => 'Grand Warden'],
-                        ['name' => 'royal_champion_level', 'label' => 'Royal Champion']
+                        ['name' => 'royal_champion_level', 'label' => 'Royal Champion (Jawara Royal)'],
+                        ['name' => 'dragon_duke_level', 'label' => 'Dragon Duke (Adipati Naga)']
                     ];
                 @endphp
 

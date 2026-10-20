@@ -4,8 +4,10 @@
     $heroes = array_filter([
         'BK' => $account->barbarian_king_level,
         'AQ' => $account->archer_queen_level,
+        'MP' => $account->minion_prince_level,
         'GW' => $account->grand_warden_level,
         'RC' => $account->royal_champion_level,
+        'DD' => $account->dragon_duke_level,
     ]);
     
     // Pastikan path gambar aman

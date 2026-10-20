@@ -11,8 +11,9 @@ class CocAccount extends Model
 
     protected $fillable = [
         'account_code', 'name', 'town_hall', 'account_level',
-        'barbarian_king_level', 'archer_queen_level', 'grand_warden_level',
-        'royal_champion_level', 'builder_count', 'gems', 'cn_information',
+        'barbarian_king_level', 'archer_queen_level', 'minion_prince_level',
+        'grand_warden_level', 'royal_champion_level', 'dragon_duke_level',
+        'builder_count', 'gems', 'cn_information',
         'protection_status', 'email_change_status', 'price', 'description',
         'publication_status', 'sale_status', 'created_by'
     ];

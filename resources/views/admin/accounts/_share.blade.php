@@ -8,9 +8,11 @@
         . "Kode: {$account->account_code}\n"
         . "\n"
         . "👑 BK Lv. " . ($account->barbarian_king_level ?? 0)
-        . " | AQ Lv. " . ($account->archer_queen_level ?? 0) . "\n"
+        . " | AQ Lv. " . ($account->archer_queen_level ?? 0)
+        . " | MP Lv. " . ($account->minion_prince_level ?? 0) . "\n"
         . "🛡️ GW Lv. " . ($account->grand_warden_level ?? 0)
-        . " | RC Lv. " . ($account->royal_champion_level ?? 0) . "\n"
+        . " | RC Lv. " . ($account->royal_champion_level ?? 0)
+        . " | DD Lv. " . ($account->dragon_duke_level ?? 0) . "\n"
         . "🔒 Proteksi: " . ($account->protection_status === 'Protected' ? 'ON' : 'OFF') . "\n"
         . "📧 Email: " . ($account->email_change_status === 'Changeable' ? 'Bisa Ganti' : 'Tidak Bisa Ganti') . "\n"
         . "\n"

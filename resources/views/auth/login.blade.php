@@ -44,7 +44,9 @@
     <div class="w-full max-w-md relative z-10">
         <!-- Logo Header -->
         <div class="text-center mb-8">
-            <img src="{{ asset('images/logo.png') }}" alt="EHANZ Logo" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg brightness-0 invert opacity-90">
+            <div class="w-20 h-20 mx-auto mb-4 flex items-center justify-center bg-white rounded-2xl overflow-hidden shadow-lg shadow-electric/20">
+                <img src="{{ asset('images/logo.png') }}" alt="EHANZ Logo" class="w-[72px] h-[72px] object-contain">
+            </div>
             <h1 class="text-2xl font-bold text-white tracking-tight">Admin Dashboard</h1>
             <p class="text-slate-400 text-sm mt-2">Masuk untuk mengelola katalog akun COC</p>
         </div>
