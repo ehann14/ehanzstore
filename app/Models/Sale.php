@@ -136,6 +136,30 @@ class Sale extends Model
         return 'sisa ' . max(1, (int) ceil($seconds / 3600)) . ' jam';
     }
 
+    /**
+     * Atribut HTML untuk hitung mundur garansi yang berjalan realtime (public/js/live-time.js).
+     * Mengembalikan string kosong kalau garansi tidak aktif, jadi cukup dipasang di elemen:
+     *   <span {!! $sale->countdownAttrs('sisa ') !!}>sisa 4 hari</span>
+     */
+    public function countdownAttrs(string $prefix = 'sisa ', string $expired = 'Garansi berakhir', bool $badge = false): string
+    {
+        if (! $this->warrantyIsActive()) {
+            return '';
+        }
+
+        return 'data-countdown="' . e($this->warranty_expires_at->toIso8601String()) . '"'
+            . ' data-prefix="' . e($prefix) . '"'
+            . ' data-expired="' . e($expired) . '"'
+            . ($badge ? ' data-badge' : '');
+    }
+
+    /** Waktu transaksi (terjual / dibuat) dalam WIB, mis. "20 Oct 2026, 19:37". */
+    public function transactionTimeLabel(): string
+    {
+        return ($this->sold_at ?? $this->created_at)
+            ->clone()->timezone(self::DISPLAY_TZ)->format('d M Y, H:i');
+    }
+
     /** Batas akhir garansi dalam WIB, mis. "23 Oct 2026, 14:30 WIB". */
     public function warrantyUntilLabel(): ?string
     {

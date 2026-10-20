@@ -35,8 +35,11 @@
                         'archived'  => ['Arsip', 'bg-slate-500/15 text-slate-300 border-slate-500/30'],
                     ][$account->sale_status] ?? ['-', 'bg-slate-500/15 text-slate-300 border-slate-500/30'];
                     
-                    // URL foto utama: /uploads/accounts/xxx.jpg (lewat CocAccountImage::url -> upload_url())
-                    $imageUrl = $account->primaryImage?->url ?: null;
+                    // Perbaikan path gambar
+                    $imageUrl = null;
+                    if ($account->primaryImage && !empty($account->primaryImage->image_path)) {
+                        $imageUrl = upload_url($account->primaryImage->image_path);
+                    }
                 @endphp
                 <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-4 border border-white/5 hover:border-electric/30 transition-colors">
                     <div class="flex items-center gap-4 min-w-0 flex-1">
@@ -72,7 +75,7 @@
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $saleBadge[1] }}">{{ $saleBadge[0] }}</span>
                                 @if($account->sale_status === 'sold' && $account->latestCompletedSale)
                                     @php [$wText, $wCls] = $account->latestCompletedSale->warrantyBadge(); @endphp
-                                    <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
+                                    <span {!! $account->latestCompletedSale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!} class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
                                     @if($account->latestCompletedSale->hasBuyerData())
                                         <span class="text-[11px] text-slate-500 self-center">Pembeli: {{ $account->latestCompletedSale->buyer_name }}</span>
                                     @endif

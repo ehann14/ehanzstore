@@ -99,7 +99,7 @@
 
                                     @if($sale->transaction_status === 'completed')
                                         @php [$wText, $wCls] = $sale->warrantyBadge(); @endphp
-                                        <span class="mt-1.5 inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
+                                        <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!} class="mt-1.5 inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
                                         @if($sale->warranty_expires_at)
                                             <p class="text-[11px] text-slate-500 mt-1 whitespace-nowrap">s/d {{ $sale->warrantyUntilLabel() }}</p>
                                         @endif
@@ -116,7 +116,7 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 text-slate-300 whitespace-nowrap">{{ $sale->processor?->name ?? '-' }}</td>
-                                <td class="px-4 py-4 text-right text-xs text-slate-500 whitespace-nowrap">{{ ($sale->sold_at ?? $sale->created_at)->format('d M Y, H:i') }}</td>
+                                <td class="px-4 py-4 text-right text-xs text-slate-500 whitespace-nowrap">{{ $sale->transactionTimeLabel() }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -142,7 +142,7 @@
                     <div class="flex flex-wrap items-center gap-1.5">
                         <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $sb[1] }}">{{ $sb[0] }}</span>
                         <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $pb[1] }}">{{ $pb[0] }}</span>
-                        <span class="text-[11px] text-slate-500 ml-auto">{{ ($sale->sold_at ?? $sale->created_at)->format('d M Y, H:i') }}</span>
+                        <span class="text-[11px] text-slate-500 ml-auto">{{ $sale->transactionTimeLabel() }}</span>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-2">Diproses oleh {{ $sale->processor?->name ?? '-' }}</p>
                     @if($sale->transaction_status === 'completed')
@@ -151,7 +151,7 @@
                             <span class="text-[11px] {{ $sale->hasBuyerData() ? 'text-slate-300' : 'text-amber-300' }}">
                                 {{ $sale->hasBuyerData() ? 'Pembeli: ' . $sale->buyer_name : 'Data pembeli belum diisi' }}
                             </span>
-                            <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
+                            <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!} class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
                             <a href="{{ route('admin.sales.buyer', $sale) }}" class="text-[11px] text-electric hover:underline ml-auto">
                                 {{ $sale->hasBuyerData() ? 'Ubah' : 'Isi data pembeli' }}
                             </a>

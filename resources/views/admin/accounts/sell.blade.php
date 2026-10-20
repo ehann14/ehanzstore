@@ -4,7 +4,7 @@
     /** @var \App\Models\CocAccount $account */
     /** @var \App\Models\Sale|null $sale */
     $isEdit = isset($sale) && $sale;
-    $imageUrl = $account->primaryImage?->url ?: null;
+    $imageUrl = $account->primaryImage?->image_path ? upload_url($account->primaryImage->image_path) : null;
 @endphp
 
 @section('title', $isEdit ? 'Data Pembeli' : 'Konfirmasi Penjualan')
@@ -55,7 +55,7 @@
         </div>
         @if($isEdit)
             @php [$badgeText, $badgeCls] = $sale->warrantyBadge(); @endphp
-            <span class="hidden sm:inline-flex px-2.5 py-1 rounded-full border text-[11px] font-medium {{ $badgeCls }}">{{ $badgeText }}</span>
+            <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!} class="hidden sm:inline-flex px-2.5 py-1 rounded-full border text-[11px] font-medium {{ $badgeCls }}">{{ $badgeText }}</span>
         @endif
     </div>
 

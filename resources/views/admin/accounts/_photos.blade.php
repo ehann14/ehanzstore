@@ -13,7 +13,7 @@
         <div class="grid grid-cols-3 sm:grid-cols-5 gap-3">
             @foreach($existing as $img)
                 <div class="relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-midnight group">
-                    <img src="{{ $img->url }}" alt="" class="w-full h-full object-cover">
+                    <img src="{{ upload_url($img->image_path) }}" alt="" class="w-full h-full object-cover">
                     @if($img->is_primary)
                         <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-electric text-[10px] font-bold text-white">Utama</span>
                     @endif

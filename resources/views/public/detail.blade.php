@@ -12,9 +12,9 @@
                 . ' | ' . ($isClan ? 'Lv. ' . $account->clan_level . ' | ' . $account->clan_league : 'TH ' . $account->town_hall)
                 . ' | Kode ' . $account->account_code . ' | ' . $sharePrice . ' - EHANZSTORE.ID';
     
-    // og:image harus URL absolut (untuk preview WhatsApp/Instagram); file ada di /uploads/accounts/
+    // Perbaikan: Menggunakan asset('storage/...') untuk kompatibilitas symlink & hosting
     $ogImage    = ($account->primaryImage && !empty($account->primaryImage->image_path))
-                ? upload_url($account->primaryImage->image_path, true)
+                ? upload_url($account->primaryImage->image_path)
                 : null;
 @endphp
 
@@ -138,9 +138,12 @@
                     <div class="w-full text-center bg-red-500/10 border border-red-500/30 text-red-300 font-bold py-4 rounded-xl">
                         {{ ucfirst($noun) }} ini sudah terjual
                     </div>
-                    @php $warrantyLeft = $account->latestCompletedSale?->warrantyRemainingText(); @endphp
+                    @php
+                        $warrantySale = $account->latestCompletedSale;
+                        $warrantyLeft = $warrantySale?->warrantyRemainingText();
+                    @endphp
                     @if($warrantyLeft)
-                        <p class="text-center text-xs text-emerald-300">Garansi pembeli masih aktif &middot; {{ $warrantyLeft }}</p>
+                        <p class="text-center text-xs text-emerald-300">Garansi pembeli: <span {!! $warrantySale->countdownAttrs('aktif · sisa ', 'sudah berakhir') !!}>aktif &middot; {{ $warrantyLeft }}</span></p>
                     @endif
                     <a href="{{ route('catalog') }}" class="block text-center text-sm text-electric hover:text-white transition">
                         Lihat {{ $noun }} lain yang tersedia

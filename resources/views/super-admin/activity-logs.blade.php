@@ -139,7 +139,7 @@
                     </div>
 
                     <div class="text-left sm:text-right shrink-0">
-                        <p class="text-sm text-slate-300">{{ $log->created_at->format('d M Y, H:i') }}</p>
+                        <p class="text-sm text-slate-300">{{ $log->created_at->clone()->timezone('Asia/Jakarta')->format('d M Y, H:i') }}</p>
                         <p class="text-xs text-slate-500">
                             {{ $log->created_at->diffForHumans() }}
                             @if(!empty($meta['ip']))

@@ -105,6 +105,12 @@
         </nav>
 
         <div class="p-4 border-t border-white/5 space-y-3">
+            <!-- Jam realtime (WIB) -->
+            <div class="px-4 py-3 rounded-xl bg-electric/10 border border-electric/20 text-center">
+                <p class="font-mono text-xl font-bold text-white tracking-wider leading-none" data-live-clock="time">{{ now()->timezone('Asia/Jakarta')->format('H:i:s') }}</p>
+                <p class="text-[11px] text-slate-400 mt-1.5" data-live-clock="date">{{ now()->timezone('Asia/Jakarta')->format('d M Y') }}</p>
+                <p class="text-[9px] uppercase tracking-widest text-electric/80 mt-1">WIB</p>
+            </div>
             <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5">
                 <div class="w-9 h-9 rounded-full bg-gradient-to-br from-royal to-electric flex items-center justify-center text-white text-sm font-bold shrink-0">
                     {{ strtoupper(mb_substr($user->name, 0, 1)) }}
@@ -127,6 +133,7 @@
         <div class="lg:hidden mb-6 sticky top-3 z-30">
             <div class="flex justify-between items-center glass-strong p-4 rounded-2xl">
                 <span class="font-display font-bold text-white">EHANZ {{ $isSuper ? 'SUPER ADMIN' : 'ADMIN' }}</span>
+                <span class="ml-auto mr-3 font-mono text-xs text-electric" data-live-clock="time">{{ now()->timezone('Asia/Jakarta')->format('H:i:s') }}</span>
                 <button onclick="document.getElementById('mobileMenu').classList.toggle('hidden')" class="text-white" aria-label="Menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
@@ -183,6 +190,7 @@
     </script>
 
     @stack('outside-forms')
+    <script src="{{ asset('js/live-time.js') }}?v={{ @filemtime(public_path('js/live-time.js')) }}" defer></script>
     @stack('scripts')
 </body>
 </html>

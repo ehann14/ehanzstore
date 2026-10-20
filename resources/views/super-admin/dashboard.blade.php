@@ -53,8 +53,14 @@
         </div>
         <div class="flex items-center gap-3">
             <div class="glass-panel px-4 py-2 rounded-xl text-right">
-                <p class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Diperbarui</p>
-                <p class="text-sm text-brand-400 font-mono">{{ now()->format('d M Y, H:i') }}</p>
+                <p class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold flex items-center justify-end gap-1.5">
+                    <span id="liveDot" class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                    </span>
+                    <span id="liveLabel">Live &middot; diperbarui</span>
+                </p>
+                <p class="text-sm text-brand-400 font-mono" id="liveUpdated">{{ now()->timezone('Asia/Jakarta')->format('d M Y, H:i:s') }} WIB</p>
             </div>
             <a href="{{ route('super-admin.sales') }}"
                class="inline-flex items-center gap-2 bg-electric hover:bg-blue-500 text-white px-4 py-3 rounded-xl text-sm font-semibold transition">
@@ -65,6 +71,7 @@
     </div>
 
     <!-- Statistik -->
+    <div data-live="cards">
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         @foreach($cards as $card)
             <div class="glass-panel rounded-2xl p-5 hover:bg-white/5 transition group">
@@ -86,8 +93,10 @@
             </div>
         @endforeach
     </div>
+    </div>
 
     <!-- Pengingat garansi -->
+    <div data-live="warranty">
     <div class="glass-panel rounded-2xl p-5 sm:p-6 mb-6 {{ $warrantyAlerts->isNotEmpty() ? 'border border-amber-500/30' : '' }}">
         <div class="flex items-start justify-between gap-3 mb-4">
             <div class="flex items-start gap-3">
@@ -127,7 +136,7 @@
                         </div>
                         <div class="flex items-center gap-3 sm:justify-end shrink-0">
                             <div class="sm:text-right">
-                                <span class="inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-semibold bg-amber-500/15 text-amber-300 border-amber-500/30">Garansi {{ $alert->warrantyRemainingText() }}</span>
+                                <span {!! $alert->countdownAttrs('Garansi sisa ', 'Garansi berakhir', true) !!} class="inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-semibold bg-amber-500/15 text-amber-300 border-amber-500/30">Garansi {{ $alert->warrantyRemainingText() }}</span>
                                 <p class="text-[11px] text-slate-500 mt-1 whitespace-nowrap">s/d {{ $alert->warrantyUntilLabel() }}</p>
                             </div>
                             @if($waUrl)
@@ -146,6 +155,8 @@
         @endif
     </div>
 
+    </div>
+
     <!-- Grafik & akun populer -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div class="lg:col-span-2 glass-panel rounded-2xl p-5 sm:p-6 flex flex-col">
@@ -158,6 +169,7 @@
             </div>
             <div class="relative flex-grow h-72">
                 <canvas id="visitorChart"></canvas>
+                <script type="application/json" data-live-json="visitorStats">@json($visitorStats)</script>
                 @unless($hasData)
                     <div class="absolute inset-0 flex items-center justify-center text-slate-500 text-sm text-center bg-slate-900/60 rounded-xl">
                         Belum ada data kunjungan dalam 7 hari terakhir.
@@ -169,7 +181,7 @@
         <div class="glass-panel rounded-2xl p-5 sm:p-6">
             <h3 class="font-bold text-white mb-1">Akun Paling Diminati</h3>
             <p class="text-xs text-slate-500 mb-5">Berdasarkan jumlah kunjungan halaman detail</p>
-            <div class="space-y-2.5 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+            <div data-live="top-accounts" class="space-y-2.5 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
                 @forelse($topAccounts as $i => $item)
                     <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-electric/30 transition">
                         <span class="w-7 h-7 shrink-0 rounded-lg bg-electric/15 text-electric text-xs font-bold flex items-center justify-center">{{ $i + 1 }}</span>
@@ -196,6 +208,7 @@
             <a href="{{ route('super-admin.sales') }}" class="text-xs text-electric hover:text-blue-300 font-medium transition">Lihat semua &rarr;</a>
         </div>
 
+        <div data-live="recent">
         @if($recentSales->isEmpty())
             <div class="text-center py-10 text-slate-500 text-sm">Belum ada transaksi tercatat.</div>
         @else
@@ -218,13 +231,14 @@
                                 <td class="py-3 text-white">{{ $sale->account?->name ?? $sale->account_code_snapshot }}</td>
                                 <td class="py-3 font-semibold text-brand-400">{{ $rupiah($sale->sale_price) }}</td>
                                 <td class="py-3"><span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $b[1] }}">{{ $b[0] }}</span></td>
-                                <td class="py-3 text-right text-xs text-slate-500">{{ ($sale->sold_at ?? $sale->created_at)->format('d M Y, H:i') }}</td>
+                                <td class="py-3 text-right text-xs text-slate-500">{{ $sale->transactionTimeLabel() }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
         @endif
+        </div>
     </div>
 </div>
 @endsection
@@ -242,7 +256,7 @@
     gradient.addColorStop(0, 'rgba(59,130,246,0.35)');
     gradient.addColorStop(1, 'rgba(59,130,246,0)');
 
-    new Chart(ctx, {
+    const visitorChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: stats.map(s => s.label),
@@ -275,5 +289,60 @@
             }
         }
     });
+    // ---- Auto-update dashboard tanpa refresh halaman ----------------------------
+    (function () {
+        const INTERVAL = 20000; // 20 detik
+        const dot = document.getElementById('liveDot');
+        const label = document.getElementById('liveLabel');
+        const stamp = document.getElementById('liveUpdated');
+        let busy = false;
+
+        function setStatus(ok) {
+            if (!dot || !label) return;
+            dot.classList.toggle('opacity-40', !ok);
+            label.innerHTML = ok ? 'Live &middot; diperbarui' : 'Offline &middot; coba lagi...';
+        }
+
+        async function refresh() {
+            if (busy || document.hidden) return;
+            busy = true;
+            try {
+                const res = await fetch(location.pathname + location.search, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                });
+                // sesi habis -> server mengarahkan ke halaman login; hentikan update diam-diam
+                if (!res.ok || res.redirected) { setStatus(false); return; }
+
+                const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+                const fresh = doc.querySelectorAll('[data-live]');
+                if (!fresh.length) { setStatus(false); return; }
+
+                fresh.forEach((node) => {
+                    const cur = document.querySelector('[data-live="' + node.dataset.live + '"]');
+                    if (cur && cur.innerHTML !== node.innerHTML) cur.innerHTML = node.innerHTML;
+                });
+
+                const json = doc.querySelector('script[data-live-json="visitorStats"]');
+                if (json) {
+                    const next = JSON.parse(json.textContent);
+                    visitorChart.data.labels = next.map(s => s.label);
+                    visitorChart.data.datasets[0].data = next.map(s => s.visitors);
+                    visitorChart.update('none');
+                }
+
+                if (stamp && window.EhzTime) stamp.textContent = EhzTime.date().replace(/^[^,]+, /, '') + ', ' + EhzTime.time() + ' WIB';
+                setStatus(true);
+            } catch (e) {
+                setStatus(false);
+            } finally {
+                busy = false;
+            }
+        }
+
+        setInterval(refresh, INTERVAL);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+    })();
 </script>
 @endpush
