@@ -63,6 +63,7 @@
                         <tr class="text-left text-[11px] uppercase tracking-wider text-slate-500 border-b border-white/5">
                             <th class="px-5 py-4 font-semibold">Kode</th>
                             <th class="px-5 py-4 font-semibold">Akun</th>
+                            <th class="px-5 py-4 font-semibold">Pembeli &amp; Garansi</th>
                             <th class="px-5 py-4 font-semibold">Harga</th>
                             <th class="px-5 py-4 font-semibold">Status</th>
                             <th class="px-5 py-4 font-semibold">Diproses</th>
@@ -82,6 +83,29 @@
                                     <p class="text-[11px] text-slate-500 font-mono">{{ $sale->account_code_snapshot }}</p>
                                     @if($sale->notes)
                                         <p class="text-[11px] text-slate-500 mt-1 max-w-xs truncate" title="{{ $sale->notes }}">{{ $sale->notes }}</p>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-4">
+                                    @if($sale->hasBuyerData())
+                                        <p class="text-white text-sm">{{ $sale->buyer_name }}</p>
+                                        @if($sale->buyer_phone)
+                                            <a href="{{ $sale->whatsappUrl() }}" target="_blank" rel="noopener" class="text-[11px] text-emerald-400 hover:underline">{{ $sale->localPhone() }}</a>
+                                        @endif
+                                    @elseif($sale->transaction_status === 'completed')
+                                        <p class="text-xs text-amber-300">Data pembeli belum diisi</p>
+                                    @else
+                                        <p class="text-xs text-slate-500">-</p>
+                                    @endif
+
+                                    @if($sale->transaction_status === 'completed')
+                                        @php [$wText, $wCls] = $sale->warrantyBadge(); @endphp
+                                        <span class="mt-1.5 inline-flex px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
+                                        @if($sale->warranty_expires_at)
+                                            <p class="text-[11px] text-slate-500 mt-1">s/d {{ $sale->warrantyUntilLabel() }}</p>
+                                        @endif
+                                        <a href="{{ route('admin.sales.buyer', $sale) }}" class="block text-[11px] text-electric hover:underline mt-1">
+                                            {{ $sale->hasBuyerData() ? 'Ubah data pembeli' : 'Isi data pembeli' }}
+                                        </a>
                                     @endif
                                 </td>
                                 <td class="px-5 py-4 font-semibold text-brand-400 whitespace-nowrap">{{ $rupiah($sale->sale_price) }}</td>
@@ -121,6 +145,18 @@
                         <span class="text-[11px] text-slate-500 ml-auto">{{ ($sale->sold_at ?? $sale->created_at)->format('d M Y, H:i') }}</span>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-2">Diproses oleh {{ $sale->processor?->name ?? '-' }}</p>
+                    @if($sale->transaction_status === 'completed')
+                        @php [$wText, $wCls] = $sale->warrantyBadge(); @endphp
+                        <div class="mt-2 pt-2 border-t border-white/5 flex flex-wrap items-center gap-2">
+                            <span class="text-[11px] {{ $sale->hasBuyerData() ? 'text-slate-300' : 'text-amber-300' }}">
+                                {{ $sale->hasBuyerData() ? 'Pembeli: ' . $sale->buyer_name : 'Data pembeli belum diisi' }}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
+                            <a href="{{ route('admin.sales.buyer', $sale) }}" class="text-[11px] text-electric hover:underline ml-auto">
+                                {{ $sale->hasBuyerData() ? 'Ubah' : 'Isi data pembeli' }}
+                            </a>
+                        </div>
+                    @endif
                 </div>
             @endforeach
         </div>
@@ -133,11 +169,11 @@
 @push('outside-forms')
 <!-- Modal konfirmasi penjualan -->
 <div id="saleModal" class="hidden fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-    <div class="glass-strong w-full max-w-lg rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="glass-strong w-full max-w-2xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div class="flex items-start justify-between mb-6">
             <div>
                 <h3 class="text-xl font-display font-bold text-white">Konfirmasi Penjualan</h3>
-                <p class="text-sm text-slate-400 mt-1">Akun akan ditandai terjual dan disembunyikan dari katalog.</p>
+                <p class="text-sm text-slate-400 mt-1">Isi data pembeli untuk garansi {{ \App\Models\Sale::WARRANTY_DAYS }} hari. Akun tetap tampil di katalog dengan label Terjual sampai garansi berakhir, lalu otomatis disembunyikan.</p>
             </div>
             <button type="button" onclick="closeSaleModal()" class="text-slate-500 hover:text-white transition" aria-label="Tutup">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -168,16 +204,7 @@
                 @endif
             </div>
 
-            <div>
-                <label for="salePrice" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Harga Jual (Rp)</label>
-                <input id="salePrice" type="number" name="price" min="0" step="1" required value="{{ old('price') }}" placeholder="0" class="{{ $inputCls }}">
-                <p class="text-xs text-slate-500 mt-1.5">Terisi otomatis dari harga akun, bisa diubah jika ada nego.</p>
-            </div>
-
-            <div>
-                <label for="saleNotes" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Catatan <span class="normal-case text-slate-600">(opsional)</span></label>
-                <textarea id="saleNotes" name="notes" rows="3" maxlength="1000" placeholder="Nama pembeli, metode bayar, dll." class="{{ $inputCls }} resize-none">{{ old('notes') }}</textarea>
-            </div>
+            @include('admin.sales._buyer-fields', ['sale' => null, 'defaultPrice' => 0, 'idPrefix' => 'sale'])
 
             <div class="flex gap-3 pt-2">
                 <button type="button" onclick="closeSaleModal()" class="flex-1 py-3 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 transition">Batal</button>
@@ -199,7 +226,7 @@
 
     document.getElementById('saleAccount').addEventListener('change', function () {
         const price = this.selectedOptions[0]?.dataset.price;
-        if (price !== undefined) document.getElementById('salePrice').value = price;
+        if (price !== undefined) document.getElementById('sale_price').value = price;
     });
 
     @if($errors->any())

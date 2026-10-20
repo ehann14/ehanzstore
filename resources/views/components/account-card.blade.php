@@ -1,4 +1,6 @@
 @php
+    $isSold = $account->sale_status === 'sold';
+    $warrantyLeft = $isSold ? $account->latestCompletedSale?->warrantyRemainingText() : null;
     $heroes = array_filter([
         'BK' => $account->barbarian_king_level,
         'AQ' => $account->archer_queen_level,
@@ -54,6 +56,18 @@
 
         <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent pointer-events-none"></div>
 
+        @if($isSold)
+            <div class="absolute inset-0 z-[5] bg-slate-950/60 flex flex-col items-center justify-center gap-3 pointer-events-none">
+                <span class="px-4 py-1.5 rounded-lg bg-red-600/90 text-white text-xs sm:text-sm font-bold tracking-widest uppercase -rotate-6 shadow-lg">Terjual</span>
+                @if($warrantyLeft)
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] sm:text-xs font-semibold backdrop-blur-sm">
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        Garansi {{ $warrantyLeft }}
+                    </span>
+                @endif
+            </div>
+        @endif
+
         <!-- Badge Town Hall -->
         <span class="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-electric text-white text-[10px] sm:text-[11px] font-bold rounded-md shadow-lg uppercase tracking-wide z-10">
             TH {{ $account->town_hall }}
@@ -95,7 +109,7 @@
                     Harga
                 </p>
 
-                <p class="text-sm sm:text-lg font-display font-bold text-white">
+                <p class="text-sm sm:text-lg font-display font-bold {{ $isSold ? 'text-slate-500 line-through' : 'text-white' }}">
                     Rp {{ number_format($account->price, 0, ',', '.') }}
                 </p>
             </div>

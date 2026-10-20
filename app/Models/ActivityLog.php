@@ -31,6 +31,8 @@ class ActivityLog extends Model
         'toggle_banner'  => ['label' => 'Tampil/sembunyi banner', 'tone' => 'amber'],
         'delete_banner'  => ['label' => 'Hapus banner',       'tone' => 'red'],
         'confirm_sale'   => ['label' => 'Konfirmasi penjualan', 'tone' => 'green'],
+        'sell_account'   => ['label' => 'Jual akun + data pembeli', 'tone' => 'green'],
+        'update_buyer'   => ['label' => 'Ubah data pembeli',  'tone' => 'blue'],
     ];
 
     public function user()

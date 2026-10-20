@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\VisitorEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 class DashboardController extends Controller
@@ -209,52 +210,35 @@ class DashboardController extends Controller
      */
     public function confirmSale(Request $request)
     {
-        $data = $request->validate([
-            'account_id' => 'required|exists:coc_accounts,id',
-            'price'      => 'required|numeric|min:0',
-            'notes'      => 'nullable|string|max:1000',
-        ]);
+        $data = $request->validate(
+            array_merge([
+                'account_id' => ['required', Rule::exists('coc_accounts', 'id')->whereNull('deleted_at')],
+            ], Sale::buyerRules()),
+            array_merge([
+                'account_id.required' => 'Pilih akun yang terjual.',
+                'account_id.exists'   => 'Akun tidak ditemukan.',
+            ], Sale::buyerMessages())
+        );
 
-        $result = DB::transaction(function () use ($data) {
-            $account = CocAccount::lockForUpdate()->findOrFail($data['account_id']);
+        // Transaksi + data pembeli + garansi 7 hari dibuat atomik; akun yang sama tidak bisa terjual dua kali.
+        $sale = Sale::completeSale((int) $data['account_id'], $data);
 
-            // Cegah akun yang sama terjual dua kali
-            if ($account->sale_status === 'sold') {
-                return false;
-            }
-
-            Sale::create([
-                'transaction_code'      => 'TRX-' . strtoupper(Str::random(8)),
-                'coc_account_id'        => $account->id,
-                'account_code_snapshot' => $account->account_code,
-                'sale_price'            => $data['price'],
-                'transaction_status'    => 'completed',
-                'payment_status'        => 'paid',
-                'processed_by'          => auth()->id(),
-                'sold_at'               => now(),
-                'notes'                 => $data['notes'] ?? null,
-            ]);
-
-            $account->update([
-                'sale_status'        => 'sold',
-                'publication_status' => 'draft',
-            ]);
-
-            return true;
-        });
-
-        if (!$result) {
+        if (! $sale) {
             return back()
                 ->withInput()
                 ->withErrors(['account_id' => 'Akun tersebut sudah berstatus terjual.']);
         }
 
-        $soldAccount = CocAccount::find($data['account_id']);
-        ActivityLog::record('confirm_sale', $soldAccount, 'Akun ' . $soldAccount?->account_code, [
-            'price' => $data['price'],
+        ActivityLog::record('confirm_sale', $sale->account, 'Akun ' . $sale->account_code_snapshot, [
+            'transaction' => $sale->transaction_code,
+            'buyer'       => $sale->buyer_name,
+            'price'       => $sale->sale_price,
         ]);
 
-        return back()->with('success', 'Penjualan berhasil dikonfirmasi dan stok telah diperbarui.');
+        return back()->with(
+            'success',
+            "Penjualan dikonfirmasi untuk {$sale->buyer_name}. Garansi aktif sampai {$sale->warrantyUntilLabel()}."
+        );
     }
 
     /**

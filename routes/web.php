@@ -40,6 +40,28 @@ Route::middleware(['auth', 'role:admin'])
             'updateStatus'
         ])->name('accounts.status');
 
+        // Form data pembeli saat akun terjual (garansi 7 hari)
+        Route::get('accounts/{account}/sell', [
+            AccountController::class,
+            'sell'
+        ])->name('accounts.sell');
+
+        Route::post('accounts/{account}/sell', [
+            AccountController::class,
+            'storeSale'
+        ])->name('accounts.sell.store');
+
+        // Lengkapi / ubah data pembeli pada transaksi yang sudah ada
+        Route::get('sales/{sale}/buyer', [
+            AccountController::class,
+            'buyer'
+        ])->name('sales.buyer');
+
+        Route::put('sales/{sale}/buyer', [
+            AccountController::class,
+            'updateBuyer'
+        ])->name('sales.buyer.update');
+
         Route::delete('accounts/{account}/images/{image}', [
             AccountController::class,
             'destroyImage'

@@ -65,7 +65,35 @@ class CocAccount extends Model
         return $this->hasMany(Sale::class);
     }
 
-    // Scope untuk publik
+    /** Transaksi selesai terakhir (berisi data pembeli & garansi). */
+    public function latestCompletedSale()
+    {
+        return $this->hasOne(Sale::class)
+            ->ofMany(['id' => 'max'], fn ($q) => $q->where('transaction_status', 'completed'));
+    }
+
+    /**
+     * Akun yang tampil di katalog publik:
+     *  - terbit dan masih tersedia, ATAU
+     *  - terbit, sudah terjual, dan masa garansi transaksinya belum berakhir.
+     * Setelah garansi berakhir akun otomatis hilang dari katalog (tanpa perlu cron).
+     */
+    public function scopeListed($query)
+    {
+        return $query->where('publication_status', 'published')
+            ->where(function ($q) {
+                $q->where('sale_status', 'available')
+                  ->orWhere(function ($sold) {
+                      $sold->where('sale_status', 'sold')
+                           ->whereHas('sales', function ($s) {
+                               $s->where('transaction_status', 'completed')
+                                 ->where('warranty_expires_at', '>', now());
+                           });
+                  });
+            });
+    }
+
+    // Scope untuk publik (hanya yang masih bisa dibeli)
     public function scopeAvailable($query)
     {
         return $query->where('publication_status', 'published')

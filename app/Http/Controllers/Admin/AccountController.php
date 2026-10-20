@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\CocAccount;
 use App\Models\CocAccountImage;
+use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,7 @@ class AccountController extends Controller
 
     public function index()
     {
-        $query = CocAccount::with('primaryImage')->orderByDesc('created_at');
+        $query = CocAccount::with(['primaryImage', 'latestCompletedSale'])->orderByDesc('created_at');
 
         // Admin biasa hanya melihat akun miliknya; super admin melihat semua.
         if (!Auth::user()->isSuperAdmin()) {
@@ -87,6 +88,13 @@ class AccountController extends Controller
             ]);
         }
 
+        // Status "terjual" tidak langsung disimpan: admin harus mengisi data pembeli dulu
+        // (untuk garansi 7 hari). Perubahan data lainnya tetap disimpan sekarang.
+        $goingToSold = ($validated['sale_status'] ?? null) === 'sold' && $account->sale_status !== 'sold';
+        if ($goingToSold) {
+            unset($validated['sale_status']);
+        }
+
         $account->update($validated);
 
         ActivityLog::record('update_account', $account, 'Akun ' . $account->account_code, [
@@ -94,6 +102,12 @@ class AccountController extends Controller
         ]);
 
         $this->storeImages($request, $account);
+
+        if ($goingToSold) {
+            return redirect()
+                ->route('admin.accounts.sell', $account)
+                ->with('success', 'Perubahan data tersimpan. Lengkapi data pembeli untuk menandai akun terjual.');
+        }
 
         return redirect()->route('admin.accounts.index')->with('success', 'Data akun diperbarui.');
     }
@@ -108,6 +122,13 @@ class AccountController extends Controller
             'sale_status'        => 'nullable|in:available,sold,archived',
         ]);
 
+        // Menandai terjual wajib lewat form data pembeli (garansi 7 hari).
+        if (($data['sale_status'] ?? null) === 'sold' && $account->sale_status !== 'sold') {
+            return redirect()
+                ->route('admin.accounts.sell', $account)
+                ->with('success', 'Isi data pembeli untuk menandai akun terjual.');
+        }
+
         $account->update(array_filter($data));
 
         ActivityLog::record('update_status', $account, 'Akun ' . $account->account_code, [
@@ -115,6 +136,80 @@ class AccountController extends Controller
         ]);
 
         return back()->with('success', 'Status akun diperbarui.');
+    }
+
+    /** Form data pembeli: dibuka saat akun akan ditandai terjual. */
+    public function sell(CocAccount $account)
+    {
+        $this->authorizeAccount($account);
+
+        // Sudah terjual: arahkan ke form data pembeli milik transaksinya.
+        if ($account->sale_status === 'sold') {
+            $sale = $account->sales()->where('transaction_status', 'completed')->latest('id')->first();
+
+            return $sale
+                ? redirect()->route('admin.sales.buyer', $sale)
+                : redirect()->route('admin.accounts.index')->with('error', 'Transaksi akun ini tidak ditemukan.');
+        }
+
+        $account->load('primaryImage');
+
+        return view('admin.accounts.sell', compact('account'));
+    }
+
+    /** Simpan data pembeli, catat transaksi, dan tandai akun terjual (garansi mulai dihitung). */
+    public function storeSale(Request $request, CocAccount $account)
+    {
+        $this->authorizeAccount($account);
+
+        $validated = $request->validate(Sale::buyerRules(), Sale::buyerMessages());
+
+        $sale = Sale::completeSale($account->id, $validated);
+
+        if (! $sale) {
+            return redirect()->route('admin.accounts.index')->with('error', 'Akun ini sudah berstatus terjual.');
+        }
+
+        ActivityLog::record('sell_account', $account, 'Akun ' . $account->account_code, [
+            'transaction' => $sale->transaction_code,
+            'buyer'       => $sale->buyer_name,
+            'price'       => $sale->sale_price,
+        ]);
+
+        return redirect()->route('admin.accounts.index')->with(
+            'success',
+            "Akun {$account->account_code} terjual ke {$sale->buyer_name}. Garansi aktif sampai {$sale->warrantyUntilLabel()}."
+        );
+    }
+
+    /** Form untuk melengkapi / mengubah data pembeli pada transaksi yang sudah ada. */
+    public function buyer(Sale $sale)
+    {
+        $this->authorizeSale($sale);
+
+        $account = $sale->account;
+        $account->load('primaryImage');
+
+        return view('admin.accounts.sell', compact('account', 'sale'));
+    }
+
+    public function updateBuyer(Request $request, Sale $sale)
+    {
+        $this->authorizeSale($sale);
+
+        $validated = $request->validate(Sale::buyerRules(), Sale::buyerMessages());
+
+        Sale::updateBuyer($sale, $validated);
+
+        ActivityLog::record('update_buyer', $sale->account, 'Akun ' . $sale->account_code_snapshot, [
+            'transaction' => $sale->transaction_code,
+            'buyer'       => $sale->buyer_name,
+        ]);
+
+        return redirect()->route('admin.accounts.index')->with(
+            'success',
+            "Data pembeli diperbarui. Garansi aktif sampai {$sale->warrantyUntilLabel()}."
+        );
     }
 
     public function destroyImage(CocAccount $account, CocAccountImage $image)
@@ -152,6 +247,20 @@ class AccountController extends Controller
     }
 
     // ------------------------------------------------------------------
+
+    /** Hanya transaksi selesai yang punya data pembeli/garansi; admin hanya boleh untuk akun miliknya. */
+    private function authorizeSale(Sale $sale): void
+    {
+        abort_if($sale->transaction_status !== 'completed', 404);
+
+        $user = Auth::user();
+
+        if (! $user->isSuperAdmin()
+            && $sale->account?->created_by !== $user->id
+            && $sale->processed_by !== $user->id) {
+            abort(403);
+        }
+    }
 
     private function authorizeAccount(CocAccount $account): void
     {

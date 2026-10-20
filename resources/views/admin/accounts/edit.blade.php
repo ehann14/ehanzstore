@@ -113,11 +113,16 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 mb-2">Status Penjualan</label>
-                    <select name="sale_status" class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition">
+                    <select name="sale_status" data-current="{{ $account->sale_status }}"
+                            onchange="document.getElementById('soldHint').classList.toggle('hidden', this.value !== 'sold' || this.dataset.current === 'sold')"
+                            class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition">
                         <option value="available" {{ old('sale_status', $account->sale_status) == 'available' ? 'selected' : '' }}>Tersedia</option>
                         <option value="sold" {{ old('sale_status', $account->sale_status) == 'sold' ? 'selected' : '' }}>Terjual</option>
                         <option value="archived" {{ old('sale_status', $account->sale_status) == 'archived' ? 'selected' : '' }}>Diarsipkan</option>
                     </select>
+                    <p id="soldHint" class="hidden text-[11px] text-amber-300 mt-1.5">
+                        Setelah disimpan, kamu akan diminta mengisi data pembeli untuk garansi {{ \App\Models\Sale::WARRANTY_DAYS }} hari.
+                    </p>
                 </div>
             </div>
         </div>

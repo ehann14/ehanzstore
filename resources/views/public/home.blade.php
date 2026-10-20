@@ -12,7 +12,7 @@
                 <div x-data="bannerSlider({{ $banners->count() }})"
                      @mouseenter="pause()" @mouseleave="play()"
                      @touchstart.passive="touchStart($event)" @touchend.passive="touchEnd($event)"
-                     class="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/40 w-full aspect-[16/9] md:aspect-[21/9] group cursor-grab active:cursor-grabbing">
+                     class="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/40 w-full aspect-[2/1] md:aspect-[8/3] group cursor-grab active:cursor-grabbing">
 
                     {{-- CONTAINER GAMBAR GESER --}}
                     <div class="flex h-full w-full transition-transform duration-500 ease-out will-change-transform"
@@ -24,12 +24,16 @@
                                 $attrs = $banner->link_url ? 'href="' . e($banner->link_url) . '" target="_blank" rel="noopener"' : '';
                             @endphp
                             
-                            <{{ $tag }} {!! $attrs !!} class="shrink-0 w-full h-full relative block {{ $banner->link_url ? 'cursor-pointer' : '' }}">
-                                <img src="{{ $banner->image_url }}" 
+                            <{{ $tag }} {!! $attrs !!} class="shrink-0 w-full h-full relative block overflow-hidden {{ $banner->link_url ? 'cursor-pointer' : '' }}">
+                                {{-- Latar blur: mengisi ruang kosong di HP supaya banner tampil utuh, tidak terpotong --}}
+                                <img src="{{ $banner->image_url }}" alt="" aria-hidden="true"
+                                     loading="{{ $i === 0 ? 'eager' : 'lazy' }}" draggable="false"
+                                     class="md:hidden absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-60 select-none pointer-events-none">
+                                <img src="{{ $banner->image_url }}"
                                      alt="{{ $banner->title }}"
                                      loading="{{ $i === 0 ? 'eager' : 'lazy' }}"
                                      draggable="false"
-                                     class="w-full h-full object-cover object-center select-none pointer-events-none">
+                                     class="relative z-[1] w-full h-full object-contain md:object-cover object-center select-none pointer-events-none">
                             </{{ $tag }}>
                         @endforeach
                     </div>
@@ -46,7 +50,7 @@
                         </button>
 
                         <!-- Indikator Dots -->
-                        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                        <div class="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
                             @foreach($banners as $i => $banner)
                                 <button @click.stop="go({{ $i }})" aria-label="Banner {{ $i + 1 }}"
                                         :class="current === {{ $i }} ? 'w-8 bg-electric' : 'w-2 bg-white/30 hover:bg-white/60'"
@@ -74,7 +78,7 @@
             @endif
 
             {{-- Jaminan singkat (Trust Badges) --}}
-            <div class="flex md:grid md:grid-cols-4 gap-3 mt-4 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0 pb-2 no-scrollbar">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mt-3 sm:mt-4">
                 @php
                     $perks = [
                         ['t' => 'Garansi 7 Hari',     'd' => 'Perlindungan setelah beli'],
@@ -84,13 +88,13 @@
                     ];
                 @endphp
                 @foreach($perks as $p)
-                    <div class="snap-center shrink-0 w-[240px] md:w-auto flex items-center gap-3 rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 hover:bg-white/[0.06] transition-colors">
-                        <span class="w-9 h-9 shrink-0 rounded-lg bg-electric/10 text-electric flex items-center justify-center">
+                    <div class="flex items-center gap-2.5 sm:gap-3 rounded-xl bg-white/[0.03] border border-white/5 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-white/[0.06] transition-colors">
+                        <span class="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg bg-electric/10 text-electric flex items-center justify-center">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                         </span>
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-white leading-tight">{{ $p['t'] }}</p>
-                            <p class="text-[11px] text-slate-500 truncate">{{ $p['d'] }}</p>
+                            <p class="text-[13px] sm:text-sm font-semibold text-white leading-tight">{{ $p['t'] }}</p>
+                            <p class="text-[10px] sm:text-[11px] text-slate-500 leading-snug mt-0.5 sm:truncate">{{ $p['d'] }}</p>
                         </div>
                     </div>
                 @endforeach

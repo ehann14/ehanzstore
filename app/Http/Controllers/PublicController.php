@@ -16,8 +16,10 @@ class PublicController extends Controller
     {
         $banners = Banner::active()->get();
 
-        $featuredAccounts = CocAccount::available()
-            ->with('primaryImage')
+        // Akun terjual (masih bergaransi) tetap tampil, tapi di urutan setelah yang tersedia
+        $featuredAccounts = CocAccount::listed()
+            ->with(['primaryImage', 'latestCompletedSale'])
+            ->orderByRaw("sale_status = 'available' desc")
             ->orderBy('created_at', 'desc')
             ->take(8)
             ->get();
@@ -44,7 +46,10 @@ class PublicController extends Controller
      */
     public function catalog(Request $request)
     {
-        $query = CocAccount::available()->with('primaryImage');
+        // Akun tersedia + akun terjual yang garansinya masih aktif (tersedia diurutkan lebih dulu)
+        $query = CocAccount::listed()
+            ->with(['primaryImage', 'latestCompletedSale'])
+            ->orderByRaw("sale_status = 'available' desc");
 
         // Pencarian berdasarkan nama atau kode akun
         if ($request->filled('search')) {
@@ -86,8 +91,8 @@ class PublicController extends Controller
      */
     public function detail($account_code)
     {
-        $account = CocAccount::available()
-            ->with('primaryImage')
+        $account = CocAccount::listed()
+            ->with(['primaryImage', 'latestCompletedSale'])
             ->where('account_code', $account_code)
             ->firstOrFail();
 

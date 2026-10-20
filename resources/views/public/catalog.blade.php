@@ -4,16 +4,16 @@
 
 @section('content')
     <!-- Hero Catalog -->
-    <section class="relative pt-40 pb-16 overflow-hidden">
+    <section class="relative pt-28 sm:pt-40 pb-8 sm:pb-16 overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-b from-royal/10 to-transparent pointer-events-none"></div>
         <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
-            <h1 class="font-display text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight">
+            <h1 class="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight">
                 Gudang Akun
             </h1>
     </section>
 
     <!-- Floating Filter Bar -->
-    <div class="sticky top-24 z-30 px-4 mb-12">
+    <div class="md:sticky md:top-24 z-30 px-4 mb-8 md:mb-12">
         <div class="max-w-5xl mx-auto glass-strong rounded-2xl p-2 flex flex-col md:flex-row items-center gap-2 shadow-2xl shadow-black/50 border border-white/10">
             
             <!-- Search Input -->
@@ -73,7 +73,7 @@
         </div>
 
         @if($accounts->count() > 0)
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                 @foreach($accounts as $account)
                     @include('components.account-card', ['account' => $account])
                 @endforeach
@@ -83,7 +83,7 @@
                 {{ $accounts->onEachSide(1)->links('vendor.pagination.tailwind') }}
             </div>
         @else
-            <div class="glass rounded-3xl p-20 text-center border border-white/5">
+            <div class="glass rounded-3xl p-8 sm:p-20 text-center border border-white/5">
                 <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
                     <svg class="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>

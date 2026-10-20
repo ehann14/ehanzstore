@@ -73,11 +73,18 @@
                                     {{ $published ? 'Terbit' : 'Draft' }}
                                 </span>
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $saleBadge[1] }}">{{ $saleBadge[0] }}</span>
+                                @if($account->sale_status === 'sold' && $account->latestCompletedSale)
+                                    @php [$wText, $wCls] = $account->latestCompletedSale->warrantyBadge(); @endphp
+                                    <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
+                                    @if($account->latestCompletedSale->hasBuyerData())
+                                        <span class="text-[11px] text-slate-500 self-center">Pembeli: {{ $account->latestCompletedSale->buyer_name }}</span>
+                                    @endif
+                                @endif
                             </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-3 sm:flex gap-2 sm:shrink-0">
+                    <div class="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">
                         <form action="{{ route('admin.accounts.status', $account) }}" method="POST">
                             @csrf
                             <input type="hidden" name="publication_status" value="{{ $published ? 'draft' : 'published' }}">
@@ -85,6 +92,15 @@
                                 {{ $published ? 'Sembunyikan' : 'Terbitkan' }}
                             </button>
                         </form>
+                        @if($account->sale_status === 'sold')
+                            @if($account->latestCompletedSale)
+                                <a href="{{ route('admin.sales.buyer', $account->latestCompletedSale) }}"
+                                   class="text-center px-3 py-2 rounded-lg border border-emerald-500/30 text-xs sm:text-sm text-emerald-300 hover:bg-emerald-500/10 transition whitespace-nowrap">Data Pembeli</a>
+                            @endif
+                        @elseif($account->sale_status === 'available')
+                            <a href="{{ route('admin.accounts.sell', $account) }}"
+                               class="text-center px-3 py-2 rounded-lg border border-emerald-500/30 text-xs sm:text-sm text-emerald-300 hover:bg-emerald-500/10 transition whitespace-nowrap">Tandai Terjual</a>
+                        @endif
                         <a href="{{ route('admin.accounts.edit', $account) }}"
                            class="text-center px-3 py-2 rounded-lg border border-white/10 text-xs sm:text-sm text-slate-300 hover:bg-white/5 transition">Edit</a>
                         <form action="{{ route('admin.accounts.destroy', $account) }}" method="POST"
