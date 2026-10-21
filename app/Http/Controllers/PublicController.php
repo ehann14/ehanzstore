@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Banner;
 use App\Models\CocAccount;
+use App\Models\Review;
 use App\Models\VisitorEvent;
 use App\Support\Uploads;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class PublicController extends Controller
 
         // Akun terjual (masih bergaransi) tetap tampil, tapi di urutan setelah yang tersedia
         $featuredAccounts = CocAccount::listed()
-            ->with(['primaryImage', 'latestCompletedSale'])
+            ->with(['primaryImage', 'latestCompletedSale.approvedReview'])
             ->orderByRaw("sale_status = 'available' desc")
             ->orderBy('created_at', 'desc')
             ->take(8)
@@ -35,11 +36,24 @@ class PublicController extends Controller
 
         $totalAvailable = CocAccount::available()->count();
 
+        // Testimoni permanen: diambil langsung dari tabel reviews (status disetujui),
+        // tidak bergantung pada akun yang sudah hilang dari katalog setelah garansi berakhir.
+        $testimonials = Review::approved()
+            ->with('account')
+            ->latest('id')
+            ->take(12)
+            ->get();
+
+        // Rating rata-rata + jumlah akun terjual (dari tabel reviews dan sales)
+        $stats = Review::publicStats();
+
         return view('public.home', compact(
             'banners',
             'featuredAccounts',
             'townHalls',
-            'totalAvailable'
+            'totalAvailable',
+            'testimonials',
+            'stats'
         ));
     }
 
@@ -50,7 +64,7 @@ class PublicController extends Controller
     {
         // Akun tersedia + akun terjual yang garansinya masih aktif (tersedia diurutkan lebih dulu)
         $query = CocAccount::listed()
-            ->with(['primaryImage', 'latestCompletedSale'])
+            ->with(['primaryImage', 'latestCompletedSale.approvedReview'])
             ->orderByRaw("sale_status = 'available' desc");
 
         // Pencarian berdasarkan nama atau kode akun
@@ -185,7 +199,7 @@ class PublicController extends Controller
     public function detail($account_code)
     {
         $account = CocAccount::listed()
-            ->with(['primaryImage', 'latestCompletedSale'])
+            ->with(['primaryImage', 'latestCompletedSale.approvedReview'])
             ->where('account_code', $account_code)
             ->firstOrFail();
 

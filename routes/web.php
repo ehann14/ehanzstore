@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\SuperAdmin\ReviewModerationController;
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboard;
@@ -14,6 +16,12 @@ Route::get('/akun/{account_code}', [PublicController::class, 'detail'])->name('a
 Route::post('/track/event', [PublicController::class, 'trackEvent'])->name('track.event');
 Route::get('/cara-membeli', [PublicController::class, 'howToBuy'])->name('how.to.buy');
 Route::get('/garansi', [PublicController::class, 'warranty'])->name('warranty');
+
+// Form ulasan pembeli (diakses lewat link pribadi dari admin)
+Route::get('/ulasan/{token}', [ReviewController::class, 'show'])->name('review.form');
+Route::post('/ulasan/{token}', [ReviewController::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('review.store');
 
 // Upload fallback: digunakan jika Apache tidak menemukan file fisiknya
 Route::get('/uploads/{path}', [PublicController::class, 'upload'])
@@ -102,6 +110,12 @@ Route::middleware(['auth', 'role:super_admin'])
             SuperAdminDashboard::class,
             'confirmSale'
         ])->name('sales.confirm');
+
+        // Moderasi ulasan pembeli
+        Route::get('/reviews', [ReviewModerationController::class, 'index'])->name('reviews');
+        Route::post('/reviews/{review}/approve', [ReviewModerationController::class, 'approve'])->name('reviews.approve');
+        Route::post('/reviews/{review}/reject', [ReviewModerationController::class, 'reject'])->name('reviews.reject');
+        Route::delete('/reviews/{review}', [ReviewModerationController::class, 'destroy'])->name('reviews.destroy');
 
         // Tambahkan route CRUD admin dan settings di sini nanti
     });

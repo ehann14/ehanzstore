@@ -1,6 +1,6 @@
 @php
     $existing = $account ? $account->images : collect();
-    $maxPhotos = 8;
+    $maxPhotos = 10;
 @endphp
 
 <div class="space-y-4" id="photoSection" data-max="{{ $maxPhotos }}" data-existing="{{ $existing->count() }}">

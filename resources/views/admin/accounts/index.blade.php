@@ -96,6 +96,13 @@
                             @if($account->latestCompletedSale)
                                 <a href="{{ route('admin.sales.buyer', $account->latestCompletedSale) }}"
                                    class="text-center px-3 py-2 rounded-lg border border-emerald-500/30 text-xs sm:text-sm text-emerald-300 hover:bg-emerald-500/10 transition whitespace-nowrap">Data Pembeli</a>
+                                @if($account->latestCompletedSale->reviewUrl())
+                                    <button type="button" data-copy="{{ $account->latestCompletedSale->reviewUrl() }}"
+                                            onclick="copyReviewLink(this)"
+                                            class="text-center px-3 py-2 rounded-lg border border-amber-500/30 text-xs sm:text-sm text-amber-300 hover:bg-amber-500/10 transition whitespace-nowrap">
+                                        {{ $account->latestCompletedSale->review ? 'Ulasan: sudah isi' : 'Salin Link Ulasan' }}
+                                    </button>
+                                @endif
                             @endif
                         @elseif($account->sale_status === 'available')
                             <a href="{{ route('admin.accounts.sell', $account) }}"
@@ -117,3 +124,23 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function copyReviewLink(btn) {
+        const url = btn.dataset.copy;
+        const done = () => {
+            const old = btn.textContent;
+            btn.textContent = 'Link tersalin!';
+            setTimeout(() => btn.textContent = old, 1800);
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(done);
+        } else {
+            const t = document.createElement('textarea');
+            t.value = url; document.body.appendChild(t); t.select();
+            document.execCommand('copy'); t.remove(); done();
+        }
+    }
+</script>
+@endpush

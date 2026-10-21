@@ -2,6 +2,7 @@
     $isSold = $account->sale_status === 'sold';
     $warrantySale = $isSold ? $account->latestCompletedSale : null;
     $warrantyLeft = $warrantySale?->warrantyRemainingText();
+    $review = $isSold ? $warrantySale?->approvedReview : null;
     $isClan = $account->isClan();
     $heroes = $isClan ? array_filter([
         'Lv'     => $account->clan_level,
@@ -84,8 +85,9 @@
 
         <!-- Badge Email Bisa Ganti -->
         @if(!$isClan && $account->email_change_status === 'Changeable')
-            <span class="hidden sm:block absolute top-3 right-3 px-2 py-1 bg-emerald-500/90 text-white text-[10px] font-semibold rounded-md z-10">
-                Email Bisa Ganti
+            @php $emailDays = $account->emailChangeDaysLeft(); @endphp
+            <span class="hidden sm:block absolute top-3 right-3 px-2 py-1 {{ $emailDays ? 'bg-amber-500/90' : 'bg-emerald-500/90' }} text-white text-[10px] font-semibold rounded-md z-10">
+                {{ $emailDays ? "Email bisa ganti {$emailDays} hari lagi" : 'Email Bisa Ganti' }}
             </span>
         @endif
     </div>
@@ -128,6 +130,15 @@
             </span>
         </div>
     </div>
+
+    <!-- Ulasan pembeli (hanya akun terjual yang ulasannya sudah disetujui) -->
+    @if($review)
+        <div class="mx-3 sm:mx-4 mb-3 sm:mb-4 rounded-xl bg-white/[0.04] border border-white/5 p-2.5 sm:p-3">
+            <x-stars :rating="$review->rating" size="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <p class="text-[11px] sm:text-xs text-slate-300 mt-1.5 line-clamp-3">&ldquo;{{ $review->comment }}&rdquo;</p>
+            <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1.5">&mdash; {{ $review->reviewer_name }}, pembeli</p>
+        </div>
+    @endif
 
     <!-- Garis Aksen -->
     <div class="h-1 bg-electric/70 group-hover:bg-electric transition"></div>

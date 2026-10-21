@@ -23,6 +23,7 @@
         }
     </script>
     <style type="text/tailwindcss">
+        html, body { max-width: 100%; overflow-x: clip; }
         body { background-color: #020617; color: #e2e8f0; }
         .glass { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
         .glass-strong { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.08); }
@@ -37,7 +38,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
     </style>
 </head>
-<body class="antialiased min-h-screen flex selection:bg-electric selection:text-white">
+<body class="antialiased min-h-screen selection:bg-electric selection:text-white">
 
     @php
         $user    = auth()->user();
@@ -60,6 +61,8 @@
                  'icon' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'],
                 ['href' => route('super-admin.sales'), 'label' => 'Transaksi', 'active' => request()->routeIs('super-admin.sales'),
                  'icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+                ['href' => route('super-admin.reviews'), 'label' => 'Ulasan Pembeli', 'active' => request()->routeIs('super-admin.reviews*'),
+                 'icon' => 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'],
                 ['href' => route('super-admin.admins'), 'label' => 'Manajemen Admin', 'active' => request()->routeIs('super-admin.admins'),
                  'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'],
                 ['href' => route('super-admin.activity-logs'), 'label' => 'Riwayat Aktivitas', 'active' => request()->routeIs('super-admin.activity-logs'),
@@ -70,8 +73,8 @@
         $flatNav = collect($sections)->flatten(1);
     @endphp
 
-    <!-- Sidebar (desktop) -->
-    <aside class="w-72 fixed h-full glass-strong border-r border-white/5 hidden lg:flex flex-col z-40">
+    <!-- Sidebar (desktop) : fixed di kiri -->
+    <aside class="hidden lg:flex flex-col fixed inset-y-0 left-0 w-72 glass-strong border-r border-white/5 z-40">
         <div class="p-6 flex items-center gap-3 border-b border-white/5">
             <div class="relative w-11 h-11 shrink-0 flex items-center justify-center bg-white rounded-xl overflow-hidden shadow-lg shadow-electric/20">
                 <img src="{{ asset('images/logo.png') }}" class="w-10 h-10 object-contain" alt="EHANZSTORE"
@@ -84,7 +87,7 @@
             </div>
         </div>
 
-        <nav class="flex-1 p-4 overflow-y-auto custom-scrollbar">
+        <nav class="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar">
             @foreach($sections as $title => $items)
                 <p class="px-4 mt-4 first:mt-0 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-600">{{ $title }}</p>
                 <div class="space-y-1">
@@ -104,7 +107,7 @@
             </a>
         </nav>
 
-        <div class="p-4 border-t border-white/5 space-y-3">
+        <div class="p-4 border-t border-white/5 space-y-3 shrink-0">
             <!-- Jam realtime (WIB) -->
             <div class="px-4 py-3 rounded-xl bg-electric/10 border border-electric/20 text-center">
                 <p class="font-mono text-xl font-bold text-white tracking-wider leading-none" data-live-clock="time">{{ now()->timezone('Asia/Jakarta')->format('H:i:s') }}</p>
@@ -127,48 +130,50 @@
         </div>
     </aside>
 
-    <!-- Konten -->
-    <main class="flex-1 lg:ml-72 min-h-screen p-4 lg:p-8 relative min-w-0">
-        <!-- Header mobile -->
-        <div class="lg:hidden mb-6 sticky top-3 z-30">
-            <div class="flex justify-between items-center glass-strong p-4 rounded-2xl">
-                <span class="font-display font-bold text-white">EHANZ {{ $isSuper ? 'SUPER ADMIN' : 'ADMIN' }}</span>
-                <span class="ml-auto mr-3 font-mono text-xs text-electric" data-live-clock="time">{{ now()->timezone('Asia/Jakarta')->format('H:i:s') }}</span>
-                <button onclick="document.getElementById('mobileMenu').classList.toggle('hidden')" class="text-white" aria-label="Menu">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                </button>
+    <!-- Konten: diberi padding kiri selebar sidebar di desktop -->
+    <main class="min-w-0 w-full lg:pl-72 relative">
+        <div class="p-4 sm:p-6 lg:px-10 lg:py-8">
+            <!-- Header mobile -->
+            <div class="lg:hidden mb-6 sticky top-3 z-30">
+                <div class="flex justify-between items-center glass-strong p-4 rounded-2xl">
+                    <span class="font-display font-bold text-white">EHANZ {{ $isSuper ? 'SUPER ADMIN' : 'ADMIN' }}</span>
+                    <span class="ml-auto mr-3 font-mono text-xs text-electric" data-live-clock="time">{{ now()->timezone('Asia/Jakarta')->format('H:i:s') }}</span>
+                    <button onclick="document.getElementById('mobileMenu').classList.toggle('hidden')" class="text-white" aria-label="Menu">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                </div>
+                <div id="mobileMenu" class="hidden glass-strong mt-2 p-3 rounded-2xl space-y-1 max-h-[70vh] overflow-y-auto">
+                    @foreach($flatNav as $item)
+                        <a href="{{ $item['href'] }}" class="sidebar-link {{ $item['active'] ? 'active' : '' }}">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/></svg>
+                            {{ $item['label'] }}
+                        </a>
+                    @endforeach
+                    <a href="{{ route('home') }}" target="_blank" rel="noopener" class="sidebar-link">Lihat Website</a>
+                    <button onclick="openLogout()" class="w-full text-left px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10">Keluar Sistem</button>
+                </div>
             </div>
-            <div id="mobileMenu" class="hidden glass-strong mt-2 p-3 rounded-2xl space-y-1 max-h-[70vh] overflow-y-auto">
-                @foreach($flatNav as $item)
-                    <a href="{{ $item['href'] }}" class="sidebar-link {{ $item['active'] ? 'active' : '' }}">
-                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/></svg>
-                        {{ $item['label'] }}
-                    </a>
-                @endforeach
-                <a href="{{ route('home') }}" target="_blank" rel="noopener" class="sidebar-link">Lihat Website</a>
-                <button onclick="openLogout()" class="w-full text-left px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10">Keluar Sistem</button>
-            </div>
+
+            @if(session('success'))
+                <div class="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-300 text-sm flex items-center gap-3">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm flex items-center gap-3">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            @yield('content')
         </div>
-
-        @if(session('success'))
-            <div class="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-300 text-sm flex items-center gap-3">
-                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm flex items-center gap-3">
-                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                {{ session('error') }}
-            </div>
-        @endif
-
-        @yield('content')
     </main>
 
     <!-- Modal keluar -->
-    <div id="logoutModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div id="logoutModal" class="hidden fixed inset-0 z-[100] items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
         <div class="glass-strong w-full max-w-md rounded-3xl p-8 border border-white/10 shadow-2xl">
             <div class="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mb-4 text-red-400">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -183,8 +188,8 @@
     </div>
 
     <script>
-        function openLogout()  { document.getElementById('logoutModal').classList.remove('hidden'); }
-        function closeLogout() { document.getElementById('logoutModal').classList.add('hidden'); }
+        function openLogout()  { var m = document.getElementById('logoutModal'); m.classList.remove('hidden'); m.classList.add('flex'); }
+        function closeLogout() { var m = document.getElementById('logoutModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
         document.getElementById('logoutModal').addEventListener('click', function (e) { if (e.target === this) closeLogout(); });
         document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLogout(); });
     </script>

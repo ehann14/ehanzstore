@@ -145,7 +145,7 @@ class DashboardController extends Controller
      */
     public function sales()
     {
-        $sales = Sale::with(['account', 'processor'])
+        $sales = Sale::with(['account', 'processor', 'review'])
             ->latest()
             ->paginate(15);
 

@@ -15,11 +15,11 @@ use App\Support\Watermark;
 
 class AccountController extends Controller
 {
-    private const MAX_IMAGES = 8;
+    private const MAX_IMAGES = 10;
 
     public function index()
     {
-        $query = CocAccount::with(['primaryImage', 'latestCompletedSale'])->orderByDesc('created_at');
+        $query = CocAccount::with(['primaryImage', 'latestCompletedSale.review'])->orderByDesc('created_at');
 
         // Admin biasa hanya melihat akun miliknya; super admin melihat semua.
         if (!Auth::user()->isSuperAdmin()) {
@@ -51,6 +51,7 @@ class AccountController extends Controller
         $validated['listing_type']        = $type;
         $validated['protection_status']   ??= 'Unprotected';
         $validated['email_change_status'] ??= 'Unchangeable';
+        $this->applyEmailDelay($validated);
 
         // Clan tidak punya Town Hall (kolom database wajib diisi, jadi 0)
         if ($type === 'clan') {
@@ -110,6 +111,8 @@ class AccountController extends Controller
         if ($goingToSold) {
             unset($validated['sale_status']);
         }
+
+        $this->applyEmailDelay($validated, $account);
 
         $account->update($validated);
 
@@ -336,7 +339,38 @@ class AccountController extends Controller
             'dragon_duke_level'    => 'nullable|integer|min:0|max:100',
             'protection_status'    => 'nullable|in:Protected,Unprotected',
             'email_change_status'  => 'nullable|in:Changeable,Unchangeable',
+            'email_change_days'    => 'nullable|integer|min:0|max:365',
         ];
+    }
+
+    /**
+     * Ubah input "email bisa diganti dalam N hari" menjadi tanggal email_change_available_at.
+     * - Hanya berlaku bila status email = Bisa Ganti; selain itu tanggal dikosongkan.
+     * - Kosong / 0 = email sudah bisa diganti sekarang.
+     * - Saat edit, jika angka hari sama dengan sisa hari saat ini, tanggal lama dipertahankan
+     *   (supaya menyimpan form tanpa mengubah angka tidak mengulang hitungan dari awal).
+     */
+    private function applyEmailDelay(array &$validated, ?CocAccount $account = null): void
+    {
+        $days = $validated['email_change_days'] ?? null;
+        unset($validated['email_change_days']);
+
+        // Clan tidak punya status email, jadi tidak disentuh
+        if (! array_key_exists('email_change_status', $validated)) {
+            return;
+        }
+
+        if ($validated['email_change_status'] !== 'Changeable' || ! $days) {
+            $validated['email_change_available_at'] = null;
+
+            return;
+        }
+
+        if ($account && $account->emailChangeDaysLeft() === (int) $days) {
+            return; // tidak berubah
+        }
+
+        $validated['email_change_available_at'] = now()->addDays((int) $days);
     }
 
     private function messages(): array
@@ -351,6 +385,8 @@ class AccountController extends Controller
             'account_code.regex'    => 'Kode akun hanya boleh huruf, angka, minus (-) dan underscore (_), tanpa spasi.',
             'account_code.unique'   => 'Kode akun sudah dipakai, gunakan kode lain.',
             'account_code.max'      => 'Kode akun maksimal 30 karakter.',
+            'email_change_days.integer' => 'Jumlah hari harus berupa angka bulat.',
+            'email_change_days.max'     => 'Jumlah hari maksimal 365.',
             'price.max'         => 'Harga terlalu besar (maksimal Rp 999.999.999).',
         ];
     }

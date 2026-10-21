@@ -15,12 +15,13 @@ class CocAccount extends Model
         'grand_warden_level', 'royal_champion_level', 'dragon_duke_level',
         'builder_count', 'gems', 'cn_information',
         'listing_type', 'clan_level', 'capital_hall_level', 'clan_members', 'clan_league',
-        'protection_status', 'email_change_status', 'price', 'description',
+        'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'description',
         'publication_status', 'sale_status', 'created_by'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'email_change_available_at' => 'datetime',
     ];
 
     /** Liga Clan War League dari yang terendah ke tertinggi (urutan dipakai untuk filter "liga minimum"). */
@@ -75,6 +76,36 @@ class CocAccount extends Model
                     ]);
             }
         });
+    }
+
+    /**
+     * Sisa hari sampai email akun bisa diganti (dibulatkan ke atas).
+     * Null jika email sudah bisa diganti sekarang, tidak bisa diganti, atau ini clan.
+     * Otomatis kembali null saat tanggalnya lewat, tanpa perlu cron.
+     */
+    public function emailChangeDaysLeft(): ?int
+    {
+        if ($this->isClan()
+            || $this->email_change_status !== 'Changeable'
+            || ! $this->email_change_available_at) {
+            return null;
+        }
+
+        $seconds = $this->email_change_available_at->getTimestamp() - now()->getTimestamp();
+
+        return $seconds > 0 ? (int) ceil($seconds / 86400) : null;
+    }
+
+    /** Teks status email untuk publik: "Bisa Ganti", "Bisa Ganti dalam 5 hari", "Tidak Bisa Ganti". */
+    public function emailStatusLabel(): string
+    {
+        if ($this->email_change_status !== 'Changeable') {
+            return 'Tidak Bisa Ganti';
+        }
+
+        $days = $this->emailChangeDaysLeft();
+
+        return $days ? "Bisa Ganti dalam {$days} hari" : 'Bisa Ganti';
     }
 
     public function images()

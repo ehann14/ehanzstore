@@ -145,6 +145,14 @@
                     @if($warrantyLeft)
                         <p class="text-center text-xs text-emerald-300">Garansi pembeli: <span {!! $warrantySale->countdownAttrs('aktif · sisa ', 'sudah berakhir') !!}>aktif &middot; {{ $warrantyLeft }}</span></p>
                     @endif
+                    @if($warrantySale?->approvedReview)
+                        @php $rv = $warrantySale->approvedReview; @endphp
+                        <div class="rounded-xl bg-white/[0.04] border border-white/5 p-4">
+                            <x-stars :rating="$rv->rating" />
+                            <p class="text-sm text-slate-300 mt-2 whitespace-pre-line">&ldquo;{{ $rv->comment }}&rdquo;</p>
+                            <p class="text-xs text-slate-500 mt-2">&mdash; {{ $rv->reviewer_name }}, pembeli</p>
+                        </div>
+                    @endif
                     <a href="{{ route('catalog') }}" class="block text-center text-sm text-electric hover:text-white transition">
                         Lihat {{ $noun }} lain yang tersedia
                     </a>
@@ -310,8 +318,8 @@
                             Status Email/Gmail
                         </span>
 
-                        <span class="text-sm font-bold {{ $account->email_change_status === 'Changeable' ? 'text-green-400' : 'text-yellow-400' }}">
-                            {{ $account->email_change_status === 'Changeable' ? 'Bisa Ganti' : 'Tidak Bisa Ganti' }}
+                        <span class="text-sm font-bold {{ $account->email_change_status === 'Changeable' ? ($account->emailChangeDaysLeft() ? 'text-amber-400' : 'text-green-400') : 'text-yellow-400' }}">
+                            {{ $account->emailStatusLabel() }}
                         </span>
                     </div>
                 </div>

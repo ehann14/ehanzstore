@@ -99,6 +99,18 @@
                     </div>
                 @endforeach
             </div>
+
+            {{-- Bukti sosial: rating rata-rata + jumlah akun terjual (dari tabel reviews & sales) --}}
+            @if($stats['sold_count'] > 0)
+                <div class="mt-3 sm:mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 text-sm">
+                    @if($stats['average'] !== null)
+                        <x-stars :rating="round($stats['average'])" size="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span class="font-semibold text-white">{{ number_format($stats['average'], 1, ',', '.') }} <span class="font-normal text-slate-400">dari 5</span></span>
+                        <span class="text-slate-600" aria-hidden="true">&middot;</span>
+                    @endif
+                    <span class="font-semibold text-white">{{ number_format($stats['sold_count'], 0, ',', '.') }} <span class="font-normal text-slate-400">akun terjual</span></span>
+                </div>
+            @endif
         </div>
     </section>
 
@@ -149,6 +161,59 @@
             </div>
         @endif
     </section>
+
+    {{-- ===================== TESTIMONI PEMBELI (PERMANEN) ===================== --}}
+    @if($testimonials->count())
+        <section id="testimoni" class="max-w-7xl mx-auto px-4 pb-16 sm:pb-20">
+            <div class="mb-5 sm:mb-6">
+                <h2 class="font-display text-xl sm:text-3xl font-bold text-white flex items-center gap-2">
+                    <span class="w-1.5 h-6 sm:h-7 rounded-full bg-electric"></span>
+                    TESTIMONI PEMBELI
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">
+                    @if($stats['average'] !== null)
+                        Rating {{ number_format($stats['average'], 1, ',', '.') }} dari 5 &middot;
+                    @endif
+                    {{ number_format($stats['sold_count'], 0, ',', '.') }} akun terjual. Ulasan asli dari pembeli kami.
+                </p>
+            </div>
+
+            <div x-data="{ all: false }">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+                    @foreach($testimonials as $i => $review)
+                        <figure @if($i >= 6) x-show="all" style="display: none;" @endif
+                                class="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5 hover:bg-white/[0.06] transition-colors">
+                            <x-stars :rating="$review->rating" />
+                            <blockquote class="mt-3 text-sm text-slate-300 leading-relaxed flex-1 break-words">
+                                &ldquo;{{ $review->comment }}&rdquo;
+                            </blockquote>
+                            <figcaption class="mt-4 flex items-center gap-3 pt-4 border-t border-white/5">
+                                <span class="w-9 h-9 shrink-0 rounded-full bg-electric/15 text-electric flex items-center justify-center text-sm font-bold uppercase">
+                                    {{ mb_substr($review->reviewer_name, 0, 1) }}
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-white truncate">{{ $review->reviewer_name }}</p>
+                                    <p class="text-[11px] text-slate-500 truncate">
+                                        Pembeli terverifikasi
+                                        @if($review->account) &middot; {{ $review->account->name }} @endif
+                                    </p>
+                                </div>
+                            </figcaption>
+                        </figure>
+                    @endforeach
+                </div>
+
+                @if($testimonials->count() > 6)
+                    <div class="mt-8 text-center">
+                        <button type="button" @click="all = !all"
+                                class="inline-flex items-center gap-2 px-7 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-sm font-semibold transition">
+                            <span x-text="all ? 'Tampilkan lebih sedikit' : 'Lihat testimoni lainnya'"></span>
+                        </button>
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
 
     {{-- ===================== CTA ===================== --}}
     <section class="max-w-7xl mx-auto px-4 pb-16 sm:pb-20">

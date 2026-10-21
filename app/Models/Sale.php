@@ -27,7 +27,7 @@ class Sale extends Model
         'transaction_code', 'coc_account_id', 'account_code_snapshot',
         'buyer_name', 'buyer_phone',
         'sale_price', 'transaction_status', 'payment_status', 'payment_method',
-        'processed_by', 'sold_at', 'handover_at', 'warranty_expires_at', 'notes',
+        'processed_by', 'sold_at', 'handover_at', 'warranty_expires_at', 'notes', 'review_token',
     ];
 
     protected $casts = [
@@ -46,6 +46,33 @@ class Sale extends Model
     public function processor()
     {
         return $this->belongsTo(User::class, 'processed_by');
+    }
+
+    protected static function booted(): void
+    {
+        // Setiap transaksi baru otomatis punya token untuk link form ulasan pembeli.
+        static::creating(function (Sale $sale) {
+            if (empty($sale->review_token)) {
+                $sale->review_token = Str::random(40);
+            }
+        });
+    }
+
+    public function review()
+    {
+        return $this->hasOne(Review::class);
+    }
+
+    /** Ulasan yang sudah disetujui super admin (tampil di publik). */
+    public function approvedReview()
+    {
+        return $this->hasOne(Review::class)->where('status', 'approved');
+    }
+
+    /** Link form ulasan yang dikirim admin ke pembeli. Null bila belum ada token. */
+    public function reviewUrl(): ?string
+    {
+        return $this->review_token ? route('review.form', $this->review_token) : null;
     }
 
     /**
