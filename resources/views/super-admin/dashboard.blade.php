@@ -34,6 +34,12 @@
             'sub'   => $rupiah($totalRevenue) . ' total',
             'icon'  => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
         ],
+        [
+            'label' => 'Laba Bulan Ini',
+            'value' => ($monthProfit < 0 ? '-' : '') . $rupiah(abs($monthProfit)),
+            'sub'   => ($totalProfit < 0 ? '-' : '') . $rupiah(abs($totalProfit)) . ' total (harga jual - modal)',
+            'icon'  => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
+        ],
     ];
 
     $statusBadge = [
@@ -72,7 +78,7 @@
 
     <!-- Statistik -->
     <div data-live="cards">
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
         @foreach($cards as $card)
             <div class="glass-panel rounded-2xl p-5 hover:bg-white/5 transition group">
                 <div class="flex items-start justify-between mb-4">
@@ -213,12 +219,14 @@
             <div class="text-center py-10 text-slate-500 text-sm">Belum ada transaksi tercatat.</div>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full text-sm min-w-[560px]">
+                <table class="w-full text-sm min-w-[680px]">
                     <thead>
                         <tr class="text-left text-[11px] uppercase tracking-wider text-slate-500">
                             <th class="pb-3 font-semibold">Kode</th>
                             <th class="pb-3 font-semibold">Akun</th>
                             <th class="pb-3 font-semibold">Harga</th>
+                            <th class="pb-3 font-semibold">Modal</th>
+                            <th class="pb-3 font-semibold">Laba</th>
                             <th class="pb-3 font-semibold">Status</th>
                             <th class="pb-3 font-semibold text-right">Tanggal</th>
                         </tr>
@@ -230,6 +238,8 @@
                                 <td class="py-3 font-mono text-xs text-slate-400">{{ $sale->transaction_code }}</td>
                                 <td class="py-3 text-white">{{ $sale->account?->name ?? $sale->account_code_snapshot }}</td>
                                 <td class="py-3 font-semibold text-brand-400">{{ $rupiah($sale->sale_price) }}</td>
+                                <td class="py-3 text-slate-400">{{ $rupiah($sale->cost_price) }}</td>
+                                <td class="py-3 font-semibold {{ $sale->profit() < 0 ? 'text-red-400' : 'text-emerald-400' }}">{{ $sale->profit() < 0 ? '-' : '' }}{{ $rupiah(abs($sale->profit())) }}</td>
                                 <td class="py-3"><span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $b[1] }}">{{ $b[0] }}</span></td>
                                 <td class="py-3 text-right text-xs text-slate-500">{{ $sale->transactionTimeLabel() }}</td>
                             </tr>

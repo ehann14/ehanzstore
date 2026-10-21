@@ -51,7 +51,9 @@
                 @endif
             </div>
             <h2 class="font-semibold text-white truncate">{{ $account->name }}</h2>
-            <p class="text-brand-400 font-bold text-sm">Harga listing: Rp {{ number_format($account->price, 0, ',', '.') }}</p>
+            <p class="text-brand-400 font-bold text-sm">Harga listing: Rp {{ number_format($account->price, 0, ',', '.') }}
+                <span class="text-slate-500 font-normal">&middot; Modal: Rp {{ number_format($account->cost_price, 0, ',', '.') }}</span>
+            </p>
         </div>
         @if($isEdit)
             @php [$badgeText, $badgeCls] = $sale->warrantyBadge(); @endphp
@@ -71,6 +73,7 @@
             @include('admin.sales._buyer-fields', [
                 'sale'         => $isEdit ? $sale : null,
                 'defaultPrice' => $account->price,
+                'defaultCost'  => $account->cost_price,
                 'idPrefix'     => 'buyer',
             ])
         </div>

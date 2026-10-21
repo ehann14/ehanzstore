@@ -15,12 +15,13 @@ class CocAccount extends Model
         'grand_warden_level', 'royal_champion_level', 'dragon_duke_level',
         'builder_count', 'gems', 'cn_information',
         'listing_type', 'clan_level', 'capital_hall_level', 'clan_members', 'clan_league',
-        'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'description',
+        'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'cost_price', 'description',
         'publication_status', 'sale_status', 'created_by'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'cost_price' => 'decimal:2',
         'email_change_available_at' => 'datetime',
     ];
 
@@ -36,6 +37,12 @@ class CocAccount extends Model
     ];
 
     public const CLAN_MAX_MEMBERS = 50;
+
+    /** Estimasi laba kalau terjual sesuai harga listing (harga - modal). */
+    public function estimatedProfit(): float
+    {
+        return (float) $this->price - (float) $this->cost_price;
+    }
 
     public function isClan(): bool
     {

@@ -87,6 +87,8 @@
                        class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition @error('price') border-red-500 @enderror">
                 @error('price') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
+
+            @include('admin.accounts._cost-field', ['account' => null])
         </div>
 
         <!-- Spesifikasi Akun -->

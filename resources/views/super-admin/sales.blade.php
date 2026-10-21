@@ -33,10 +33,18 @@
     </div>
 
     <!-- Ringkasan -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
         <div class="glass-panel rounded-2xl p-5">
             <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-2">Total Pendapatan</p>
             <p class="text-2xl font-display font-bold text-white">{{ $rupiah($stats['revenue']) }}</p>
+        </div>
+        <div class="glass-panel rounded-2xl p-5">
+            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-2">Total Modal</p>
+            <p class="text-2xl font-display font-bold text-white">{{ $rupiah($stats['cost']) }}</p>
+        </div>
+        <div class="glass-panel rounded-2xl p-5">
+            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-2">Total Laba</p>
+            <p class="text-2xl font-display font-bold {{ $stats['profit'] < 0 ? 'text-red-400' : 'text-emerald-400' }}">{{ $stats['profit'] < 0 ? '-' : '' }}{{ $rupiah(abs($stats['profit'])) }}</p>
         </div>
         <div class="glass-panel rounded-2xl p-5">
             <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-2">Transaksi Selesai</p>
@@ -58,13 +66,15 @@
         <!-- Tabel (desktop) -->
         <div class="hidden md:block glass-panel rounded-2xl overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[860px] text-sm">
+                <table class="w-full min-w-[1000px] text-sm">
                     <thead>
                         <tr class="text-left text-[11px] uppercase tracking-wider text-slate-500 border-b border-white/5 whitespace-nowrap">
                             <th class="px-4 py-3.5 font-semibold">Kode</th>
                             <th class="px-4 py-3.5 font-semibold">Akun</th>
                             <th class="px-4 py-3.5 font-semibold">Pembeli &amp; Garansi</th>
-                            <th class="px-4 py-3.5 font-semibold">Harga</th>
+                            <th class="px-4 py-3.5 font-semibold">Harga Jual</th>
+                            <th class="px-4 py-3.5 font-semibold">Modal</th>
+                            <th class="px-4 py-3.5 font-semibold">Laba</th>
                             <th class="px-4 py-3.5 font-semibold">Status</th>
                             <th class="px-4 py-3.5 font-semibold">Diproses</th>
                             <th class="px-4 py-3.5 font-semibold text-right">Tanggal</th>
@@ -109,6 +119,13 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-4 font-semibold text-brand-400 whitespace-nowrap">{{ $rupiah($sale->sale_price) }}</td>
+                                <td class="px-4 py-4 text-slate-400 whitespace-nowrap">{{ $rupiah($sale->cost_price) }}</td>
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    <p class="font-semibold {{ $sale->profit() < 0 ? 'text-red-400' : 'text-emerald-400' }}">{{ $sale->profit() < 0 ? '-' : '' }}{{ $rupiah(abs($sale->profit())) }}</p>
+                                    @if($sale->profitMargin() !== null)
+                                        <p class="text-[11px] text-slate-500">{{ str_replace('.', ',', (string) $sale->profitMargin()) }}%</p>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-4">
                                     <div class="flex flex-col items-start gap-1.5">
                                         <span class="whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-medium {{ $sb[1] }}">{{ $sb[0] }}</span>
@@ -144,7 +161,11 @@
                         <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $pb[1] }}">{{ $pb[0] }}</span>
                         <span class="text-[11px] text-slate-500 ml-auto">{{ $sale->transactionTimeLabel() }}</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-2">Diproses oleh {{ $sale->processor?->name ?? '-' }}</p>
+                    <p class="text-[11px] text-slate-500 mt-2">
+                        Modal {{ $rupiah($sale->cost_price) }} &middot; Laba
+                        <span class="font-semibold {{ $sale->profit() < 0 ? 'text-red-400' : 'text-emerald-400' }}">{{ $sale->profit() < 0 ? '-' : '' }}{{ $rupiah(abs($sale->profit())) }}</span>
+                    </p>
+                    <p class="text-[11px] text-slate-500 mt-1">Diproses oleh {{ $sale->processor?->name ?? '-' }}</p>
                     @if($sale->transaction_status === 'completed')
                         @php [$wText, $wCls] = $sale->warrantyBadge(); @endphp
                         <div class="mt-2 pt-2 border-t border-white/5 flex flex-wrap items-center gap-2">
@@ -194,7 +215,7 @@
                 <select id="saleAccount" name="account_id" required class="{{ $inputCls }}">
                     <option value="" disabled {{ old('account_id') ? '' : 'selected' }} class="bg-slate-900">Pilih akun yang terjual&hellip;</option>
                     @foreach($availableAccounts as $acc)
-                        <option value="{{ $acc->id }}" data-price="{{ (int) $acc->price }}" class="bg-slate-900" @selected(old('account_id') == $acc->id)>
+                        <option value="{{ $acc->id }}" data-price="{{ (int) $acc->price }}" data-cost="{{ (int) $acc->cost_price }}" class="bg-slate-900" @selected(old('account_id') == $acc->id)>
                             {{ $acc->account_code }} &mdash; {{ $acc->badgeLabel() }} &mdash; {{ $acc->name }}
                         </option>
                     @endforeach
@@ -225,8 +246,19 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSaleModal(); });
 
     document.getElementById('saleAccount').addEventListener('change', function () {
-        const price = this.selectedOptions[0]?.dataset.price;
-        if (price !== undefined) document.getElementById('sale_price').value = price;
+        const opt   = this.selectedOptions[0];
+        const price = opt?.dataset.price;
+        const cost  = opt?.dataset.cost;
+        if (price !== undefined) {
+            const p = document.getElementById('sale_price');
+            p.value = price;
+            p.dispatchEvent(new Event('input'));
+        }
+        if (cost !== undefined) {
+            const c = document.getElementById('sale_cost');
+            c.value = cost;
+            c.dispatchEvent(new Event('input'));
+        }
     });
 
     @if($errors->any())

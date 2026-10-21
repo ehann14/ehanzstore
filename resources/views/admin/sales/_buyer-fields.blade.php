@@ -13,6 +13,7 @@
     $nowWib       = now(\App\Models\Sale::DISPLAY_TZ);
     $handoverVal  = old('handover_at', $sale ? $sale->handoverInputValue() : $nowWib->format('Y-m-d\TH:i'));
     $priceVal     = old('price', $sale ? (int) $sale->sale_price : (int) ($defaultPrice ?? 0));
+    $costVal      = old('cost_price', $sale ? (int) $sale->cost_price : (int) ($defaultCost ?? 0));
     $methodVal    = old('payment_method', $sale?->payment_method);
     $warrantyDays = \App\Models\Sale::WARRANTY_DAYS;
 @endphp
@@ -35,6 +36,18 @@
             <p class="text-[11px] text-slate-500 mt-1">Bisa ditulis 08xx, +62 8xx, atau 8xx. Dipakai untuk klaim garansi.</p>
             @error('buyer_phone') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+        <div>
+            <label for="{{ $idPrefix }}_cost" class="{{ $labelCls }}">Harga Modal (Rp) <span class="text-slate-600 font-normal">(opsional)</span></label>
+            <input id="{{ $idPrefix }}_cost" type="number" name="cost_price" min="0" max="999999999" step="1"
+                   value="{{ $costVal }}" placeholder="0"
+                   class="{{ $inputCls }} @error('cost_price') border-red-500 @enderror">
+            <p class="text-[11px] text-slate-500 mt-1">Terisi dari modal akun. Laba: <span id="{{ $idPrefix }}_profit" class="font-bold text-slate-300">-</span></p>
+            @error('cost_price') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+        <div class="hidden md:block"></div>
     </div>
 
     <div class="grid md:grid-cols-2 gap-4">
@@ -105,6 +118,28 @@
         }
 
         input.addEventListener('input', render);
+        render();
+    })();
+
+    // Laba = harga jual - modal, dihitung langsung saat diketik.
+    (function () {
+        const price  = document.getElementById('{{ $idPrefix }}_price');
+        const cost   = document.getElementById('{{ $idPrefix }}_cost');
+        const output = document.getElementById('{{ $idPrefix }}_profit');
+        if (!price || !cost || !output) return;
+
+        const rp = n => (n < 0 ? '-Rp ' : 'Rp ') + Math.abs(Math.round(n)).toLocaleString('id-ID');
+
+        function render() {
+            const profit = (parseFloat(price.value) || 0) - (parseFloat(cost.value) || 0);
+            output.textContent = rp(profit);
+            output.className = 'font-bold ' + (profit < 0 ? 'text-red-400' : (profit > 0 ? 'text-emerald-400' : 'text-slate-300'));
+        }
+
+        price.addEventListener('input', render);
+        cost.addEventListener('input', render);
+        cost.addEventListener('change', render);
+        price.addEventListener('change', render);
         render();
     })();
 </script>

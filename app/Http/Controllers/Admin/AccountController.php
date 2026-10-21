@@ -49,6 +49,7 @@ class AccountController extends Controller
         unset($validated['images']);
 
         $validated['listing_type']        = $type;
+        $validated['cost_price']          = $validated['cost_price'] ?? 0;
         $validated['protection_status']   ??= 'Unprotected';
         $validated['email_change_status'] ??= 'Unchangeable';
         $this->applyEmailDelay($validated);
@@ -111,6 +112,8 @@ class AccountController extends Controller
         if ($goingToSold) {
             unset($validated['sale_status']);
         }
+
+        $validated['cost_price'] = $validated['cost_price'] ?? 0;
 
         $this->applyEmailDelay($validated, $account);
 
@@ -199,11 +202,13 @@ class AccountController extends Controller
             'transaction' => $sale->transaction_code,
             'buyer'       => $sale->buyer_name,
             'price'       => $sale->sale_price,
+            'cost'        => $sale->cost_price,
+            'profit'      => $sale->profit(),
         ]);
 
         return redirect()->route('admin.accounts.index')->with(
             'success',
-            "Akun {$account->account_code} terjual ke {$sale->buyer_name}. Garansi aktif sampai {$sale->warrantyUntilLabel()}."
+            "Akun {$account->account_code} terjual ke {$sale->buyer_name}. Laba: Rp " . number_format($sale->profit(), 0, ',', '.') . ". Garansi aktif sampai {$sale->warrantyUntilLabel()}."
         );
     }
 
@@ -314,6 +319,8 @@ class AccountController extends Controller
             'name'                 => 'required|string|max:255',
             // kolom DB decimal(12,2) -> jaga di bawah batas supaya tidak error 1264
             'price'                => 'required|numeric|min:0|max:999999999',
+            // harga modal: hanya terlihat admin, tidak pernah tampil di halaman publik
+            'cost_price'           => 'nullable|numeric|min:0|max:999999999',
             'description'          => 'nullable|string|max:5000',
             'images'               => 'nullable|array|max:' . self::MAX_IMAGES,
             // 5 MB per foto; foto dari browser sudah dikompres otomatis (~0.5 MB)
@@ -388,6 +395,9 @@ class AccountController extends Controller
             'email_change_days.integer' => 'Jumlah hari harus berupa angka bulat.',
             'email_change_days.max'     => 'Jumlah hari maksimal 365.',
             'price.max'         => 'Harga terlalu besar (maksimal Rp 999.999.999).',
+            'cost_price.numeric' => 'Harga modal harus berupa angka.',
+            'cost_price.min'     => 'Harga modal tidak boleh negatif.',
+            'cost_price.max'     => 'Harga modal terlalu besar (maksimal Rp 999.999.999).',
         ];
     }
 

@@ -36,6 +36,12 @@ class DashboardController extends Controller
             ->whereBetween('sold_at', [now()->startOfMonth(), now()->endOfMonth()])
             ->sum('sale_price');
 
+        // Laba = harga jual - modal (hanya transaksi selesai)
+        $totalProfit = Sale::sumProfit(Sale::completed());
+        $monthProfit = Sale::sumProfit(
+            Sale::completed()->whereBetween('sold_at', [now()->startOfMonth(), now()->endOfMonth()])
+        );
+
         // Grafik 7 hari (hari kosong tetap tampil dengan nilai 0)
         $visitorStats = $this->dailyStats(7);
 
@@ -70,6 +76,8 @@ class DashboardController extends Controller
             'soldAccounts',
             'totalRevenue',
             'monthRevenue',
+            'totalProfit',
+            'monthProfit',
             'visitorStats',
             'topAccounts',
             'recentSales',
@@ -153,11 +161,13 @@ class DashboardController extends Controller
             'completed' => Sale::where('transaction_status', 'completed')->count(),
             'pending'   => Sale::where('transaction_status', 'pending')->count(),
             'revenue'   => Sale::where('transaction_status', 'completed')->sum('sale_price'),
+            'cost'      => Sale::where('transaction_status', 'completed')->sum('cost_price'),
+            'profit'    => Sale::sumProfit(Sale::completed()),
         ];
 
         $availableAccounts = CocAccount::where('sale_status', 'available')
             ->orderBy('account_code')
-            ->get(['id', 'account_code', 'name', 'town_hall', 'listing_type', 'price']);
+            ->get(['id', 'account_code', 'name', 'town_hall', 'listing_type', 'price', 'cost_price']);
 
         return view('super-admin.sales', compact('sales', 'stats', 'availableAccounts'));
     }
@@ -248,11 +258,13 @@ class DashboardController extends Controller
             'transaction' => $sale->transaction_code,
             'buyer'       => $sale->buyer_name,
             'price'       => $sale->sale_price,
+            'cost'        => $sale->cost_price,
+            'profit'      => $sale->profit(),
         ]);
 
         return back()->with(
             'success',
-            "Penjualan dikonfirmasi untuk {$sale->buyer_name}. Garansi aktif sampai {$sale->warrantyUntilLabel()}."
+            "Penjualan dikonfirmasi untuk {$sale->buyer_name}. Laba: Rp " . number_format($sale->profit(), 0, ',', '.') . ". Garansi aktif sampai {$sale->warrantyUntilLabel()}."
         );
     }
 

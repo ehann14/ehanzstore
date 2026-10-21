@@ -68,6 +68,17 @@
                             </div>
                             <h3 class="font-semibold text-white truncate text-lg">{{ $account->name }}</h3>
                             <p class="text-brand-400 font-bold text-sm mt-0.5">Rp {{ number_format($account->price, 0, ',', '.') }}</p>
+                            @php
+                                // Akun terjual: pakai angka transaksi (harga nego & modal saat itu); selain itu estimasi dari listing.
+                                $doneSale   = $account->sale_status === 'sold' ? $account->latestCompletedSale : null;
+                                $costShown  = $doneSale ? (float) $doneSale->cost_price : (float) $account->cost_price;
+                                $profitShown = $doneSale ? $doneSale->profit() : $account->estimatedProfit();
+                            @endphp
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                Modal Rp {{ number_format($costShown, 0, ',', '.') }}
+                                &middot; {{ $doneSale ? 'Laba' : 'Est. laba' }}
+                                <span class="font-semibold {{ $profitShown < 0 ? 'text-red-400' : ($profitShown > 0 ? 'text-emerald-400' : 'text-slate-400') }}">{{ $profitShown < 0 ? '-' : '' }}Rp {{ number_format(abs($profitShown), 0, ',', '.') }}</span>
+                            </p>
                             <div class="flex flex-wrap gap-1.5 mt-2">
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $published ? 'bg-electric/15 text-blue-300 border-electric/30' : 'bg-amber-500/15 text-amber-300 border-amber-500/30' }}">
                                     {{ $published ? 'Terbit' : 'Draft' }}

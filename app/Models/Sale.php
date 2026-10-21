@@ -26,16 +26,49 @@ class Sale extends Model
     protected $fillable = [
         'transaction_code', 'coc_account_id', 'account_code_snapshot',
         'buyer_name', 'buyer_phone',
-        'sale_price', 'transaction_status', 'payment_status', 'payment_method',
+        'sale_price', 'cost_price', 'transaction_status', 'payment_status', 'payment_method',
         'processed_by', 'sold_at', 'handover_at', 'warranty_expires_at', 'notes', 'review_token',
     ];
 
     protected $casts = [
         'sale_price'          => 'decimal:2',
+        'cost_price'          => 'decimal:2',
         'sold_at'             => 'datetime',
         'handover_at'         => 'datetime',
         'warranty_expires_at' => 'datetime',
     ];
+
+    // ------------------------------------------------------------------
+    // Modal & laba
+    // ------------------------------------------------------------------
+
+    /** Laba transaksi = harga jual - harga modal. */
+    public function profit(): float
+    {
+        return (float) $this->sale_price - (float) $this->cost_price;
+    }
+
+    /** Margin laba terhadap harga jual, dalam persen (null bila harga jual 0). */
+    public function profitMargin(): ?float
+    {
+        $price = (float) $this->sale_price;
+
+        return $price > 0 ? round($this->profit() / $price * 100, 1) : null;
+    }
+
+    /** Scope: hanya transaksi selesai (dasar perhitungan pendapatan & laba). */
+    public function scopeCompleted($query)
+    {
+        return $query->where('transaction_status', 'completed');
+    }
+
+    /** Total laba dari query transaksi (SUM(harga jual - modal)). */
+    public static function sumProfit($query = null): float
+    {
+        $query ??= static::query();
+
+        return (float) ($query->selectRaw('COALESCE(SUM(sale_price - cost_price), 0) as total_profit')->value('total_profit') ?? 0);
+    }
 
     public function account()
     {
@@ -281,6 +314,7 @@ class Sale extends Model
                 },
             ],
             'price' => ['required', 'numeric', 'min:0', 'max:999999999'],
+            'cost_price' => ['nullable', 'numeric', 'min:0', 'max:999999999'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -298,6 +332,9 @@ class Sale extends Model
             'price.required'       => 'Harga jual wajib diisi.',
             'price.numeric'        => 'Harga jual harus berupa angka.',
             'price.max'            => 'Harga terlalu besar (maksimal Rp 999.999.999).',
+            'cost_price.numeric'   => 'Harga modal harus berupa angka.',
+            'cost_price.min'       => 'Harga modal tidak boleh negatif.',
+            'cost_price.max'       => 'Harga modal terlalu besar (maksimal Rp 999.999.999).',
             'notes.max'            => 'Catatan maksimal 1000 karakter.',
         ];
     }
@@ -311,7 +348,7 @@ class Sale extends Model
         $handover = Carbon::parse($validated['handover_at'], self::DISPLAY_TZ)
             ->setTimezone(config('app.timezone'));
 
-        return [
+        $payload = [
             'buyer_name'          => trim($validated['buyer_name']),
             'buyer_phone'         => static::normalizePhone($validated['buyer_phone']),
             'payment_method'      => $validated['payment_method'] ?? null,
@@ -320,6 +357,13 @@ class Sale extends Model
             'warranty_expires_at' => $handover->clone()->addDays(self::WARRANTY_DAYS),
             'notes'               => $validated['notes'] ?? null,
         ];
+
+        // Modal hanya ikut diubah bila field-nya dikirim (kosong = tetap pakai modal yang tersimpan).
+        if (isset($validated['cost_price']) && $validated['cost_price'] !== '') {
+            $payload['cost_price'] = $validated['cost_price'];
+        }
+
+        return $payload;
     }
 
     // ------------------------------------------------------------------
@@ -344,7 +388,7 @@ class Sale extends Model
                 return null;
             }
 
-            $sale = static::create(array_merge(static::buyerPayload($validated), [
+            $sale = static::create(array_merge(['cost_price' => $account->cost_price], static::buyerPayload($validated), [
                 'transaction_code'      => static::generateCode(),
                 'coc_account_id'        => $account->id,
                 'account_code_snapshot' => $account->account_code,
@@ -396,6 +440,7 @@ class Sale extends Model
             'coc_account_id'        => $account->id,
             'account_code_snapshot' => $account->account_code,
             'sale_price'            => $price ?? $account->price,
+            'cost_price'            => $account->cost_price ?? 0,
             'transaction_status'    => 'completed',
             'payment_status'        => 'paid',
             'processed_by'          => $processedBy,
