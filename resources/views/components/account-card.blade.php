@@ -4,6 +4,8 @@
     $warrantyLeft = $warrantySale?->warrantyRemainingText();
     $review = $isSold ? $warrantySale?->approvedReview : null;
     $isClan = $account->isClan();
+    $showDiscount = ! $isSold && $account->hasDiscount();
+    $showHot      = ! $isSold && $account->isHotDeal();
     $heroes = $isClan ? array_filter([
         'Lv'     => $account->clan_level,
         'CH'     => $account->capital_hall_level,
@@ -27,7 +29,7 @@
 @endphp
 
 <a href="{{ route('account.detail', $account->account_code) }}"
-   class="group relative flex flex-col h-full rounded-2xl overflow-hidden bg-slate-900/60 border border-white/[0.07] hover:border-electric/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-15px_rgba(59,130,246,0.35)]">
+   class="group relative flex flex-col h-full rounded-2xl overflow-hidden bg-slate-900/60 border {{ $showHot ? 'border-orange-500/40' : 'border-white/[0.07]' }} hover:border-electric/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-15px_rgba(59,130,246,0.35)]">
 
     <!-- Gambar -->
     <div class="relative aspect-[4/3] overflow-hidden bg-midnight">
@@ -78,10 +80,39 @@
             </div>
         @endif
 
-        <!-- Badge Town Hall -->
-        <span class="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-electric text-white text-[10px] sm:text-[11px] font-bold rounded-md shadow-lg uppercase tracking-wide z-10">
-            {{ $account->badgeLabel() }}
-        </span>
+        <!-- Badge Town Hall + label Hot Deal -->
+        <div class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex flex-col items-start gap-1 sm:gap-1.5">
+            <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-electric text-white text-[10px] sm:text-[11px] font-bold rounded-md shadow-lg uppercase tracking-wide">
+                {{ $account->badgeLabel() }}
+            </span>
+            @if($showHot)
+                <x-hot-deal-badge />
+            @endif
+        </div>
+
+        <!-- Persen diskon -->
+        @if($showDiscount)
+            <span class="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-red-600 text-white text-[10px] sm:text-xs font-bold shadow-lg z-10">
+                -{{ $account->discountPercent() }}%
+            </span>
+        @endif
+
+        <!-- Tombol bandingkan (hanya untuk yang masih tersedia) -->
+        @unless($isSold)
+            <button type="button" data-compare-btn
+                    data-code="{{ $account->account_code }}"
+                    data-name="{{ $account->name }}"
+                    data-type="{{ $account->listing_type }}"
+                    data-img="{{ $imageUrl }}"
+                    data-price="{{ (int) $account->price }}"
+                    aria-pressed="false"
+                    aria-label="Bandingkan {{ $account->name }}"
+                    class="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-10 inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg bg-black/60 backdrop-blur border border-white/20 text-white text-[10px] sm:text-[11px] font-semibold hover:bg-electric/80 aria-pressed:bg-electric aria-pressed:border-electric transition">
+                <svg data-cmp-off class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14m7-7H5"/></svg>
+                <svg data-cmp-on class="hidden w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span data-compare-label data-off="Bandingkan" data-on="Dipilih" class="hidden sm:inline">Bandingkan</span>
+            </button>
+        @endunless
 
         <!-- Badge Email Bisa Ganti -->
         @if(!$isClan && $account->email_change_status === 'Changeable')
@@ -120,7 +151,13 @@
                     Harga
                 </p>
 
-                <p class="text-sm sm:text-lg font-display font-bold {{ $isSold ? 'text-slate-500 line-through' : 'text-white' }}">
+                @if($showDiscount)
+                    <p class="text-[10px] sm:text-xs text-slate-500 line-through leading-none mb-0.5">
+                        Rp {{ number_format($account->original_price, 0, ',', '.') }}
+                    </p>
+                @endif
+
+                <p class="text-sm sm:text-lg font-display font-bold {{ $isSold ? 'text-slate-500 line-through' : ($showDiscount ? 'text-orange-400' : 'text-white') }}">
                     Rp {{ number_format($account->price, 0, ',', '.') }}
                 </p>
             </div>
@@ -141,5 +178,5 @@
     @endif
 
     <!-- Garis Aksen -->
-    <div class="h-1 bg-electric/70 group-hover:bg-electric transition"></div>
+    <div class="h-1 {{ $showHot ? 'bg-gradient-to-r from-orange-500 to-red-600' : 'bg-electric/70 group-hover:bg-electric' }} transition"></div>
 </a>

@@ -26,6 +26,14 @@ class PublicController extends Controller
         $featuredClans = $this->homeAvailable('clan');
         $soldClans     = $this->homeSold('clan');
 
+        // Hot Deal: akun/clan yang ditandai admin dan masih tersedia
+        $hotDeals = CocAccount::available()
+            ->hotDeal()
+            ->with(['primaryImage', 'latestCompletedSale.approvedReview'])
+            ->orderBy('created_at', 'desc')
+            ->take(8)
+            ->get();
+
         // Chip filter Town Hall yang stoknya memang ada
         $townHalls = CocAccount::available()
             ->where('listing_type', 'account')
@@ -50,6 +58,7 @@ class PublicController extends Controller
 
         return view('public.home', compact(
             'banners',
+            'hotDeals',
             'featuredAccounts',
             'soldAccounts',
             'featuredClans',
@@ -239,6 +248,39 @@ class PublicController extends Controller
         );
 
         return view('public.detail', compact('account'));
+    }
+
+    /**
+     * Bandingkan 2 sampai 3 akun (atau clan) berdampingan.
+     * URL: /bandingkan?akun=KODE1,KODE2,KODE3
+     * Hanya akun yang masih tersedia; akun dan clan tidak dicampur.
+     */
+    public function compare(Request $request)
+    {
+        $codes = collect(explode(',', (string) $request->input('akun')))
+            ->map(fn ($code) => strtoupper(trim($code)))
+            ->filter(fn ($code) => preg_match('/^[A-Z0-9_-]{1,30}$/', $code))
+            ->unique()
+            ->take(3)
+            ->values();
+
+        $found = $codes->isEmpty()
+            ? collect()
+            : CocAccount::available()
+                ->whereIn('account_code', $codes->all())
+                ->with('primaryImage')
+                ->get()
+                ->keyBy('account_code');
+
+        // Urutan sesuai urutan pilihan pengunjung
+        $accounts = $codes->map(fn ($code) => $found->get($code))->filter()->values();
+
+        // Jangan campur akun pemain dengan clan: pakai jenis dari pilihan pertama
+        $firstType = $accounts->first()?->listing_type;
+        $mixed     = $accounts->contains(fn ($a) => $a->listing_type !== $firstType);
+        $accounts  = $accounts->filter(fn ($a) => $a->listing_type === $firstType)->values();
+
+        return view('public.compare', compact('accounts', 'mixed'));
     }
 
     /**

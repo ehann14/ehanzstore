@@ -17,6 +17,7 @@ Route::get('/akun/{account_code}', [PublicController::class, 'detail'])->name('a
 Route::post('/track/event', [PublicController::class, 'trackEvent'])->name('track.event');
 Route::get('/cara-membeli', [PublicController::class, 'howToBuy'])->name('how.to.buy');
 Route::get('/garansi', [PublicController::class, 'warranty'])->name('warranty');
+Route::get('/bandingkan', [PublicController::class, 'compare'])->name('compare');
 
 // Form ulasan pembeli (diakses lewat link pribadi dari admin)
 Route::get('/ulasan/{token}', [ReviewController::class, 'show'])->name('review.form');

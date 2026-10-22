@@ -125,14 +125,40 @@
 
             {{-- Harga dan Tombol Pembelian --}}
             <div class="glass rounded-2xl p-6 space-y-4 border-l-4 border-electric">
+                @php
+                    $isAvailable  = $account->sale_status === 'available';
+                    $showDiscount = $isAvailable && $account->hasDiscount();
+                @endphp
                 <div>
-                    <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">
-                        Harga Jual
-                    </p>
+                    <div class="flex items-center gap-2 mb-1">
+                        <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">
+                            Harga Jual
+                        </p>
+                        @if($isAvailable && $account->isHotDeal())
+                            <x-hot-deal-badge />
+                        @endif
+                    </div>
 
-                    <p class="text-4xl font-display font-bold text-white">
+                    @if($showDiscount)
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <p class="text-base text-slate-500 line-through">
+                                Rp {{ number_format($account->original_price, 0, ',', '.') }}
+                            </p>
+                            <span class="px-2 py-0.5 rounded-md bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold">
+                                Diskon {{ $account->discountPercent() }}%
+                            </span>
+                        </div>
+                    @endif
+
+                    <p class="text-4xl font-display font-bold {{ $showDiscount ? 'text-orange-400' : 'text-white' }}">
                         Rp {{ number_format($account->price, 0, ',', '.') }}
                     </p>
+
+                    @if($showDiscount)
+                        <p class="text-xs text-emerald-400 mt-1">
+                            Kamu hemat Rp {{ number_format($account->discountAmount(), 0, ',', '.') }}
+                        </p>
+                    @endif
                 </div>
 
                 @if($account->sale_status !== 'available')
@@ -174,6 +200,20 @@
                 <p class="text-[10px] text-slate-500 text-center">
                     Anda akan diarahkan ke chat admin dengan pesan otomatis.
                 </p>
+
+                {{-- Bandingkan dengan akun lain (2 sampai 3 akun) --}}
+                <button type="button" data-compare-btn
+                        data-code="{{ $account->account_code }}"
+                        data-name="{{ $account->name }}"
+                        data-type="{{ $account->listing_type }}"
+                        data-img="{{ $ogImage }}"
+                        data-price="{{ (int) $account->price }}"
+                        aria-pressed="false"
+                        class="flex items-center justify-center gap-2 w-full border border-white/10 bg-white/5 hover:bg-white/10 text-slate-200 text-sm font-semibold py-3 rounded-xl transition aria-pressed:bg-electric/20 aria-pressed:border-electric aria-pressed:text-white">
+                    <svg data-cmp-off class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14m7-7H5"/></svg>
+                    <svg data-cmp-on class="hidden w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    <span data-compare-label data-off="Bandingkan dengan {{ $noun }} lain" data-on="Ditambahkan ke perbandingan">Bandingkan dengan {{ $noun }} lain</span>
+                </button>
                 @endif
 
                 {{-- Informasi Garansi --}}

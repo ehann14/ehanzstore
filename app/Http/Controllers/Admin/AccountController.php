@@ -50,6 +50,7 @@ class AccountController extends Controller
 
         $validated['listing_type']        = $type;
         $validated['cost_price']          = $validated['cost_price'] ?? 0;
+        $this->applyDiscount($validated, $request);
         $this->applyAccountInfoDefaults($validated);
         $validated['protection_status']   ??= 'Unprotected';
         $validated['email_change_status'] ??= 'Unchangeable';
@@ -115,6 +116,7 @@ class AccountController extends Controller
         }
 
         $validated['cost_price'] = $validated['cost_price'] ?? 0;
+        $this->applyDiscount($validated, $request);
         $this->applyAccountInfoDefaults($validated);
 
         $this->applyEmailDelay($validated, $account);
@@ -323,6 +325,9 @@ class AccountController extends Controller
             'name'                 => 'required|string|max:255',
             // kolom DB decimal(12,2) -> jaga di bawah batas supaya tidak error 1264
             'price'                => 'required|numeric|min:0|max:999999999',
+            // harga coret (harga normal sebelum diskon): opsional, harus lebih besar dari harga jual
+            'original_price'       => 'nullable|numeric|min:0|max:999999999|gt:price',
+            'is_hot_deal'          => 'nullable|boolean',
             // harga modal: hanya terlihat admin, tidak pernah tampil di halaman publik
             'cost_price'           => 'nullable|numeric|min:0|max:999999999',
             'description'          => 'nullable|string|max:5000',
@@ -406,6 +411,22 @@ class AccountController extends Controller
         $validated['email_change_available_at'] = now()->addDays((int) $days);
     }
 
+    /**
+     * Rapikan input harga coret & Hot Deal.
+     * - Harga coret kosong / tidak lebih besar dari harga jual -> disimpan NULL (tidak ada diskon).
+     * - Hot Deal berasal dari checkbox: tidak dicentang = false.
+     */
+    private function applyDiscount(array &$validated, Request $request): void
+    {
+        $orig = $validated['original_price'] ?? null;
+
+        $validated['original_price'] = ($orig !== null && $orig !== '' && (float) $orig > (float) ($validated['price'] ?? 0))
+            ? $orig
+            : null;
+
+        $validated['is_hot_deal'] = $request->boolean('is_hot_deal');
+    }
+
     private function messages(): array
     {
         return [
@@ -421,6 +442,10 @@ class AccountController extends Controller
             'email_change_days.integer' => 'Jumlah hari harus berupa angka bulat.',
             'email_change_days.max'     => 'Jumlah hari maksimal 365.',
             'price.max'         => 'Harga terlalu besar (maksimal Rp 999.999.999).',
+            'original_price.numeric' => 'Harga coret harus berupa angka.',
+            'original_price.min'     => 'Harga coret tidak boleh negatif.',
+            'original_price.max'     => 'Harga coret terlalu besar (maksimal Rp 999.999.999).',
+            'original_price.gt'      => 'Harga coret harus lebih besar dari harga jual. Kosongkan jika tidak ada diskon.',
             'player_tag.regex'  => 'Tag akun tidak valid. Gunakan huruf dan angka saja, contoh: #P2LQ8Y0R.',
             'clan_tag.regex'    => 'Tag clan tidak valid. Gunakan huruf dan angka saja, contoh: #2Y8LQ0R.',
             'builder_count.max' => 'Jumlah tukang maksimal 6.',

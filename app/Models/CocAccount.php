@@ -15,12 +15,14 @@ class CocAccount extends Model
         'grand_warden_level', 'royal_champion_level', 'dragon_duke_level',
         'builder_count', 'gems', 'cn_information',
         'listing_type', 'clan_level', 'capital_hall_level', 'clan_members', 'clan_league',
-        'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'cost_price', 'description',
+        'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'original_price', 'is_hot_deal', 'cost_price', 'description',
         'publication_status', 'sale_status', 'created_by'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'original_price' => 'decimal:2',
+        'is_hot_deal' => 'boolean',
         'cost_price' => 'decimal:2',
         'email_change_available_at' => 'datetime',
     ];
@@ -42,6 +44,39 @@ class CocAccount extends Model
     public function estimatedProfit(): float
     {
         return (float) $this->price - (float) $this->cost_price;
+    }
+
+    /** Ada harga coret? (harga normal lebih tinggi dari harga jual sekarang) */
+    public function hasDiscount(): bool
+    {
+        return $this->original_price !== null
+            && (float) $this->original_price > (float) $this->price;
+    }
+
+    /** Persen diskon (dibulatkan, minimal 1% bila ada diskon). 0 jika tidak ada diskon. */
+    public function discountPercent(): int
+    {
+        if (! $this->hasDiscount()) {
+            return 0;
+        }
+
+        $pct = (1 - ((float) $this->price / (float) $this->original_price)) * 100;
+
+        return max(1, (int) round($pct));
+    }
+
+    /** Nominal hemat dalam rupiah. 0 jika tidak ada diskon. */
+    public function discountAmount(): float
+    {
+        return $this->hasDiscount()
+            ? (float) $this->original_price - (float) $this->price
+            : 0.0;
+    }
+
+    /** Label Hot Deal hanya relevan selama akun masih tersedia. */
+    public function isHotDeal(): bool
+    {
+        return (bool) $this->is_hot_deal && $this->sale_status === 'available';
     }
 
     /** Tag yang relevan untuk jenis listing ini (tag clan untuk clan, tag akun untuk akun pemain). */
@@ -175,6 +210,12 @@ class CocAccount extends Model
                            });
                   });
             });
+    }
+
+    /** Akun yang ditandai admin sebagai Hot Deal. */
+    public function scopeHotDeal($query)
+    {
+        return $query->where('is_hot_deal', true);
     }
 
     // Scope untuk publik (hanya yang masih bisa dibeli)

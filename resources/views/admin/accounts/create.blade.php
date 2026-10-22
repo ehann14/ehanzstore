@@ -96,6 +96,8 @@
                 @error('price') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
+            @include('admin.accounts._discount-field', ['account' => null])
+
             @include('admin.accounts._cost-field', ['account' => null])
         </div>
 

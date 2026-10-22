@@ -118,6 +118,26 @@
         </div>
     </section>
 
+    {{-- ===================== HOT DEAL ===================== --}}
+    @if(isset($hotDeals) && $hotDeals->count())
+        <section id="hot-deal" class="max-w-7xl mx-auto px-4 pt-10 sm:pt-14">
+            <div class="mb-5 sm:mb-6">
+                <h2 class="font-display text-xl sm:text-3xl font-bold text-white flex items-center gap-2">
+                    <span class="w-1.5 h-6 sm:h-7 rounded-full bg-gradient-to-b from-orange-400 to-red-600"></span>
+                    HOT DEAL
+                    <svg class="w-5 h-5 sm:w-7 sm:h-7 text-orange-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.35.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"/></svg>
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">Harga spesial untuk stok pilihan. Stok terbatas, siapa cepat dia dapat.</p>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+                @foreach($hotDeals as $account)
+                    @include('components.account-card', ['account' => $account])
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     {{-- ===================== AKUN & CLAN DIJUAL (dipisah, termasuk yang terjual) ===================== --}}
     @php
         $homeBlocks = [
