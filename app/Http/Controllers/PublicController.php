@@ -18,13 +18,13 @@ class PublicController extends Controller
     {
         $banners = Banner::active()->get();
 
-        // Akun terjual (masih bergaransi) tetap tampil, tapi di urutan setelah yang tersedia
-        $featuredAccounts = CocAccount::listed()
-            ->with(['primaryImage', 'latestCompletedSale.approvedReview'])
-            ->orderByRaw("sale_status = 'available' desc")
-            ->orderBy('created_at', 'desc')
-            ->take(8)
-            ->get();
+        // Akun pemain dan clan dipisah, masing-masing: tersedia dulu, lalu yang
+        // baru terjual (masih dalam masa garansi pembeli) di bagian tersendiri.
+        $featuredAccounts = $this->homeAvailable('account');
+        $soldAccounts     = $this->homeSold('account');
+
+        $featuredClans = $this->homeAvailable('clan');
+        $soldClans     = $this->homeSold('clan');
 
         // Chip filter Town Hall yang stoknya memang ada
         $townHalls = CocAccount::available()
@@ -34,7 +34,8 @@ class PublicController extends Controller
             ->orderByDesc('town_hall')
             ->pluck('town_hall');
 
-        $totalAvailable = CocAccount::available()->count();
+        $totalAvailableAccounts = CocAccount::available()->where('listing_type', 'account')->count();
+        $totalAvailableClans    = CocAccount::available()->where('listing_type', 'clan')->count();
 
         // Testimoni permanen: diambil langsung dari tabel reviews (status disetujui),
         // tidak bergantung pada akun yang sudah hilang dari katalog setelah garansi berakhir.
@@ -50,11 +51,38 @@ class PublicController extends Controller
         return view('public.home', compact(
             'banners',
             'featuredAccounts',
+            'soldAccounts',
+            'featuredClans',
+            'soldClans',
             'townHalls',
-            'totalAvailable',
+            'totalAvailableAccounts',
+            'totalAvailableClans',
             'testimonials',
             'stats'
         ));
+    }
+
+    /** Listing tersedia (terbit & belum terjual) untuk satu jenis, terbaru dulu. */
+    private function homeAvailable(string $type, int $limit = 8)
+    {
+        return CocAccount::available()
+            ->where('listing_type', $type)
+            ->with(['primaryImage', 'latestCompletedSale.approvedReview'])
+            ->orderBy('created_at', 'desc')
+            ->take($limit)
+            ->get();
+    }
+
+    /** Listing yang sudah terjual tapi garansinya masih aktif (masih tampil di katalog), per jenis. */
+    private function homeSold(string $type, int $limit = 4)
+    {
+        return CocAccount::listed()
+            ->where('sale_status', 'sold')
+            ->where('listing_type', $type)
+            ->with(['primaryImage', 'latestCompletedSale.approvedReview'])
+            ->orderBy('updated_at', 'desc')
+            ->take($limit)
+            ->get();
     }
 
     /**
