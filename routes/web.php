@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\WarrantyCheckController;
 use App\Http\Controllers\SuperAdmin\ReviewModerationController;
 use App\Http\Controllers\SuperAdmin\ReportController;
 use App\Http\Controllers\Admin\AccountController;
@@ -17,6 +18,11 @@ Route::get('/akun/{account_code}', [PublicController::class, 'detail'])->name('a
 Route::post('/track/event', [PublicController::class, 'trackEvent'])->name('track.event');
 Route::get('/cara-membeli', [PublicController::class, 'howToBuy'])->name('how.to.buy');
 Route::get('/garansi', [PublicController::class, 'warranty'])->name('warranty');
+
+// Cek sisa garansi pembeli lewat kode transaksi (data dari tabel sales)
+Route::get('/cek-garansi', [WarrantyCheckController::class, 'index'])
+    ->middleware('throttle:20,1')
+    ->name('warranty.check');
 Route::get('/bandingkan', [PublicController::class, 'compare'])->name('compare');
 
 // Form ulasan pembeli (diakses lewat link pribadi dari admin)

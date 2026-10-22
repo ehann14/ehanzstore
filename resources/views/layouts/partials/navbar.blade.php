@@ -4,6 +4,7 @@
         ['route' => 'catalog',    'label' => 'Katalog'],
         ['route' => 'how.to.buy', 'label' => 'Cara Beli'],
         ['route' => 'warranty',   'label' => 'Garansi'],
+        ['route' => 'warranty.check', 'label' => 'Cek Garansi'],
     ];
 @endphp
 
@@ -39,7 +40,7 @@
             <div class="hidden md:flex items-center gap-1">
                 @foreach($links as $link)
                     <a href="{{ route($link['route']) }}"
-                       class="px-4 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs($link['route']) ? 'text-white bg-white/10' : 'text-slate-400 hover:text-white hover:bg-white/5' }}">
+                       class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs($link['route']) ? 'text-white bg-white/10' : 'text-slate-400 hover:text-white hover:bg-white/5' }}">
                         {{ $link['label'] }}
                     </a>
                 @endforeach

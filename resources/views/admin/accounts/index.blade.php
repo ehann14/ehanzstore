@@ -107,6 +107,20 @@
                             @if($account->latestCompletedSale)
                                 <a href="{{ route('admin.sales.buyer', $account->latestCompletedSale) }}"
                                    class="text-center px-3 py-2 rounded-lg border border-emerald-500/30 text-xs sm:text-sm text-emerald-300 hover:bg-emerald-500/10 transition whitespace-nowrap">Data Pembeli</a>
+                                @if($account->latestCompletedSale->warranty_expires_at)
+                                    @php
+                                        $warrantySale = $account->latestCompletedSale;
+                                        $warrantyInfo = "Halo kak, terima kasih sudah belanja di EHANZSTORE.ID 🙏\n"
+                                            . "Kode transaksi: {$warrantySale->transaction_code}\n"
+                                            . "Cek sisa garansi 7 hari kapan saja di:\n"
+                                            . route('warranty.check', ['kode' => $warrantySale->transaction_code]);
+                                    @endphp
+                                    <button type="button" data-copy="{{ $warrantyInfo }}" data-done="Info tersalin!"
+                                            onclick="copyReviewLink(this)"
+                                            class="text-center px-3 py-2 rounded-lg border border-sky-500/30 text-xs sm:text-sm text-sky-300 hover:bg-sky-500/10 transition whitespace-nowrap">
+                                        Salin Info Garansi
+                                    </button>
+                                @endif
                                 @if($account->latestCompletedSale->reviewUrl())
                                     <button type="button" data-copy="{{ $account->latestCompletedSale->reviewUrl() }}"
                                             onclick="copyReviewLink(this)"
@@ -142,7 +156,7 @@
         const url = btn.dataset.copy;
         const done = () => {
             const old = btn.textContent;
-            btn.textContent = 'Link tersalin!';
+            btn.textContent = btn.dataset.done || 'Link tersalin!';
             setTimeout(() => btn.textContent = old, 1800);
         };
         if (navigator.clipboard && window.isSecureContext) {
