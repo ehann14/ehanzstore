@@ -120,6 +120,11 @@ class PublicController extends Controller
             $query->where('listing_type', $type);
         }
 
+        // Hot Deal saja: hanya yang masih tersedia dan promonya belum berakhir
+        if ($request->boolean('hot')) {
+            $query->where('sale_status', 'available')->hotDeal();
+        }
+
         // Filter Town Hall (tidak berlaku untuk clan)
         if ($request->filled('th') && $type !== 'clan') {
             $query->where('town_hall', (int) $request->input('th'));
@@ -136,6 +141,10 @@ class PublicController extends Controller
 
             case 'price_desc':
                 $query->orderBy('price', 'desc');
+                break;
+
+            case 'discount_desc':
+                $query->orderByDiscount()->orderBy('created_at', 'desc');
                 break;
 
             default:

@@ -8,6 +8,7 @@ use App\Models\CocAccount;
 use App\Models\CocAccountImage;
 use App\Models\Sale;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use App\Support\Uploads;
@@ -328,6 +329,23 @@ class AccountController extends Controller
             // harga coret (harga normal sebelum diskon): opsional, harus lebih besar dari harga jual
             'original_price'       => 'nullable|numeric|min:0|max:999999999|gt:price',
             'is_hot_deal'          => 'nullable|boolean',
+            // masa berlaku promo (diisi dalam WIB). Kosong = tanpa batas waktu.
+            'hot_deal_ends_at'     => [
+                'nullable', 'date',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    try {
+                        $end = Carbon::parse($value, Sale::DISPLAY_TZ);
+                    } catch (\Throwable) {
+                        $fail('Format tanggal berakhir promo tidak valid.');
+
+                        return;
+                    }
+
+                    if ($end->lte(now())) {
+                        $fail('Tanggal berakhir promo harus di masa depan.');
+                    }
+                },
+            ],
             // harga modal: hanya terlihat admin, tidak pernah tampil di halaman publik
             'cost_price'           => 'nullable|numeric|min:0|max:999999999',
             'description'          => 'nullable|string|max:5000',
@@ -415,6 +433,8 @@ class AccountController extends Controller
      * Rapikan input harga coret & Hot Deal.
      * - Harga coret kosong / tidak lebih besar dari harga jual -> disimpan NULL (tidak ada diskon).
      * - Hot Deal berasal dari checkbox: tidak dicentang = false.
+     * - Tanggal berakhir dibaca sebagai WIB lalu disimpan sebagai UTC. Hanya disimpan bila
+     *   memang ada promo (ada harga coret atau Hot Deal dicentang); selain itu dikosongkan.
      */
     private function applyDiscount(array &$validated, Request $request): void
     {
@@ -425,6 +445,13 @@ class AccountController extends Controller
             : null;
 
         $validated['is_hot_deal'] = $request->boolean('is_hot_deal');
+
+        $end     = $validated['hot_deal_ends_at'] ?? null;
+        $hasDeal = $validated['original_price'] !== null || $validated['is_hot_deal'];
+
+        $validated['hot_deal_ends_at'] = ($hasDeal && filled($end))
+            ? Carbon::parse($end, Sale::DISPLAY_TZ)->setTimezone(config('app.timezone'))
+            : null;
     }
 
     private function messages(): array
@@ -446,6 +473,7 @@ class AccountController extends Controller
             'original_price.min'     => 'Harga coret tidak boleh negatif.',
             'original_price.max'     => 'Harga coret terlalu besar (maksimal Rp 999.999.999).',
             'original_price.gt'      => 'Harga coret harus lebih besar dari harga jual. Kosongkan jika tidak ada diskon.',
+            'hot_deal_ends_at.date'  => 'Format tanggal berakhir promo tidak valid.',
             'player_tag.regex'  => 'Tag akun tidak valid. Gunakan huruf dan angka saja, contoh: #P2LQ8Y0R.',
             'clan_tag.regex'    => 'Tag clan tidak valid. Gunakan huruf dan angka saja, contoh: #2Y8LQ0R.',
             'builder_count.max' => 'Jumlah tukang maksimal 6.',

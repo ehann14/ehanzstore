@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\ExpireHotDeals;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\VisitorTracking;
 
@@ -17,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => RoleMiddleware::class,
         ]);
+
+        // Hot Deal yang sudah lewat masa berlakunya diakhiri otomatis (tanpa cron)
+        $middleware->append(ExpireHotDeals::class);
 
         // Menjalankan tracking pengunjung secara global
         $middleware->append(VisitorTracking::class);

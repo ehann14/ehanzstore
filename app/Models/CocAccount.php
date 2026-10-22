@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class CocAccount extends Model
 {
@@ -15,7 +17,7 @@ class CocAccount extends Model
         'grand_warden_level', 'royal_champion_level', 'dragon_duke_level',
         'builder_count', 'gems', 'cn_information',
         'listing_type', 'clan_level', 'capital_hall_level', 'clan_members', 'clan_league',
-        'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'original_price', 'is_hot_deal', 'cost_price', 'description',
+        'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'original_price', 'is_hot_deal', 'hot_deal_ends_at', 'cost_price', 'description',
         'publication_status', 'sale_status', 'created_by'
     ];
 
@@ -23,6 +25,7 @@ class CocAccount extends Model
         'price' => 'decimal:2',
         'original_price' => 'decimal:2',
         'is_hot_deal' => 'boolean',
+        'hot_deal_ends_at' => 'datetime',
         'cost_price' => 'decimal:2',
         'email_change_available_at' => 'datetime',
     ];
@@ -50,7 +53,8 @@ class CocAccount extends Model
     public function hasDiscount(): bool
     {
         return $this->original_price !== null
-            && (float) $this->original_price > (float) $this->price;
+            && (float) $this->original_price > (float) $this->price
+            && ! $this->dealHasEnded();
     }
 
     /** Persen diskon (dibulatkan, minimal 1% bila ada diskon). 0 jika tidak ada diskon. */
@@ -76,7 +80,90 @@ class CocAccount extends Model
     /** Label Hot Deal hanya relevan selama akun masih tersedia. */
     public function isHotDeal(): bool
     {
-        return (bool) $this->is_hot_deal && $this->sale_status === 'available';
+        return (bool) $this->is_hot_deal
+            && $this->sale_status === 'available'
+            && ! $this->dealHasEnded();
+    }
+
+    // ------------------------------------------------------------------
+    // Masa berlaku Hot Deal / diskon
+    // ------------------------------------------------------------------
+
+    /** Masa berlaku promo sudah lewat? (false jika tanpa batas waktu) */
+    public function dealHasEnded(): bool
+    {
+        return $this->hot_deal_ends_at !== null && now()->gte($this->hot_deal_ends_at);
+    }
+
+    /** Waktu berakhir promo yang masih berjalan. Null jika tanpa batas waktu, sudah lewat, atau tidak ada promo. */
+    public function dealEndsAt(): ?Carbon
+    {
+        if (! $this->hot_deal_ends_at
+            || $this->dealHasEnded()
+            || $this->sale_status !== 'available') {
+            return null;
+        }
+
+        return ($this->hasDiscount() || $this->is_hot_deal) ? $this->hot_deal_ends_at : null;
+    }
+
+    /** Teks sisa waktu promo: "Berakhir dalam 2 hari" / "5 jam" / "20 menit". Null jika tidak ada batas waktu. */
+    public function dealRemainingText(): ?string
+    {
+        $end = $this->dealEndsAt();
+
+        if (! $end) {
+            return null;
+        }
+
+        $seconds = max(1, $end->getTimestamp() - now()->getTimestamp());
+
+        if ($seconds >= 86400) {
+            return 'Berakhir dalam ' . (int) ceil($seconds / 86400) . ' hari';
+        }
+
+        if ($seconds >= 3600) {
+            return 'Berakhir dalam ' . (int) ceil($seconds / 3600) . ' jam';
+        }
+
+        return 'Berakhir dalam ' . max(1, (int) ceil($seconds / 60)) . ' menit';
+    }
+
+    /** Atribut HTML untuk hitung mundur berjalan (public/js/live-time.js). Kosong jika tidak ada batas waktu. */
+    public function dealCountdownAttrs(): string
+    {
+        $end = $this->dealEndsAt();
+
+        if (! $end) {
+            return '';
+        }
+
+        return 'data-countdown="' . e($end->toIso8601String()) . '"'
+            . ' data-prefix="Berakhir dalam "'
+            . ' data-expired="Promo berakhir"';
+    }
+
+    /**
+     * Akhiri semua promo yang masa berlakunya lewat: harga kembali ke harga normal
+     * (harga coret), label Hot Deal dan batas waktunya dihapus.
+     * Akun terjual tidak disentuh supaya harga historisnya tetap.
+     * Dipanggil otomatis oleh middleware ExpireHotDeals di setiap request.
+     *
+     * Urutan kolom di array update sengaja begini: price dihitung dari original_price
+     * sebelum original_price dikosongkan.
+     */
+    public static function expireHotDeals(): int
+    {
+        return DB::table('coc_accounts')
+            ->whereNotNull('hot_deal_ends_at')
+            ->where('hot_deal_ends_at', '<=', now())
+            ->where('sale_status', '!=', 'sold')
+            ->update([
+                'price'            => DB::raw('COALESCE(original_price, price)'),
+                'original_price'   => null,
+                'is_hot_deal'      => false,
+                'hot_deal_ends_at' => null,
+            ]);
     }
 
     /** Tag yang relevan untuk jenis listing ini (tag clan untuk clan, tag akun untuk akun pemain). */
@@ -212,10 +299,25 @@ class CocAccount extends Model
             });
     }
 
-    /** Akun yang ditandai admin sebagai Hot Deal. */
+    /** Akun yang ditandai admin sebagai Hot Deal dan masa berlakunya belum lewat. */
     public function scopeHotDeal($query)
     {
-        return $query->where('is_hot_deal', true);
+        return $query->where('is_hot_deal', true)
+            ->where(function ($q) {
+                $q->whereNull('hot_deal_ends_at')
+                  ->orWhere('hot_deal_ends_at', '>', now());
+            });
+    }
+
+    /** Urutkan dari persen diskon terbesar; yang tidak sedang diskon di bawah. */
+    public function scopeOrderByDiscount($query)
+    {
+        return $query->orderByRaw(
+            'CASE WHEN original_price IS NOT NULL AND original_price > price'
+            . ' AND (hot_deal_ends_at IS NULL OR hot_deal_ends_at > ?)'
+            . ' THEN (original_price - price) / original_price ELSE 0 END DESC',
+            [now()]
+        );
     }
 
     // Scope untuk publik (hanya yang masih bisa dibeli)

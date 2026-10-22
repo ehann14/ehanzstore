@@ -6,6 +6,7 @@
     $isClan = $account->isClan();
     $showDiscount = ! $isSold && $account->hasDiscount();
     $showHot      = ! $isSold && $account->isHotDeal();
+    $dealLeft     = ($showHot || $showDiscount) ? $account->dealRemainingText() : null;
     $heroes = $isClan ? array_filter([
         'Lv'     => $account->clan_level,
         'CH'     => $account->capital_hall_level,
@@ -160,6 +161,13 @@
                 <p class="text-sm sm:text-lg font-display font-bold {{ $isSold ? 'text-slate-500 line-through' : ($showDiscount ? 'text-orange-400' : 'text-white') }}">
                     Rp {{ number_format($account->price, 0, ',', '.') }}
                 </p>
+
+                @if($dealLeft)
+                    <p class="mt-1 inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-orange-300">
+                        <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span {!! $account->dealCountdownAttrs() !!}>{{ $dealLeft }}</span>
+                    </p>
+                @endif
             </div>
 
             <span class="hidden sm:inline text-xs font-semibold text-electric group-hover:text-white group-hover:bg-electric border border-electric/40 px-3 py-1.5 rounded-lg transition">
