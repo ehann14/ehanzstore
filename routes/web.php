@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WarrantyCheckController;
@@ -9,6 +10,8 @@ use App\Http\Controllers\SuperAdmin\ReviewModerationController;
 use App\Http\Controllers\SuperAdmin\ReportController;
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\StaleStockController;
+use App\Http\Controllers\SuperAdmin\SecurityController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboard;
 
 // Public Routes
@@ -39,10 +42,17 @@ Route::get('/uploads/{path}', [PublicController::class, 'upload'])
 // Auth Routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
+
+// Langkah kedua login Super Admin (kode authenticator / kode pemulihan)
+Route::get('/login/two-factor', [TwoFactorController::class, 'show'])->name('two-factor.challenge');
+Route::post('/login/two-factor', [TwoFactorController::class, 'verify'])
+    ->middleware('throttle:20,1')
+    ->name('two-factor.verify');
+Route::post('/login/two-factor/cancel', [TwoFactorController::class, 'cancel'])->name('two-factor.cancel');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Admin Routes (Regular Admin + Super Admin)
-Route::middleware(['auth', 'role:admin'])
+Route::middleware(['auth', 'role:admin', 'two-factor'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -90,10 +100,33 @@ Route::middleware(['auth', 'role:admin'])
             BannerController::class,
             'toggle'
         ])->name('banners.toggle');
+
+        // Pengingat stok lama + saran penurunan harga
+        Route::get('stale-stock', [StaleStockController::class, 'index'])
+            ->name('stale.index');
+
+        Route::post('stale-stock/{account}/apply-price', [StaleStockController::class, 'applyPrice'])
+            ->name('stale.apply');
+    });
+
+// Pengaturan keamanan Super Admin (2FA). Sengaja di luar grup di bawah:
+// halaman ini harus bisa dibuka sebelum 2FA aktif, tapi tetap memeriksa sesi bila sudah aktif.
+Route::middleware(['auth', 'role:super_admin', 'two-factor:setup'])
+    ->prefix('super-admin')
+    ->name('super-admin.')
+    ->group(function () {
+        Route::get('/security', [SecurityController::class, 'index'])->name('security');
+
+        Route::middleware('throttle:10,1')->group(function () {
+            Route::post('/security/two-factor/refresh', [SecurityController::class, 'refresh'])->name('security.refresh');
+            Route::post('/security/two-factor/enable', [SecurityController::class, 'enable'])->name('security.enable');
+            Route::post('/security/two-factor/recovery', [SecurityController::class, 'regenerateRecovery'])->name('security.recovery');
+            Route::post('/security/two-factor/disable', [SecurityController::class, 'disable'])->name('security.disable');
+        });
     });
 
 // Super Admin Routes
-Route::middleware(['auth', 'role:super_admin'])
+Route::middleware(['auth', 'role:super_admin', 'two-factor'])
     ->prefix('super-admin')
     ->name('super-admin.')
     ->group(function () {

@@ -36,6 +36,15 @@ class ActivityLog extends Model
         'approve_review' => ['label' => 'Setujui ulasan',     'tone' => 'green'],
         'reject_review'  => ['label' => 'Tolak ulasan',       'tone' => 'amber'],
         'delete_review'  => ['label' => 'Hapus ulasan',       'tone' => 'red'],
+        'apply_price_suggestion' => ['label' => 'Terapkan saran harga', 'tone' => 'blue'],
+        // Keamanan login
+        'login_failed'   => ['label' => 'Login gagal',        'tone' => 'amber'],
+        'login_locked'   => ['label' => 'Login diblokir sementara', 'tone' => 'red'],
+        'two_factor_failed'    => ['label' => '2FA: kode salah',         'tone' => 'amber'],
+        'two_factor_enabled'   => ['label' => '2FA diaktifkan',          'tone' => 'green'],
+        'two_factor_disabled'  => ['label' => '2FA dinonaktifkan',       'tone' => 'red'],
+        'two_factor_recovery_used'  => ['label' => '2FA: kode pemulihan dipakai', 'tone' => 'amber'],
+        'two_factor_recovery_reset' => ['label' => '2FA: kode pemulihan dibuat ulang', 'tone' => 'blue'],
     ];
 
     public function user()
@@ -49,9 +58,16 @@ class ActivityLog extends Model
      */
     public static function record(string $action, ?Model $entity = null, ?string $label = null, array $extra = []): void
     {
-        try {
-            $userId = Auth::id();
+        static::recordFor(Auth::id(), $action, $entity, $label, $extra);
+    }
 
+    /**
+     * Catat aktivitas untuk pengguna tertentu, termasuk yang belum/tidak sedang login
+     * (mis. percobaan login gagal pada akun yang ada).
+     */
+    public static function recordFor(?int $userId, string $action, ?Model $entity = null, ?string $label = null, array $extra = []): void
+    {
+        try {
             if (! $userId) {
                 return;
             }

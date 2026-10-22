@@ -396,6 +396,50 @@
 
         </div>
     </div>
+
+    {{-- ===================== AKUN SERUPA ===================== --}}
+    @if(isset($similar) && $similar->isNotEmpty())
+        @php
+            $isSoldNow = $account->sale_status === 'sold';
+            $simNoun   = $account->noun();
+        @endphp
+
+        <section class="mt-16 sm:mt-20 pt-10 border-t border-white/10">
+            @if($isSoldNow)
+                <div class="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4">
+                    <p class="font-semibold text-amber-200">{{ ucfirst($simNoun) }} ini sudah terjual.</p>
+                    <p class="text-sm text-amber-100/70 mt-0.5">Ini {{ $simNoun }} lain yang masih tersedia dengan spesifikasi dan harga mirip.</p>
+                </div>
+            @endif
+
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-4 mb-5 sm:mb-6">
+                <div>
+                    <h2 class="font-display text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                        <span class="w-1.5 h-6 rounded-full bg-electric"></span>
+                        {{ $account->isClan() ? 'CLAN SERUPA' : 'AKUN SERUPA' }}
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">
+                        @if($account->isClan())
+                            Clan dengan rentang harga yang mirip.
+                        @else
+                            Town Hall dan rentang harga yang mirip dengan TH {{ $account->town_hall }}.
+                        @endif
+                    </p>
+                </div>
+                <a href="{{ route('catalog', array_filter(['type' => $account->listing_type, 'th' => $account->isClan() ? null : $account->town_hall])) }}"
+                   class="inline-flex items-center gap-2 text-sm font-medium text-electric hover:text-white transition self-start sm:self-auto">
+                    Lihat semua
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                </a>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+                @foreach($similar as $item)
+                    @include('components.account-card', ['account' => $item])
+                @endforeach
+            </div>
+        </section>
+    @endif
 </div>
 @endsection
 

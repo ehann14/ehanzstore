@@ -44,12 +44,23 @@
         $user    = auth()->user();
         $isSuper = $user->isSuperAdmin();
 
+        // Jumlah stok lama (belum laku > N hari) untuk lencana di menu
+        try {
+            $staleBadge = \App\Models\CocAccount::stale()
+                ->when(! $isSuper, fn ($q) => $q->where('created_by', $user->id))
+                ->count();
+        } catch (\Throwable $e) {
+            $staleBadge = 0;
+        }
+
         $sections = [
             'Menu' => [
                 ['href' => route($isSuper ? 'super-admin.dashboard' : 'admin.dashboard'), 'label' => 'Dashboard', 'active' => request()->routeIs('*.dashboard'),
                  'icon' => 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z'],
                 ['href' => route('admin.accounts.index'), 'label' => 'Kelola Akun', 'active' => request()->routeIs('admin.accounts.*'),
                  'icon' => 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'],
+                ['href' => route('admin.stale.index'), 'label' => 'Stok Lama', 'active' => request()->routeIs('admin.stale.*'), 'badge' => $staleBadge,
+                 'icon' => 'M5 3h14M5 21h14M7 3v3a5 5 0 002 4l3 2-3 2a5 5 0 00-2 4v3m10-18v3a5 5 0 01-2 4l-3 2 3 2a5 5 0 012 4v3'],
                 ['href' => route('admin.banners.index'), 'label' => 'Banner Beranda', 'active' => request()->routeIs('admin.banners.*'),
                  'icon' => 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'],
             ],
@@ -69,6 +80,8 @@
                  'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'],
                 ['href' => route('super-admin.activity-logs'), 'label' => 'Riwayat Aktivitas', 'active' => request()->routeIs('super-admin.activity-logs'),
                  'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
+                ['href' => route('super-admin.security'), 'label' => 'Keamanan', 'active' => request()->routeIs('super-admin.security*'),
+                 'icon' => 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'],
             ];
         }
 
@@ -97,6 +110,9 @@
                         <a href="{{ $item['href'] }}" class="sidebar-link {{ $item['active'] ? 'active' : '' }}">
                             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/></svg>
                             {{ $item['label'] }}
+                            @if(!empty($item['badge']))
+                                <span class="ml-auto min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500/90 text-[10px] font-bold text-slate-900 flex items-center justify-center">{{ $item['badge'] }}</span>
+                            @endif
                         </a>
                     @endforeach
                 </div>
@@ -149,6 +165,9 @@
                         <a href="{{ $item['href'] }}" class="sidebar-link {{ $item['active'] ? 'active' : '' }}">
                             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/></svg>
                             {{ $item['label'] }}
+                            @if(!empty($item['badge']))
+                                <span class="ml-auto min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500/90 text-[10px] font-bold text-slate-900 flex items-center justify-center">{{ $item['badge'] }}</span>
+                            @endif
                         </a>
                     @endforeach
                     <a href="{{ route('home') }}" target="_blank" rel="noopener" class="sidebar-link">Lihat Website</a>

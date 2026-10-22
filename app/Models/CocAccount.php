@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class CocAccount extends Model
@@ -318,6 +319,164 @@ class CocAccount extends Model
             . ' THEN (original_price - price) / original_price ELSE 0 END DESC',
             [now()]
         );
+    }
+
+    // ------------------------------------------------------------------
+    // Akun serupa (ditampilkan di bawah halaman detail)
+    // ------------------------------------------------------------------
+
+    /**
+     * Akun/clan lain yang masih tersedia dengan Town Hall dan rentang harga mirip.
+     * Dicari bertahap sampai $limit terpenuhi, yang paling mirip dulu:
+     *   akun : TH sama harga +/-30%  ->  TH sama +/-60%  ->  TH +/-1 harga +/-40%  ->  TH sama berapa pun
+     *   clan : harga +/-30%  ->  harga +/-60%  ->  clan lain berapa pun
+     * Di tiap tahap diurutkan dari selisih harga terkecil. Akun ini sendiri tidak ikut.
+     */
+    public function similarListings(int $limit = 4): Collection
+    {
+        $price = (float) $this->price;
+        $type  = $this->listing_type ?: 'account';
+
+        // [filter Town Hall, persen rentang harga (null = bebas)]
+        $tiers = $this->isClan()
+            ? [[null, 30], [null, 60], [null, null]]
+            : [[[$this->town_hall], 30], [[$this->town_hall], 60],
+               [[$this->town_hall - 1, $this->town_hall + 1], 40], [[$this->town_hall], null]];
+
+        $picked = collect();
+
+        foreach ($tiers as [$townHalls, $percent]) {
+            $need = $limit - $picked->count();
+
+            if ($need < 1) {
+                break;
+            }
+
+            $query = static::available()
+                ->where('listing_type', $type)
+                ->where('id', '!=', $this->id)
+                ->when($picked->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $picked->pluck('id')))
+                ->with(['primaryImage', 'latestCompletedSale.approvedReview']);
+
+            if ($townHalls !== null) {
+                $query->whereIn('town_hall', $townHalls);
+            }
+
+            if ($percent !== null) {
+                $query->whereBetween('price', [
+                    max(0, $price * (1 - $percent / 100)),
+                    $price * (1 + $percent / 100),
+                ]);
+            }
+
+            $picked = $picked->concat(
+                $query->orderByRaw('ABS(price - ?)', [$price])
+                      ->orderByDesc('created_at')
+                      ->limit($need)
+                      ->get()
+            );
+        }
+
+        return $picked->take($limit)->values();
+    }
+
+    // ------------------------------------------------------------------
+    // Pengingat stok lama
+    // ------------------------------------------------------------------
+
+    /** Terbit, masih tersedia, dan sudah terpajang lebih dari N hari (default config store.stale_days). */
+    public function scopeStale($query, ?int $days = null)
+    {
+        $days ??= (int) config('store.stale_days', 30);
+
+        return $query->where('publication_status', 'published')
+            ->where('sale_status', 'available')
+            ->where('created_at', '<=', now()->subDays($days));
+    }
+
+    /** Sudah berapa hari akun ini terpajang (sejak dibuat). */
+    public function daysListed(): int
+    {
+        return $this->created_at
+            ? max(0, (int) floor((now()->getTimestamp() - $this->created_at->getTimestamp()) / 86400))
+            : 0;
+    }
+
+    /**
+     * Saran harga baru untuk stok lama. Makin lama belum laku, makin besar penurunannya
+     * (lihat config store.stale_price_tiers). Dibulatkan ke kelipatan yang rapi dan tidak
+     * pernah di bawah harga modal. Null bila tidak ada ruang turun lagi.
+     *
+     * @return array{percent: float, price: int, profit: float, at_cost: bool, cost_known: bool}|null
+     */
+    public function priceSuggestion(): ?array
+    {
+        $price = (float) $this->price;
+
+        if ($price <= 0) {
+            return null;
+        }
+
+        $tiers = (array) config('store.stale_price_tiers', [30 => 5]);
+        krsort($tiers);
+
+        $days    = $this->daysListed();
+        $percent = (float) min($tiers);
+
+        foreach ($tiers as $minDays => $pct) {
+            if ($days >= $minDays) {
+                $percent = (float) $pct;
+                break;
+            }
+        }
+
+        $step      = $price >= 1_000_000 ? 25_000 : ($price >= 300_000 ? 10_000 : 5_000);
+        $suggested = (int) (round($price * (1 - $percent / 100) / $step) * $step);
+
+        $cost      = (float) $this->cost_price;
+        $costKnown = $cost > 0;
+        $atCost    = false;
+
+        // Jangan sampai rugi: batasi sampai harga modal
+        if ($costKnown && $suggested < $cost) {
+            $suggested = (int) ceil($cost);
+            $atCost    = true;
+        }
+
+        if ($suggested >= $price) {
+            return null;
+        }
+
+        return [
+            'percent'    => round((1 - $suggested / $price) * 100, 1),
+            'price'      => $suggested,
+            'profit'     => $suggested - $cost,
+            'at_cost'    => $atCost,
+            'cost_known' => $costKnown,
+        ];
+    }
+
+    /**
+     * Ringkasan stok lama untuk kartu pengingat di dashboard.
+     * $ownerId diisi untuk admin biasa (hanya akun miliknya); null untuk Super Admin (semua).
+     *
+     * @return array{count: int, capital: float, value: float, oldest_days: int}
+     */
+    public static function staleSummary(?int $ownerId = null): array
+    {
+        $row = static::stale()
+            ->when($ownerId, fn ($q) => $q->where('created_by', $ownerId))
+            ->selectRaw('COUNT(*) as total, COALESCE(SUM(cost_price), 0) as capital, COALESCE(SUM(price), 0) as value, MIN(created_at) as oldest')
+            ->first();
+
+        $oldest = $row?->oldest ? Carbon::parse($row->oldest) : null;
+
+        return [
+            'count'       => (int) ($row->total ?? 0),
+            'capital'     => (float) ($row->capital ?? 0),
+            'value'       => (float) ($row->value ?? 0),
+            'oldest_days' => $oldest ? max(0, (int) floor((now()->getTimestamp() - $oldest->getTimestamp()) / 86400)) : 0,
+        ];
     }
 
     // Scope untuk publik (hanya yang masih bisa dibeli)

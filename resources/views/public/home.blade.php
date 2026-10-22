@@ -202,25 +202,6 @@
                 </a>
             </div>
         @endif
-
-        {{-- Terjual: dipisah dari yang tersedia, hanya jenis ini --}}
-        @if($sold->count())
-            <div class="mt-12 sm:mt-14">
-                <div class="mb-5">
-                    <h3 class="font-display text-lg sm:text-2xl font-bold text-white flex items-center gap-2">
-                        <span class="w-1.5 h-5 sm:h-6 rounded-full bg-red-500"></span>
-                        {{ $isClanBlock ? 'CLAN TERJUAL' : 'AKUN TERJUAL' }}
-                    </h3>
-                    <p class="text-sm text-slate-500 mt-1">{{ ucfirst($noun) }} yang baru laku dan masih dalam masa garansi pembeli.</p>
-                </div>
-
-                <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-                    @foreach($sold as $account)
-                        @include('components.account-card', ['account' => $account])
-                    @endforeach
-                </div>
-            </div>
-        @endif
     </section>
     @endforeach
 
@@ -280,6 +261,34 @@
                     </div>
                 @endif
             </div>
+        </section>
+    @endif
+
+    {{-- ===================== AKUN & CLAN TERJUAL (paling bawah) ===================== --}}
+    @if($soldAccounts->count() || $soldClans->count())
+        <section id="terjual" class="max-w-7xl mx-auto px-4 pb-16 sm:pb-20">
+            @foreach([
+                ['noun' => 'akun', 'title' => 'AKUN TERJUAL', 'items' => $soldAccounts],
+                ['noun' => 'clan', 'title' => 'CLAN TERJUAL', 'items' => $soldClans],
+            ] as $i => $group)
+                @if($group['items']->count())
+                    <div class="{{ $i > 0 && $soldAccounts->count() ? 'mt-12 sm:mt-14' : '' }}">
+                        <div class="mb-5">
+                            <h2 class="font-display text-lg sm:text-2xl font-bold text-white flex items-center gap-2">
+                                <span class="w-1.5 h-5 sm:h-6 rounded-full bg-red-500"></span>
+                                {{ $group['title'] }}
+                            </h2>
+                            <p class="text-sm text-slate-500 mt-1">{{ ucfirst($group['noun']) }} yang baru laku dan masih dalam masa garansi pembeli.</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+                            @foreach($group['items'] as $account)
+                                @include('components.account-card', ['account' => $account])
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            @endforeach
         </section>
     @endif
 

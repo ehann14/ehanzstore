@@ -54,6 +54,12 @@
         <!-- Login Card -->
         <div class="glass-card rounded-3xl p-8 shadow-2xl">
             
+            @if (session('error') || session('success'))
+                <div class="mb-6 p-4 rounded-xl border text-sm {{ session('error') ? 'bg-amber-500/10 border-amber-500/20 text-amber-200' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200' }}">
+                    {{ session('error') ?? session('success') }}
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-200 text-sm flex items-start gap-3">
                     <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

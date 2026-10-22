@@ -7,7 +7,9 @@ use App\Models\ActivityLog;
 use App\Models\Banner;
 use Illuminate\Http\Request;
 use App\Support\Uploads;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Sale;
 
 class BannerController extends Controller
 {
@@ -28,6 +30,7 @@ class BannerController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request, true);
+        $this->applySchedule($data);
 
         try {
             $data['image_path'] = Uploads::store($request->file('image'), 'banners');
@@ -56,7 +59,8 @@ class BannerController extends Controller
 
     public function update(Request $request, Banner $banner)
     {
-        $data = $this->validated($request, false);
+        $data = $this->validated($request, false, $banner);
+        $this->applySchedule($data);
 
         if ($request->hasFile('image')) {
             $oldImage = $banner->image_path;
@@ -110,7 +114,7 @@ class BannerController extends Controller
         return back()->with('success', 'Banner dihapus.');
     }
 
-    private function validated(Request $request, bool $imageRequired): array
+    private function validated(Request $request, bool $imageRequired, ?Banner $banner = null): array
     {
         $validated = $request->validate([
             'title'      => 'required|string|max:120',
@@ -127,10 +131,63 @@ class BannerController extends Controller
                 },
             ],
             'sort_order' => 'nullable|integer|min:0|max:9999',
+            // Jadwal tayang (WIB). Kosong = tanpa batas.
+            'starts_at'  => ['nullable', 'date'],
+            'ends_at'    => [
+                'nullable', 'date',
+                function ($attribute, $value, $fail) use ($request, $banner) {
+                    $end = $this->parseWib($value);
+
+                    if (! $end) {
+                        return;
+                    }
+
+                    if ($request->filled('starts_at')) {
+                        $start = $this->parseWib($request->input('starts_at'));
+
+                        if ($start && $end->lte($start)) {
+                            $fail('Tanggal berakhir harus setelah tanggal mulai.');
+
+                            return;
+                        }
+                    }
+
+                    // Tanggal berakhir baru harus di masa depan. Saat edit, nilai lama yang tidak diubah dibiarkan.
+                    $unchanged = $banner?->ends_at && $banner->ends_at->equalTo($end);
+
+                    if ($end->lte(now()) && ! $unchanged) {
+                        $fail('Tanggal berakhir harus di masa depan.');
+                    }
+                },
+            ],
+        ], [
+            'starts_at.date' => 'Format tanggal mulai tidak valid.',
+            'ends_at.date'   => 'Format tanggal berakhir tidak valid.',
         ]);
 
         $validated['sort_order'] = (int) ($validated['sort_order'] ?? 0);
 
         return $validated;
+    }
+
+    /** Baca input datetime-local sebagai WIB, simpan dalam zona waktu aplikasi. Kosong -> null. */
+    private function parseWib(mixed $value): ?Carbon
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value, Sale::DISPLAY_TZ)->setTimezone(config('app.timezone'));
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /** Ubah input jadwal (string WIB) menjadi nilai yang siap disimpan. */
+    private function applySchedule(array &$data): void
+    {
+        $data['starts_at'] = $this->parseWib($data['starts_at'] ?? null);
+        $data['ends_at']   = $this->parseWib($data['ends_at'] ?? null);
     }
 }

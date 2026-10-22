@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\EnsureTwoFactor;
 use App\Http\Middleware\ExpireHotDeals;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\VisitorTracking;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Registrasi alias middleware role
         $middleware->alias([
             'role' => RoleMiddleware::class,
+            'two-factor' => EnsureTwoFactor::class,
         ]);
 
         // Hot Deal yang sudah lewat masa berlakunya diakhiri otomatis (tanpa cron)

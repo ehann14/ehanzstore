@@ -256,7 +256,11 @@ class PublicController extends Controller
             $account->id
         );
 
-        return view('public.detail', compact('account'));
+        // 4 akun lain dengan Town Hall & rentang harga mirip (mengarahkan pembeli melihat stok lain,
+        // terutama bila akun yang dibuka sudah terjual)
+        $similar = $account->similarListings((int) config('store.similar_limit', 4));
+
+        return view('public.detail', compact('account', 'similar'));
     }
 
     /**

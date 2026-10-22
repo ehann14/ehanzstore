@@ -101,6 +101,9 @@
     </div>
     </div>
 
+    <!-- Pengingat stok lama -->
+    @include('admin.stale._alert')
+
     <!-- Pengingat garansi -->
     <div data-live="warranty">
     <div class="glass-panel rounded-2xl p-5 sm:p-6 mb-6 {{ $warrantyAlerts->isNotEmpty() ? 'border border-amber-500/30' : '' }}">

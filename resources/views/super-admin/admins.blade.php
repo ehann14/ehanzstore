@@ -65,6 +65,11 @@
                         <span class="px-2.5 py-1 rounded-full border text-[11px] font-medium {{ $admin->is_active ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-red-500/15 text-red-300 border-red-500/30' }}">
                             {{ $admin->is_active ? 'Aktif' : 'Nonaktif' }}
                         </span>
+                        @if($isSuper)
+                            <span class="px-2.5 py-1 rounded-full border text-[11px] font-medium {{ $admin->hasTwoFactorEnabled() ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border-amber-500/30' }}">
+                                {{ $admin->hasTwoFactorEnabled() ? '2FA aktif' : '2FA belum aktif' }}
+                            </span>
+                        @endif
                         <span class="text-xs text-slate-500 sm:ml-2">Bergabung {{ $admin->created_at?->format('d M Y') ?? '-' }}</span>
                     </div>
                 </div>

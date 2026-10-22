@@ -16,6 +16,8 @@
         </a>
     </div>
 
+    @include('admin.stale._alert')
+
     @if($accounts->isEmpty())
         <div class="glass-panel rounded-3xl p-16 text-center border border-white/5">
             <div class="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
