@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SuperAdmin\ReviewModerationController;
+use App\Http\Controllers\SuperAdmin\ReportController;
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboard;
@@ -97,6 +98,16 @@ Route::middleware(['auth', 'role:super_admin'])
 
         Route::get('/sales', [SuperAdminDashboard::class, 'sales'])
             ->name('sales');
+
+        // Ekspor Excel/PDF: daftar transaksi dan laporan bulanan
+        Route::get('/sales/export', [ReportController::class, 'exportSales'])
+            ->name('sales.export');
+
+        Route::get('/reports/monthly', [ReportController::class, 'monthly'])
+            ->name('reports.monthly');
+
+        Route::get('/reports/monthly/export', [ReportController::class, 'exportMonthly'])
+            ->name('reports.monthly.export');
 
         Route::get('/admins', [SuperAdminDashboard::class, 'manageAdmins'])
             ->name('admins');
