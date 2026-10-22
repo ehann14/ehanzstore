@@ -42,6 +42,11 @@
                     <input type="text" name="name" value="{{ old('name', $account->name) }}" required placeholder="Contoh: TH16 Max Hero Full"
                            class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition @error('name') border-red-500 @enderror">
                     @error('name') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+
+                    {{-- Tag langsung di bawah nama: Tag Akun (akun pemain) / Tag Clan (clan) --}}
+                    <div class="mt-4">
+                        @include('admin.accounts._tag-field', ['account' => $account, 'kind' => $account->isClan() ? 'clan' : 'account'])
+                    </div>
                 </div>
 
                 @unless($account->isClan())
@@ -75,6 +80,14 @@
 
             @include('admin.accounts._cost-field', ['account' => $account])
         </div>
+
+        @unless($account->isClan())
+        <!-- Informasi Akun -->
+        <div class="space-y-4">
+            <h3 class="text-sm font-bold text-brand-400 uppercase tracking-wider border-b border-white/5 pb-2">Informasi Akun</h3>
+            @include('admin.accounts._account-info', ['account' => $account])
+        </div>
+        @endunless
 
         <!-- Spesifikasi Akun -->
         <div class="space-y-4">
@@ -141,7 +154,7 @@
         <div class="space-y-6 pt-4">
             <div>
                 <label class="block text-xs font-semibold text-slate-400 mb-2">Deskripsi Tambahan</label>
-                <textarea name="description" rows="3" placeholder="Tulis detail tambahan seperti CN, builder, gems, dll..."
+                <textarea name="description" rows="3" placeholder="Tulis detail tambahan lainnya..."
                           class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition resize-none">{{ old('description', $account->description) }}</textarea>
             </div>
 

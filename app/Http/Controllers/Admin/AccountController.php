@@ -50,6 +50,7 @@ class AccountController extends Controller
 
         $validated['listing_type']        = $type;
         $validated['cost_price']          = $validated['cost_price'] ?? 0;
+        $this->applyAccountInfoDefaults($validated);
         $validated['protection_status']   ??= 'Unprotected';
         $validated['email_change_status'] ??= 'Unchangeable';
         $this->applyEmailDelay($validated);
@@ -114,6 +115,7 @@ class AccountController extends Controller
         }
 
         $validated['cost_price'] = $validated['cost_price'] ?? 0;
+        $this->applyAccountInfoDefaults($validated);
 
         $this->applyEmailDelay($validated, $account);
 
@@ -304,6 +306,8 @@ class AccountController extends Controller
     {
         $request->merge([
             'account_code' => strtoupper(trim((string) $request->input('account_code'))),
+            'player_tag'   => CocAccount::normalizeTag($request->input('player_tag')),
+            'clan_tag'     => CocAccount::normalizeTag($request->input('clan_tag')),
         ]);
     }
 
@@ -329,6 +333,8 @@ class AccountController extends Controller
 
         if ($type === 'clan') {
             return $common + [
+                // tag clan: huruf & angka yang dipakai Clash of Clans (setelah #)
+                'clan_tag'           => ['nullable', 'string', 'max:20', 'regex:/^#[0-9A-Z]{3,19}$/'],
                 'clan_level'         => 'required|integer|min:1|max:100',
                 'capital_hall_level' => 'required|integer|min:0|max:15',
                 'clan_members'       => 'required|integer|min:0|max:' . CocAccount::CLAN_MAX_MEMBERS,
@@ -337,7 +343,13 @@ class AccountController extends Controller
         }
 
         return $common + [
+            // tag akun: huruf & angka yang dipakai Clash of Clans (setelah #)
+            'player_tag'           => ['nullable', 'string', 'max:20', 'regex:/^#[0-9A-Z]{3,19}$/'],
             'town_hall'            => 'required|integer|min:1|max:18',
+            'account_level'        => 'nullable|integer|min:0|max:500',
+            'builder_count'        => 'nullable|integer|min:0|max:6',
+            'gems'                 => 'nullable|integer|min:0|max:99999999',
+            'cn_information'       => 'nullable|string|max:255',
             'barbarian_king_level' => 'nullable|integer|min:0|max:100',
             'archer_queen_level'   => 'nullable|integer|min:0|max:100',
             'minion_prince_level'  => 'nullable|integer|min:0|max:100',
@@ -348,6 +360,20 @@ class AccountController extends Controller
             'email_change_status'  => 'nullable|in:Changeable,Unchangeable',
             'email_change_days'    => 'nullable|integer|min:0|max:365',
         ];
+    }
+
+    /**
+     * Kolom angka informasi akun tidak boleh NULL di database. Jika input dikosongkan
+     * (Laravel mengubah string kosong jadi null), pakai nilai bawaan kolomnya.
+     * Hanya menyentuh kolom yang memang dikirim form (akun pemain), clan tidak terpengaruh.
+     */
+    private function applyAccountInfoDefaults(array &$validated): void
+    {
+        foreach (['account_level' => 0, 'builder_count' => 5, 'gems' => 0] as $col => $default) {
+            if (array_key_exists($col, $validated) && $validated[$col] === null) {
+                $validated[$col] = $default;
+            }
+        }
     }
 
     /**
@@ -395,6 +421,9 @@ class AccountController extends Controller
             'email_change_days.integer' => 'Jumlah hari harus berupa angka bulat.',
             'email_change_days.max'     => 'Jumlah hari maksimal 365.',
             'price.max'         => 'Harga terlalu besar (maksimal Rp 999.999.999).',
+            'player_tag.regex'  => 'Tag akun tidak valid. Gunakan huruf dan angka saja, contoh: #P2LQ8Y0R.',
+            'clan_tag.regex'    => 'Tag clan tidak valid. Gunakan huruf dan angka saja, contoh: #2Y8LQ0R.',
+            'builder_count.max' => 'Jumlah tukang maksimal 6.',
             'cost_price.numeric' => 'Harga modal harus berupa angka.',
             'cost_price.min'     => 'Harga modal tidak boleh negatif.',
             'cost_price.max'     => 'Harga modal terlalu besar (maksimal Rp 999.999.999).',

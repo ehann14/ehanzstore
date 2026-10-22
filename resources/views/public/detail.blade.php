@@ -10,6 +10,7 @@
     $shareTitle = $account->name . ' (' . ($isClan ? 'Clan Lv. ' . $account->clan_level : 'TH ' . $account->town_hall) . ') - ' . $sharePrice;
     $shareText  = ($isClan ? 'Clan Clash of Clans ' : 'Akun Clash of Clans ') . $account->name
                 . ' | ' . ($isClan ? 'Lv. ' . $account->clan_level . ' | ' . $account->clan_league : 'TH ' . $account->town_hall)
+                . ($account->tag() ? ' | Tag ' . $account->tag() : '')
                 . ' | Kode ' . $account->account_code . ' | ' . $sharePrice . ' - EHANZSTORE.ID';
     
     // Perbaikan: Menggunakan asset('storage/...') untuk kompatibilitas symlink & hosting
@@ -235,16 +236,31 @@
             {{-- Spesifikasi Akun --}}
             <div class="space-y-4">
                 <h3 class="text-lg font-display font-bold text-white border-b border-white/10 pb-2">
-                    Spesifikasi {{ $isClan ? 'Clan' : 'Akun' }}
+                    {{ $isClan ? 'Informasi Clan' : 'Informasi Akun' }}
                 </h3>
 
                 @php
+                    // Tag selalu paling awal (setelah nama), lalu data lainnya
+                    $tagSpec = [
+                        'label' => $isClan ? 'Tag Clan' : 'Tag Akun',
+                        'val'   => $account->tag() ?: '-',
+                        'mono'  => true,
+                        'wide'  => true,
+                        'copy'  => $account->tag(),
+                    ];
+
                     $specs = $isClan ? [
+                        $tagSpec,
                         ['label' => 'Level Clan', 'val' => 'Lv. ' . ($account->clan_level ?? 0)],
                         ['label' => 'Capital Hall', 'val' => 'Lv. ' . ($account->capital_hall_level ?? 0)],
                         ['label' => 'Member', 'val' => ($account->clan_members ?? 0) . ' / ' . \App\Models\CocAccount::CLAN_MAX_MEMBERS],
                         ['label' => 'Liga Clan', 'val' => $account->clan_league ?: 'Unranked'],
                     ] : [
+                        $tagSpec,
+                        ['label' => 'Level Akun', 'val' => $account->account_level ? 'Lv. ' . $account->account_level : '-'],
+                        ['label' => 'Tukang', 'val' => ($account->builder_count ?? 5) . ' Orang'],
+                        ['label' => 'Gems', 'val' => number_format($account->gems ?? 0, 0, ',', '.') . ' Gems'],
+                        ['label' => 'CN', 'val' => $account->cn_information ?: '-', 'wide' => true],
                         [
                             'label' => 'Barbarian King',
                             'val' => 'Lv. ' . ($account->barbarian_king_level ?? 0),
@@ -269,27 +285,28 @@
                             'label' => 'Dragon Duke',
                             'val' => 'Lv. ' . ($account->dragon_duke_level ?? 0),
                         ],
-                        [
-                            'label' => 'Builder',
-                            'val' => ($account->builder_count ?? 5) . ' Orang',
-                        ],
-                        [
-                            'label' => 'Gems',
-                            'val' => number_format($account->gems ?? 0) . ' Gems',
-                        ],
                     ];
                 @endphp
 
                 <div class="grid grid-cols-2 gap-4">
                     @foreach($specs as $spec)
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/5 {{ !empty($spec['wide']) ? 'col-span-2' : '' }}">
                             <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
                                 {{ $spec['label'] }}
                             </p>
 
-                            <p class="text-sm font-bold text-white">
-                                {{ $spec['val'] }}
-                            </p>
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-sm font-bold text-white {{ !empty($spec['mono']) ? 'font-mono' : '' }} break-words">
+                                    {{ $spec['val'] }}
+                                </p>
+
+                                @if(!empty($spec['copy']))
+                                    <button type="button" id="copyTagBtn" data-tag="{{ $spec['copy'] }}"
+                                            class="shrink-0 text-[11px] font-semibold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1.5 rounded-lg transition">
+                                        Salin
+                                    </button>
+                                @endif
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -630,6 +647,38 @@
 
         window.addEventListener('resize', function () {
             if (isOpen) { clamp(); apply(false); }
+        });
+    })();
+
+    // ---- Salin tag akun / clan ----
+    (function () {
+        const btn = document.getElementById('copyTagBtn');
+        if (!btn) return;
+        const tag = btn.dataset.tag;
+
+        function done() {
+            btn.textContent = 'Tersalin!';
+            setTimeout(function () { btn.textContent = 'Salin'; }, 1800);
+        }
+
+        function fallback() {
+            const ta = document.createElement('textarea');
+            ta.value = tag;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); done(); }
+            catch (e) { window.prompt('Salin tag ini:', tag); }
+            document.body.removeChild(ta);
+        }
+
+        btn.addEventListener('click', function () {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(tag).then(done).catch(fallback);
+            } else {
+                fallback();
+            }
         });
     })();
 

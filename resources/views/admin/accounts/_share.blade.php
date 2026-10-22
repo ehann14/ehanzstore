@@ -6,6 +6,7 @@
     if ($account->isClan()) {
         $shareText = "🔥 CLAN CLASH OF CLANS DIJUAL 🔥\n"
             . "{$account->name} | Clan Lv. " . ($account->clan_level ?? 0) . "\n"
+            . ($account->clan_tag ? "Tag Clan: {$account->clan_tag}\n" : '')
             . "Kode: {$account->account_code}\n"
             . "\n"
             . "🏰 Capital Hall Lv. " . ($account->capital_hall_level ?? 0)
@@ -19,8 +20,12 @@
     } else {
         $shareText = "🔥 AKUN CLASH OF CLANS DIJUAL 🔥\n"
             . "{$account->name} | TH {$account->town_hall}\n"
+            . ($account->player_tag ? "Tag Akun: {$account->player_tag}\n" : '')
             . "Kode: {$account->account_code}\n"
             . "\n"
+            . ($account->account_level ? "⭐ Level Akun: {$account->account_level}\n" : '')
+            . "🔨 Tukang: " . ($account->builder_count ?? 5) . " | 💎 Gems: " . number_format($account->gems ?? 0, 0, ',', '.') . "\n"
+            . ($account->cn_information ? "✏️ CN: {$account->cn_information}\n" : '')
             . "👑 BK Lv. " . ($account->barbarian_king_level ?? 0)
             . " | AQ Lv. " . ($account->archer_queen_level ?? 0)
             . " | MP Lv. " . ($account->minion_prince_level ?? 0) . "\n"
@@ -72,7 +77,7 @@
 
     <!-- Teks promosi -->
     <label class="block text-xs font-semibold text-slate-400 mb-2">Teks Promosi</label>
-    <textarea id="shareTextInput" rows="11" readonly
+    <textarea id="shareTextInput" rows="14" readonly
               class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 outline-none resize-none mb-4">{{ $shareText }}</textarea>
 
     <div class="flex flex-wrap gap-2">

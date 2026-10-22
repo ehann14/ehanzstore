@@ -59,6 +59,14 @@
                     <input type="text" name="name" value="{{ old('name') }}" required data-placeholder-account="Contoh: TH16 Max Hero Full" data-placeholder-clan="Contoh: Indo Warriors" placeholder="Contoh: TH16 Max Hero Full"
                            class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition @error('name') border-red-500 @enderror">
                     @error('name') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+
+                    {{-- Tag langsung di bawah nama: Tag Akun (akun pemain) / Tag Clan (clan) --}}
+                    <div class="mt-4" data-type-section="account">
+                        @include('admin.accounts._tag-field', ['account' => null, 'kind' => 'account'])
+                    </div>
+                    <div class="mt-4 hidden" data-type-section="clan">
+                        @include('admin.accounts._tag-field', ['account' => null, 'kind' => 'clan'])
+                    </div>
                 </div>
 
                 <div data-type-section="account">
@@ -89,6 +97,12 @@
             </div>
 
             @include('admin.accounts._cost-field', ['account' => null])
+        </div>
+
+        <!-- Informasi Akun (hanya akun pemain) -->
+        <div class="space-y-4" data-type-section="account">
+            <h3 class="text-sm font-bold text-brand-400 uppercase tracking-wider border-b border-white/5 pb-2">Informasi Akun</h3>
+            @include('admin.accounts._account-info', ['account' => null])
         </div>
 
         <!-- Spesifikasi Akun -->
@@ -131,7 +145,7 @@
         <div class="space-y-6 pt-4">
             <div>
                 <label class="block text-xs font-semibold text-slate-400 mb-2">Deskripsi Tambahan</label>
-                <textarea name="description" rows="3" placeholder="Tulis detail tambahan seperti CN, builder, gems, dll..."
+                <textarea name="description" rows="3" placeholder="Tulis detail tambahan lainnya..."
                           class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition resize-none">{{ old('description') }}</textarea>
             </div>
 

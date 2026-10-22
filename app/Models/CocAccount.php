@@ -10,7 +10,7 @@ class CocAccount extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'account_code', 'name', 'town_hall', 'account_level',
+        'account_code', 'name', 'player_tag', 'clan_tag', 'town_hall', 'account_level',
         'barbarian_king_level', 'archer_queen_level', 'minion_prince_level',
         'grand_warden_level', 'royal_champion_level', 'dragon_duke_level',
         'builder_count', 'gems', 'cn_information',
@@ -42,6 +42,20 @@ class CocAccount extends Model
     public function estimatedProfit(): float
     {
         return (float) $this->price - (float) $this->cost_price;
+    }
+
+    /** Tag yang relevan untuk jenis listing ini (tag clan untuk clan, tag akun untuk akun pemain). */
+    public function tag(): ?string
+    {
+        return $this->isClan() ? $this->clan_tag : $this->player_tag;
+    }
+
+    /** Rapikan input tag: huruf besar, tanpa spasi, selalu diawali #. Kosong -> null. */
+    public static function normalizeTag(?string $tag): ?string
+    {
+        $clean = strtoupper(preg_replace('/[\s#]+/', '', (string) $tag));
+
+        return $clean === '' ? null : '#' . $clean;
     }
 
     public function isClan(): bool
