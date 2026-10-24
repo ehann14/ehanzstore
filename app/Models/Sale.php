@@ -12,8 +12,11 @@ use Throwable;
 
 class Sale extends Model
 {
-    /** Lama garansi (hari) sejak serah terima akun. */
+    /** Lama garansi standar (hari) bila admin tidak memilih durasi lain. */
     public const WARRANTY_DAYS = 7;
+
+    /** Pilihan durasi garansi (hari) yang bisa dipilih admin untuk setiap transaksi. */
+    public const WARRANTY_OPTIONS = [7, 14, 21];
 
     /**
      * Zona waktu untuk input & tampilan admin.
@@ -27,7 +30,7 @@ class Sale extends Model
         'transaction_code', 'coc_account_id', 'account_code_snapshot',
         'buyer_name', 'buyer_phone',
         'sale_price', 'cost_price', 'transaction_status', 'payment_status', 'payment_method',
-        'processed_by', 'sold_at', 'handover_at', 'warranty_expires_at', 'notes', 'review_token',
+        'processed_by', 'sold_at', 'handover_at', 'warranty_days', 'warranty_expires_at', 'notes', 'review_token',
     ];
 
     protected $casts = [
@@ -35,6 +38,7 @@ class Sale extends Model
         'cost_price'          => 'decimal:2',
         'sold_at'             => 'datetime',
         'handover_at'         => 'datetime',
+        'warranty_days'       => 'integer',
         'warranty_expires_at' => 'datetime',
     ];
 
@@ -169,6 +173,32 @@ class Sale extends Model
         return filled($this->buyer_name);
     }
 
+    /**
+     * Durasi garansi transaksi ini (hari). Transaksi lama yang belum punya nilai
+     * (atau nilainya di luar opsi) dianggap garansi standar 7 hari.
+     */
+    public function warrantyDays(): int
+    {
+        $days = (int) $this->warranty_days;
+
+        return in_array($days, self::WARRANTY_OPTIONS, true) ? $days : self::WARRANTY_DAYS;
+    }
+
+    /** Teks opsi untuk kalimat umum, mis. "7, 14, atau 21 hari". */
+    public static function warrantyOptionsText(): string
+    {
+        $options = self::WARRANTY_OPTIONS;
+        $last    = array_pop($options);
+
+        return ($options ? implode(', ', $options) . ', atau ' : '') . $last . ' hari';
+    }
+
+    /** Rentang opsi untuk judul/label umum, mis. "7–21". */
+    public static function warrantyRange(): string
+    {
+        return min(self::WARRANTY_OPTIONS) . '–' . max(self::WARRANTY_OPTIONS);
+    }
+
     public function warrantyIsActive(): bool
     {
         return $this->transaction_status === 'completed'
@@ -177,9 +207,9 @@ class Sale extends Model
     }
 
     /**
-     * Teks sisa garansi untuk publik: "sisa 7 hari" / "sisa 5 jam".
+     * Teks sisa garansi untuk publik: "sisa 14 hari" / "sisa 5 jam".
      * Null jika garansi tidak aktif. Hari dibulatkan ke atas, jadi tepat setelah
-     * serah terima tampil "sisa 7 hari" sesuai janji garansi 7 hari.
+     * serah terima tampil "sisa N hari" sesuai durasi garansi yang dipilih.
      */
     public function warrantyRemainingText(): ?string
     {
@@ -296,6 +326,7 @@ class Sale extends Model
                 },
             ],
             'payment_method' => ['nullable', Rule::in(self::PAYMENT_METHODS)],
+            'warranty_days' => ['required', 'integer', Rule::in(self::WARRANTY_OPTIONS)],
             'handover_at' => [
                 'required', 'date',
                 function (string $attribute, mixed $value, \Closure $fail) {
@@ -327,6 +358,9 @@ class Sale extends Model
             'buyer_name.max'       => 'Nama pembeli maksimal 100 karakter.',
             'buyer_phone.required' => 'Nomor WhatsApp pembeli wajib diisi.',
             'payment_method.in'    => 'Metode pembayaran tidak dikenal.',
+            'warranty_days.required' => 'Pilih durasi garansi.',
+            'warranty_days.integer'  => 'Durasi garansi tidak valid.',
+            'warranty_days.in'       => 'Durasi garansi harus salah satu dari: ' . self::warrantyOptionsText() . '.',
             'handover_at.required' => 'Waktu serah terima wajib diisi (awal masa garansi).',
             'handover_at.date'     => 'Format waktu serah terima tidak valid.',
             'price.required'       => 'Harga jual wajib diisi.',
@@ -342,11 +376,18 @@ class Sale extends Model
     /**
      * Ubah input form yang sudah tervalidasi menjadi kolom tabel sales.
      * handover_at dibaca sebagai WIB lalu disimpan sebagai UTC.
+     * Garansi berakhir = handover_at + warranty_days (7 / 14 / 21 hari).
      */
     public static function buyerPayload(array $validated): array
     {
         $handover = Carbon::parse($validated['handover_at'], self::DISPLAY_TZ)
             ->setTimezone(config('app.timezone'));
+
+        $days = (int) ($validated['warranty_days'] ?? self::WARRANTY_DAYS);
+
+        if (! in_array($days, self::WARRANTY_OPTIONS, true)) {
+            $days = self::WARRANTY_DAYS;
+        }
 
         $payload = [
             'buyer_name'          => trim($validated['buyer_name']),
@@ -354,7 +395,8 @@ class Sale extends Model
             'payment_method'      => $validated['payment_method'] ?? null,
             'sale_price'          => $validated['price'],
             'handover_at'         => $handover,
-            'warranty_expires_at' => $handover->clone()->addDays(self::WARRANTY_DAYS),
+            'warranty_days'       => $days,
+            'warranty_expires_at' => $handover->clone()->addDays($days),
             'notes'               => $validated['notes'] ?? null,
         ];
 

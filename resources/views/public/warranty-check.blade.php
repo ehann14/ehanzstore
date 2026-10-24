@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Cek Garansi - EHANZSTORE.ID')
-@section('description', 'Cek sisa garansi 7 hari akun Clash of Clans kamu dengan memasukkan kode transaksi EHANZSTORE.ID.')
+@section('description', 'Cek sisa garansi akun Clash of Clans kamu dengan memasukkan kode transaksi EHANZSTORE.ID.')
 
 @push('meta')
     <meta name="robots" content="noindex, nofollow">
@@ -33,7 +33,7 @@
                 Sisa Garansi <span class="text-electric glow-text">Kamu</span>
             </h1>
             <p class="text-slate-400 mt-4 text-sm sm:text-base">
-                Masukkan kode transaksi dari admin untuk melihat sisa garansi 7 hari akunmu.
+                Masukkan kode transaksi dari admin untuk melihat sisa garansi akunmu.
             </p>
         </div>
 
@@ -89,7 +89,7 @@
                         <h2 class="font-display text-xl font-bold text-white">Garansi belum dimulai</h2>
                         <p class="text-sm text-slate-400 mt-2 leading-relaxed">
                             Transaksi <span class="font-mono text-slate-300">{{ $sale->transaction_code }}</span> sudah tercatat, tetapi waktu serah terima akun belum dikonfirmasi admin.
-                            Garansi 7 hari dihitung sejak serah terima selesai.
+                            Garansi dihitung sejak serah terima selesai.
                         </p>
                         <a href="{{ $waAsk }}" target="_blank" rel="noopener"
                            class="inline-flex items-center gap-2 mt-5 bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-full text-sm font-bold transition">
@@ -132,7 +132,7 @@
                                 <p class="font-display text-4xl sm:text-5xl font-bold text-white mt-4">
                                     {{ ucfirst($sale->warrantyRemainingText()) }}
                                 </p>
-                                <p class="text-xs text-slate-500 mt-1">dari total {{ \App\Models\Sale::WARRANTY_DAYS }} hari garansi</p>
+                                <p class="text-xs text-slate-500 mt-1">dari total {{ $sale->warrantyDays() }} hari garansi</p>
 
                                 <div class="mt-5 h-2.5 rounded-full bg-white/10 overflow-hidden" role="progressbar"
                                      aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $progress['remaining'] }}">
@@ -144,7 +144,7 @@
                                 </div>
                             @else
                                 <p class="font-display text-3xl sm:text-4xl font-bold text-white mt-4">Garansi Berakhir</p>
-                                <p class="text-sm text-slate-400 mt-2">Masa garansi {{ \App\Models\Sale::WARRANTY_DAYS }} hari untuk akun ini sudah selesai.</p>
+                                <p class="text-sm text-slate-400 mt-2">Masa garansi {{ $sale->warrantyDays() }} hari untuk akun ini sudah selesai.</p>
                             @endif
                         </div>
 

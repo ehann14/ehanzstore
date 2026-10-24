@@ -21,7 +21,7 @@
             <p class="text-sm text-slate-400">
                 {{ $isEdit
                     ? 'Lengkapi atau ubah data pembeli. Masa garansi dihitung ulang dari waktu serah terima.'
-                    : 'Isi data pembeli untuk mencatat garansi ' . \App\Models\Sale::WARRANTY_DAYS . ' hari. Akun baru berstatus terjual setelah form ini disimpan.' }}
+                    : 'Isi data pembeli dan pilih durasi garansi (' . \App\Models\Sale::warrantyOptionsText() . '). Akun baru berstatus terjual setelah form ini disimpan.' }}
             </p>
         </div>
     </div>

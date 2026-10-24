@@ -153,7 +153,7 @@
                                         @php [$wText, $wCls] = $sale->warrantyBadge(); @endphp
                                         <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!} class="mt-1.5 inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
                                         @if($sale->warranty_expires_at)
-                                            <p class="text-[11px] text-slate-500 mt-1 whitespace-nowrap">s/d {{ $sale->warrantyUntilLabel() }}</p>
+                                            <p class="text-[11px] text-slate-500 mt-1 whitespace-nowrap">s/d {{ $sale->warrantyUntilLabel() }} · {{ $sale->warrantyDays() }} hari</p>
                                         @endif
                                         <a href="{{ route('admin.sales.buyer', $sale) }}" class="block text-[11px] text-electric hover:underline mt-1">
                                             {{ $sale->hasBuyerData() ? 'Ubah data pembeli' : 'Isi data pembeli' }}
@@ -241,7 +241,7 @@
         <div class="flex items-start justify-between mb-6">
             <div>
                 <h3 class="text-xl font-display font-bold text-white">Konfirmasi Penjualan</h3>
-                <p class="text-sm text-slate-400 mt-1">Isi data pembeli untuk garansi {{ \App\Models\Sale::WARRANTY_DAYS }} hari. Akun tetap tampil di katalog dengan label Terjual sampai garansi berakhir, lalu otomatis disembunyikan.</p>
+                <p class="text-sm text-slate-400 mt-1">Isi data pembeli dan pilih durasi garansi ({{ \App\Models\Sale::warrantyOptionsText() }}). Akun tetap tampil di katalog dengan label Terjual sampai garansi berakhir, lalu otomatis disembunyikan.</p>
             </div>
             <button type="button" onclick="closeSaleModal()" class="text-slate-500 hover:text-white transition" aria-label="Tutup">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>

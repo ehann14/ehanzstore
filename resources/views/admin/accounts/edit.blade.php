@@ -146,7 +146,7 @@
                         <option value="archived" {{ old('sale_status', $account->sale_status) == 'archived' ? 'selected' : '' }}>Diarsipkan</option>
                     </select>
                     <p id="soldHint" class="hidden text-[11px] text-amber-300 mt-1.5">
-                        Setelah disimpan, kamu akan diminta mengisi data pembeli untuk garansi {{ \App\Models\Sale::WARRANTY_DAYS }} hari.
+                        Setelah disimpan, kamu akan diminta mengisi data pembeli dan memilih durasi garansi ({{ \App\Models\Sale::warrantyOptionsText() }}).
                     </p>
                 </div>
             </div>

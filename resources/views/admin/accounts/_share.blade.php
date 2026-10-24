@@ -16,7 +16,7 @@
             . "💰 Harga: {$rupiahShare}\n"
             . "🛒 Detail & foto: {$shareUrl}\n"
             . "\n"
-            . "Bergaransi 7 hari - EHANZSTORE.ID";
+            . "Bergaransi " . \App\Models\Sale::warrantyRange() . " hari - EHANZSTORE.ID";
     } else {
         $shareText = "🔥 AKUN CLASH OF CLANS DIJUAL 🔥\n"
             . "{$account->name} | TH {$account->town_hall}\n"
@@ -38,7 +38,7 @@
             . "💰 Harga: {$rupiahShare}\n"
             . "🛒 Detail & foto: {$shareUrl}\n"
             . "\n"
-            . "Bergaransi 7 hari - EHANZSTORE.ID";
+            . "Bergaransi " . \App\Models\Sale::warrantyRange() . " hari - EHANZSTORE.ID";
     }
 @endphp
 

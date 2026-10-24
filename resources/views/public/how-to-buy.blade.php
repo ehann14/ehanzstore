@@ -47,7 +47,7 @@
                         [
                             'num' => '04',
                             'title' => 'Serah Terima & Garansi Aktif',
-                            'desc' => 'Data login dikirim via WA. Segera ganti password & aktifkan 2FA. Garansi personal 7 hari berlaku sejak serah terima selesai.',
+                            'desc' => 'Data login dikirim via WA. Segera ganti password & aktifkan 2FA. Garansi personal (' . \App\Models\Sale::warrantyOptionsText() . ', sesuai transaksi) berlaku sejak serah terima selesai.',
                             'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
                         ],
                     ];
@@ -100,11 +100,11 @@
 
             <div class="text-center md:text-left flex-1">
                 <h3 class="font-display text-2xl font-bold text-white mb-2">
-                    Garansi Personal 7 Hari
+                    Garansi Personal {{ \App\Models\Sale::warrantyRange() }} Hari
                 </h3>
 
                 <p class="text-slate-300 text-sm leading-relaxed">
-                    Jika akun terkena recall, hacked, atau tidak sesuai deskripsi dalam 7 hari setelah serah terima, kami akan mengganti dengan akun setara atau refund penuh.
+                    Jika akun terkena recall, hacked, atau tidak sesuai deskripsi selama masa garansi ({{ \App\Models\Sale::warrantyOptionsText() }}, sesuai transaksi) setelah serah terima, kami akan mengganti dengan akun setara atau refund penuh.
                     <a
                         href="{{ route('warranty') }}"
                         class="text-green-400 underline hover:text-green-300 transition"

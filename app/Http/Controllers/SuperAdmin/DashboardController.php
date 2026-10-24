@@ -245,7 +245,7 @@ class DashboardController extends Controller
             ], Sale::buyerMessages())
         );
 
-        // Transaksi + data pembeli + garansi 7 hari dibuat atomik; akun yang sama tidak bisa terjual dua kali.
+        // Transaksi + data pembeli + garansi (7/14/21 hari) dibuat atomik; akun yang sama tidak bisa terjual dua kali.
         $sale = Sale::completeSale((int) $data['account_id'], $data);
 
         if (! $sale) {

@@ -81,7 +81,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mt-3 sm:mt-4">
                 @php
                     $perks = [
-                        ['t' => 'Garansi 7 Hari',     'd' => 'Perlindungan setelah beli'],
+                        ['t' => 'Garansi ' . \App\Models\Sale::warrantyRange() . ' Hari', 'd' => 'Perlindungan setelah beli'],
                         ['t' => 'Akun Dicek Dulu',    'd' => 'Data sesuai sebelum listing'],
                         ['t' => 'Email Bisa Ganti',   'd' => 'Serah terima aman'],
                         ['t' => 'Respon Cepat',       'd' => 'Admin aktif via WhatsApp'],

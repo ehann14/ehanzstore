@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Ketentuan Garansi 7 Hari - EHANZSTORE.ID')
-@section('description', 'Syarat dan ketentuan garansi 7 hari akun Clash of Clans EHANZSTORE.ID: cakupan garansi, pengecualian, dan cara klaim.')
+@section('title', 'Ketentuan Garansi ' . \App\Models\Sale::warrantyRange() . ' Hari - EHANZSTORE.ID')
+@section('description', 'Syarat dan ketentuan garansi ' . \App\Models\Sale::warrantyOptionsText() . ' akun Clash of Clans EHANZSTORE.ID: cakupan garansi, pengecualian, dan cara klaim.')
 
 @section('content')
     @php
@@ -16,7 +16,7 @@
         ];
 
         $excluded = [
-            ['t' => 'Klaim di luar 7 hari',           'd' => 'Masa garansi berakhir tepat 7 x 24 jam setelah serah terima dikonfirmasi.'],
+            ['t' => 'Klaim di luar masa garansi',     'd' => 'Masa garansi berakhir tepat sesuai durasi yang dipilih saat transaksi (' . \App\Models\Sale::warrantyOptionsText() . ') setelah serah terima dikonfirmasi.'],
             ['t' => 'Kelalaian pembeli',              'd' => 'Membagikan data login ke orang lain, login lewat situs/aplikasi pihak ketiga, atau data bocor dari perangkat pembeli.'],
             ['t' => 'Pelanggaran aturan game',        'd' => 'Akun diblokir karena pemakaian cheat, mod, bot, atau pelanggaran lain setelah serah terima.'],
             ['t' => 'Perubahan dari pihak game',      'd' => 'Perubahan fitur, keseimbangan, atau kebijakan dari developer game.'],
@@ -25,7 +25,7 @@
         ];
 
         $claimSteps = [
-            ['num' => '01', 'title' => 'Hubungi Admin',   'desc' => 'Chat admin via WhatsApp sebelum masa garansi 7 hari berakhir.'],
+            ['num' => '01', 'title' => 'Hubungi Admin',   'desc' => 'Chat admin via WhatsApp sebelum masa garansi berakhir.'],
             ['num' => '02', 'title' => 'Kirim Bukti',     'desc' => 'Sertakan kode akun, bukti pembayaran, serta screenshot atau rekaman layar masalahnya.'],
             ['num' => '03', 'title' => 'Verifikasi',      'desc' => 'Admin memeriksa laporan maksimal 1 x 24 jam pada hari kerja.'],
             ['num' => '04', 'title' => 'Penyelesaian',    'desc' => 'Jika klaim valid, kamu mendapat akun pengganti atau refund.'],
@@ -34,7 +34,8 @@
         $faqs = [
             ['q' => 'Kapan garansi mulai dihitung?', 'a' => 'Garansi dihitung sejak admin dan pembeli sama-sama mengonfirmasi bahwa serah terima akun sudah selesai di chat WhatsApp, bukan sejak tanggal pembayaran.'],
             ['q' => 'Apa bedanya akun pengganti dan refund?', 'a' => 'Akun pengganti adalah akun dengan spesifikasi dan nilai setara akun yang dibeli. Jika belum ada akun yang setara, kamu bisa memilih refund sesuai nominal yang sudah dibayarkan.'],
-            ['q' => 'Apakah garansi bisa diperpanjang?', 'a' => 'Garansi standar adalah 7 hari dan tidak otomatis diperpanjang. Jika klaim sedang diproses saat masa garansi berakhir, klaim tetap kami selesaikan selama sudah diajukan sebelum batas waktu.'],
+            ['q' => 'Berapa lama masa garansi akun saya?', 'a' => 'Durasi garansi ditentukan saat transaksi: ' . \App\Models\Sale::warrantyOptionsText() . '. Kamu bisa melihat sisa garansi kapan saja di halaman Cek Garansi dengan memasukkan kode transaksi.'],
+            ['q' => 'Apakah garansi bisa diperpanjang?', 'a' => 'Garansi tidak otomatis diperpanjang setelah durasinya habis. Jika klaim sedang diproses saat masa garansi berakhir, klaim tetap kami selesaikan selama sudah diajukan sebelum batas waktu.'],
             ['q' => 'Bagaimana jika akun bermasalah karena kesalahan saya?', 'a' => 'Garansi tidak berlaku untuk masalah akibat kelalaian pembeli. Kami tetap bisa membantu mengarahkan langkah pemulihan, tetapi tanpa jaminan penggantian.'],
             ['q' => 'Apakah akun pengganti juga bergaransi?', 'a' => 'Ya. Akun pengganti mendapat sisa masa garansi dari akun sebelumnya.'],
         ];
@@ -49,7 +50,7 @@
                 Garansi Resmi EHANZSTORE
             </div>
             <h1 class="font-display text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
-                Garansi <span class="text-electric glow-text">7 Hari</span>
+                Garansi <span class="text-electric glow-text">{{ \App\Models\Sale::warrantyRange() }} Hari</span>
             </h1>
             <p class="text-slate-400 max-w-2xl mx-auto text-lg">
                 Beli akun dengan tenang. Jika ada masalah yang memenuhi ketentuan di bawah ini, kami ganti dengan akun setara atau kami kembalikan dana kamu.
@@ -167,7 +168,7 @@
 
         <ol class="glass rounded-2xl border border-white/5 p-6 md:p-8 space-y-4 text-sm text-slate-300 leading-relaxed list-decimal list-inside marker:text-electric marker:font-bold">
             <li>Garansi hanya berlaku untuk pembelian resmi melalui admin EHANZSTORE.ID di WhatsApp.</li>
-            <li>Masa garansi 7 x 24 jam dihitung sejak admin mengonfirmasi serah terima selesai di chat.</li>
+            <li>Masa garansi ({{ \App\Models\Sale::warrantyOptionsText() }}, sesuai yang dicatat pada transaksi) dihitung sejak admin mengonfirmasi serah terima selesai di chat.</li>
             <li>Klaim harus diajukan sebelum masa garansi berakhir, dengan bukti berupa kode akun, bukti pembayaran, dan screenshot atau rekaman layar.</li>
             <li>Segera setelah menerima akun, pembeli wajib mengamankannya dengan mengganti kata sandi dan email, serta tidak membagikan data login kepada siapa pun.</li>
             <li>Simpan seluruh riwayat chat WhatsApp sebagai bukti transaksi dan serah terima.</li>

@@ -117,7 +117,7 @@
                                         $warrantySale = $account->latestCompletedSale;
                                         $warrantyInfo = "Halo kak, terima kasih sudah belanja di EHANZSTORE.ID 🙏\n"
                                             . "Kode transaksi: {$warrantySale->transaction_code}\n"
-                                            . "Cek sisa garansi 7 hari kapan saja di:\n"
+                                            . "Cek sisa garansi {$warrantySale->warrantyDays()} hari kapan saja di:\n"
                                             . route('warranty.check', ['kode' => $warrantySale->transaction_code]);
                                     @endphp
                                     <button type="button" data-copy="{{ $warrantyInfo }}" data-done="Info tersalin!"

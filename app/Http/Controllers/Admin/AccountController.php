@@ -110,7 +110,7 @@ class AccountController extends Controller
         }
 
         // Status "terjual" tidak langsung disimpan: admin harus mengisi data pembeli dulu
-        // (untuk garansi 7 hari). Perubahan data lainnya tetap disimpan sekarang.
+        // (untuk garansi 7/14/21 hari). Perubahan data lainnya tetap disimpan sekarang.
         $goingToSold = ($validated['sale_status'] ?? null) === 'sold' && $account->sale_status !== 'sold';
         if ($goingToSold) {
             unset($validated['sale_status']);
@@ -175,7 +175,7 @@ class AccountController extends Controller
             'sale_status'        => 'nullable|in:available,sold,archived',
         ]);
 
-        // Menandai terjual wajib lewat form data pembeli (garansi 7 hari).
+        // Menandai terjual wajib lewat form data pembeli (garansi 7/14/21 hari).
         if (($data['sale_status'] ?? null) === 'sold' && $account->sale_status !== 'sold') {
             return redirect()
                 ->route('admin.accounts.sell', $account)
