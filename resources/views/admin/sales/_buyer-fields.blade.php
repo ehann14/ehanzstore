@@ -13,7 +13,9 @@
     $nowWib       = now(\App\Models\Sale::DISPLAY_TZ);
     $handoverVal  = old('handover_at', $sale ? $sale->handoverInputValue() : $nowWib->format('Y-m-d\TH:i'));
     $priceVal     = old('price', $sale ? (int) $sale->sale_price : (int) ($defaultPrice ?? 0));
-    $costVal      = old('cost_price', $sale ? (int) $sale->cost_price : (int) ($defaultCost ?? 0));
+    // Modal transaksi; bila masih 0 (data lama), pakai modal yang tersimpan di akunnya.
+    $savedCost    = $sale ? ((float) $sale->cost_price > 0 ? (int) $sale->cost_price : (int) ($sale->account?->cost_price ?? 0)) : (int) ($defaultCost ?? 0);
+    $costVal      = old('cost_price', $savedCost);
     $methodVal    = old('payment_method', $sale?->payment_method);
     $warrantyDays = \App\Models\Sale::WARRANTY_DAYS;
 @endphp

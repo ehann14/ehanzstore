@@ -211,7 +211,7 @@
                         <th class="{{ $labelCell }}"></th>
                         @foreach($accounts as $a)
                             <td class="px-2.5 sm:px-4 py-4 align-top space-y-2">
-                                <a href="https://wa.me/6282130559126?text={{ urlencode('Halo Admin EHANZSTORE, saya tertarik dengan ' . $a->noun() . ' ' . $a->name . ' (Kode: ' . $a->account_code . '). Apakah masih tersedia?') }}"
+                                <a href="{{ account_wa_url($a, $storeWa ?? null) }}"
                                    target="_blank" rel="noopener noreferrer"
                                    class="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-500 text-white text-xs sm:text-sm font-bold py-2.5 rounded-xl transition active:scale-[0.98]">
                                     Beli via WA

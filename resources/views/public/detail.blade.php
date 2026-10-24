@@ -185,7 +185,7 @@
                     </a>
                 @else
                 <a
-                    href="https://wa.me/6282130559126?text={{ urlencode('Halo Admin EHANZSTORE, saya tertarik dengan ' . $noun . ' ' . $account->name . ' (Kode: ' . $account->account_code . '). Apakah masih tersedia?') }}"
+                    href="{{ account_wa_url($account, $storeWa ?? null) }}"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="flex items-center justify-center gap-3 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-900/20 hover:shadow-green-900/40 active:scale-[0.98]"

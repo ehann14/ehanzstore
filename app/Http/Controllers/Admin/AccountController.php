@@ -124,6 +124,26 @@ class AccountController extends Controller
 
         $account->update($validated);
 
+        // Akun yang sudah terjual: modal pada transaksinya ikut diperbarui. Daftar akun, laporan
+        // dan laba membaca modal dari transaksi (snapshot), bukan dari akun, jadi tanpa ini
+        // modal yang baru diisi di form akun terlihat "tidak tersimpan".
+        // Disinkronkan juga bila modal akun > 0 tapi transaksinya masih 0 (data lama yang belum sinkron).
+        if ($account->sale_status === 'sold') {
+            $sale = $account->sales()
+                ->where('transaction_status', 'completed')
+                ->latest('id')
+                ->first();
+
+            if ($sale) {
+                $accountCost = (float) $account->cost_price;
+                $saleCost    = (float) $sale->cost_price;
+
+                if ($account->wasChanged('cost_price') || ($accountCost > 0 && $saleCost !== $accountCost)) {
+                    $sale->update(['cost_price' => $accountCost]);
+                }
+            }
+        }
+
         ActivityLog::record('update_account', $account, 'Akun ' . $account->account_code, [
             'changed' => array_values(array_diff(array_keys($account->getChanges()), ['updated_at'])),
         ]);
@@ -235,6 +255,12 @@ class AccountController extends Controller
         $validated = $request->validate(Sale::buyerRules(), Sale::buyerMessages());
 
         Sale::updateBuyer($sale, $validated);
+
+        // Modal yang diisi di form pembeli juga disimpan ke akunnya, supaya form Edit Akun
+        // dan daftar akun menampilkan angka yang sama (tidak saling menimpa dengan 0).
+        if (isset($validated['cost_price']) && $validated['cost_price'] !== '') {
+            $sale->account?->update(['cost_price' => $validated['cost_price']]);
+        }
 
         ActivityLog::record('update_buyer', $sale->account, 'Akun ' . $sale->account_code_snapshot, [
             'transaction' => $sale->transaction_code,

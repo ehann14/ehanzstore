@@ -73,8 +73,11 @@
                             @php
                                 // Akun terjual: pakai angka transaksi (harga nego & modal saat itu); selain itu estimasi dari listing.
                                 $doneSale   = $account->sale_status === 'sold' ? $account->latestCompletedSale : null;
-                                $costShown  = $doneSale ? (float) $doneSale->cost_price : (float) $account->cost_price;
-                                $profitShown = $doneSale ? $doneSale->profit() : $account->estimatedProfit();
+                                // Modal transaksi bisa 0 pada data lama; kalau begitu pakai modal yang tersimpan di akun.
+                                $costShown  = $doneSale
+                                    ? ((float) $doneSale->cost_price > 0 ? (float) $doneSale->cost_price : (float) $account->cost_price)
+                                    : (float) $account->cost_price;
+                                $profitShown = $doneSale ? ((float) $doneSale->sale_price - $costShown) : $account->estimatedProfit();
                             @endphp
                             <p class="text-[11px] text-slate-500 mt-0.5">
                                 Modal Rp {{ number_format($costShown, 0, ',', '.') }}
