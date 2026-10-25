@@ -184,6 +184,30 @@
                                     Hubungi Admin
                                 </a>
                             @endif
+
+                            {{-- Ambil ulang invoice (verifikasi 4 digit terakhir nomor WA) --}}
+                            @if($sale->invoice_token)
+                                <div class="mt-6 pt-5 border-t border-white/5 text-left">
+                                    <p class="text-sm font-semibold text-white">Butuh invoice / bukti transaksi?</p>
+                                    <p class="text-xs text-slate-500 mt-1">Masukkan 4 digit terakhir nomor WhatsApp yang dipakai saat membeli.</p>
+
+                                    @if(session('invoice_error'))
+                                        <p class="mt-2 text-sm text-red-400">{{ session('invoice_error') }}</p>
+                                    @endif
+
+                                    <form action="{{ route('invoice.verify') }}" method="POST" class="mt-3 flex gap-2">
+                                        @csrf
+                                        <input type="hidden" name="kode" value="{{ $sale->transaction_code }}">
+                                        <input type="text" name="hp" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required
+                                               placeholder="••••" autocomplete="off"
+                                               class="w-28 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center font-mono tracking-[0.4em] text-white placeholder-slate-600 focus:border-electric outline-none transition">
+                                        <button type="submit"
+                                                class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold rounded-xl px-4 py-3 transition">
+                                            Lihat Invoice
+                                        </button>
+                                    </form>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 @endif

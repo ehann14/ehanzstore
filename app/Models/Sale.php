@@ -30,7 +30,7 @@ class Sale extends Model
         'transaction_code', 'coc_account_id', 'account_code_snapshot',
         'buyer_name', 'buyer_phone',
         'sale_price', 'cost_price', 'transaction_status', 'payment_status', 'payment_method',
-        'processed_by', 'sold_at', 'handover_at', 'warranty_days', 'warranty_expires_at', 'notes', 'review_token',
+        'processed_by', 'sold_at', 'handover_at', 'warranty_days', 'warranty_expires_at', 'notes', 'review_token', 'invoice_token',
     ];
 
     protected $casts = [
@@ -87,10 +87,14 @@ class Sale extends Model
 
     protected static function booted(): void
     {
-        // Setiap transaksi baru otomatis punya token untuk link form ulasan pembeli.
+        // Setiap transaksi baru otomatis punya token untuk link ulasan & link invoice pembeli.
         static::creating(function (Sale $sale) {
             if (empty($sale->review_token)) {
                 $sale->review_token = Str::random(40);
+            }
+
+            if (empty($sale->invoice_token)) {
+                $sale->invoice_token = Str::random(40);
             }
         });
     }
@@ -110,6 +114,12 @@ class Sale extends Model
     public function reviewUrl(): ?string
     {
         return $this->review_token ? route('review.form', $this->review_token) : null;
+    }
+
+    /** Link invoice pribadi yang dikirim admin ke pembeli. Null bila belum ada token. */
+    public function invoiceUrl(): ?string
+    {
+        return $this->invoice_token ? route('invoice.show', $this->invoice_token) : null;
     }
 
     /**
@@ -321,7 +331,7 @@ class Sale extends Model
                     $phone = static::normalizePhone($value);
 
                     if (! $phone || ! preg_match('/^628[0-9]{8,12}$/', $phone)) {
-                        $fail('Nomor WhatsApp pembeli tidak valid. Contoh: 0812-3456-7890.');
+                        $fail('Nomor WhatsApp pembeli wajib diisi.');
                     }
                 },
             ],

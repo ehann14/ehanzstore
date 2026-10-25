@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WarrantyCheckController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\SuperAdmin\ReviewModerationController;
 use App\Http\Controllers\SuperAdmin\ReportController;
 use App\Http\Controllers\Admin\AccountController;
@@ -26,6 +27,15 @@ Route::get('/garansi', [PublicController::class, 'warranty'])->name('warranty');
 Route::get('/cek-garansi', [WarrantyCheckController::class, 'index'])
     ->middleware('throttle:20,1')
     ->name('warranty.check');
+
+// Invoice pembeli: link pribadi dari admin + cadangan verifikasi 4 digit nomor WA
+Route::get('/invoice/{token}', [InvoiceController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('invoice.show');
+Route::post('/cek-garansi/invoice', [InvoiceController::class, 'verify'])
+    ->middleware('throttle:8,1')
+    ->name('invoice.verify');
+
 Route::get('/bandingkan', [PublicController::class, 'compare'])->name('compare');
 
 // Form ulasan pembeli (diakses lewat link pribadi dari admin)
