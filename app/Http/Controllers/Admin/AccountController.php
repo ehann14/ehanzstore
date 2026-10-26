@@ -79,6 +79,14 @@ class AccountController extends Controller
         );
     }
 
+    /** Admin tidak punya halaman detail terpisah: buka detail = langsung ke halaman edit. */
+    public function show(CocAccount $account)
+    {
+        $this->authorizeAccount($account);
+
+        return redirect()->route('admin.accounts.edit', $account);
+    }
+
     public function edit(CocAccount $account)
     {
         $this->authorizeAccount($account);

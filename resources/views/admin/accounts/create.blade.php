@@ -127,7 +127,7 @@
                 @foreach($heroes as $hero)
                 <div>
                     <label class="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase">{{ $hero['label'] }}</label>
-                    <input type="number" name="{{ $hero['name'] }}" value="{{ old($hero['name'], 0) }}" min="0" max="90"
+                    <input type="number" name="{{ $hero['name'] }}" value="{{ old($hero['name'], 0) }}" min="0" max="100"
                            class="w-full bg-brand-950/50 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:border-brand-500 outline-none transition">
                 </div>
                 @endforeach
