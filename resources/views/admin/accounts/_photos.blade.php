@@ -10,10 +10,27 @@
     </div>
 
     @if($existing->isNotEmpty())
-        <div class="grid grid-cols-3 sm:grid-cols-5 gap-3">
+        {{-- Toolbar: pilih semua + hapus terpilih --}}
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-midnight/60 px-3 py-2">
+            <label class="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300 font-medium">
+                <input type="checkbox" id="selectAllPhotos" style="width:16px;height:16px;accent-color:#ef4444;cursor:pointer">
+                <span>Pilih semua</span>
+                <span id="selectedInfo" class="text-slate-500"></span>
+            </label>
+            <button type="submit" form="bulkDeleteImages" id="bulkDeleteBtn" disabled
+                    class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition"
+                    style="opacity:.4;cursor:not-allowed">
+                Hapus terpilih (<span id="bulkCount">0</span>)
+            </button>
+        </div>
+
+        <div class="grid grid-cols-3 sm:grid-cols-5 gap-3" id="existingGrid">
             @foreach($existing as $img)
-                <div class="relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-midnight group">
+                <div class="photo-item relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-midnight group cursor-pointer">
                     <img src="{{ upload_url($img->image_path) }}" alt="" class="w-full h-full object-cover">
+                    <input type="checkbox" name="image_ids[]" value="{{ $img->id }}" form="bulkDeleteImages"
+                           class="photo-check absolute top-1 left-1"
+                           style="width:20px;height:20px;accent-color:#ef4444;cursor:pointer">
                     @if($img->is_primary)
                         <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-electric text-[10px] font-bold text-white">Utama</span>
                     @endif
@@ -50,6 +67,10 @@
 @if($account)
     {{-- Form hapus foto di luar form utama (form tidak boleh bersarang) --}}
     @push('outside-forms')
+        {{-- Form hapus banyak foto sekaligus (checkbox foto terhubung lewat atribut form="bulkDeleteImages") --}}
+        <form id="bulkDeleteImages" action="{{ route('admin.accounts.images.bulk-destroy', $account) }}" method="POST" class="hidden">
+            @csrf @method('DELETE')
+        </form>
         @foreach($existing as $img)
             <form id="deleteImg{{ $img->id }}" action="{{ route('admin.accounts.images.destroy', [$account, $img]) }}" method="POST" class="hidden">
                 @csrf @method('DELETE')
@@ -150,6 +171,56 @@
         busy = false;
         if (submitBtn) submitBtn.disabled = false;
     });
+
+    // ---- Pilih semua + hapus terpilih ----
+    const selectAll = document.getElementById('selectAllPhotos');
+    const bulkBtn   = document.getElementById('bulkDeleteBtn');
+    const bulkCount = document.getElementById('bulkCount');
+    const infoEl    = document.getElementById('selectedInfo');
+    const checks    = Array.from(document.querySelectorAll('.photo-check'));
+
+    function refreshSelection() {
+        const n = checks.filter(c => c.checked).length;
+        checks.forEach(c => {
+            const box = c.closest('.photo-item');
+            if (box) box.style.outline = c.checked ? '3px solid #ef4444' : '';
+            if (box) box.style.outlineOffset = '-3px';
+        });
+        if (bulkCount) bulkCount.textContent = n;
+        if (infoEl) infoEl.textContent = n ? `(${n} dipilih)` : '';
+        if (bulkBtn) {
+            bulkBtn.disabled = n === 0;
+            bulkBtn.style.opacity = n === 0 ? '.4' : '1';
+            bulkBtn.style.cursor = n === 0 ? 'not-allowed' : 'pointer';
+        }
+        if (selectAll) {
+            selectAll.checked = n > 0 && n === checks.length;
+            selectAll.indeterminate = n > 0 && n < checks.length;
+        }
+    }
+
+    if (selectAll) selectAll.addEventListener('change', () => {
+        checks.forEach(c => c.checked = selectAll.checked);
+        refreshSelection();
+    });
+
+    checks.forEach(c => c.addEventListener('change', refreshSelection));
+
+    // Klik di foto = centang/lepas centang (kecuali klik tombol X atau checkbox-nya)
+    document.querySelectorAll('.photo-item').forEach(item => {
+        item.addEventListener('click', e => {
+            if (e.target.closest('button') || e.target.classList.contains('photo-check')) return;
+            const c = item.querySelector('.photo-check');
+            if (c) { c.checked = !c.checked; refreshSelection(); }
+        });
+    });
+
+    if (bulkBtn) bulkBtn.addEventListener('click', e => {
+        const n = checks.filter(c => c.checked).length;
+        if (!n || !confirm(`Hapus ${n} foto terpilih? Tindakan ini tidak bisa dibatalkan.`)) e.preventDefault();
+    });
+
+    refreshSelection();
 
     if (form) form.addEventListener('submit', e => {
         if (busy) { e.preventDefault(); return; }

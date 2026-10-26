@@ -48,8 +48,31 @@
             <input type="number" name="email_change_days" min="0" max="365" inputmode="numeric" placeholder="0"
                    value="{{ old('email_change_days', optional($account ?? null)->emailChangeDaysLeft()) }}"
                    class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition @error('email_change_days') border-red-500 @enderror">
-            <p class="text-[11px] text-slate-500 mt-1">Untuk stok baru. Isi jumlah hari sampai email bisa diganti; kosong atau 0 = sudah bisa diganti sekarang. Hanya berlaku bila memilih Bisa Ganti.</p>
+            <p class="text-[11px] text-slate-500 mt-1">Untuk stok baru. Isi jumlah hari sampai email bisa diganti; kosong atau 0 = sudah bisa diganti sekarang. Mengisi hari lebih dari 0 otomatis memilih Bisa Ganti.</p>
             @error('email_change_days') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
     </div>
 </div>
+
+@once
+@push('scripts')
+<script>
+    (function () {
+        const days = document.querySelector('input[name="email_change_days"]');
+        const yes  = document.querySelector('input[name="email_change_status"][value="Changeable"]');
+        const no   = document.querySelector('input[name="email_change_status"][value="Unchangeable"]');
+        if (!days || !yes || !no) return;
+
+        // Mengetik jumlah hari > 0 = otomatis pilih "Bisa Ganti"
+        days.addEventListener('input', function () {
+            if ((parseInt(days.value, 10) || 0) > 0) yes.checked = true;
+        });
+
+        // Memilih "Tidak Bisa Ganti" mengosongkan jumlah hari supaya tidak membingungkan
+        no.addEventListener('change', function () {
+            if (no.checked) days.value = '';
+        });
+    })();
+</script>
+@endpush
+@endonce

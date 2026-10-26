@@ -1,0 +1,24 @@
+{
+  "id": "/admin/dashboard",
+  "name": "EHANZSTORE Admin",
+  "short_name": "EHANZ Admin",
+  "description": "Panel admin EHANZSTORE.ID untuk kelola akun, penjualan, dan laporan.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "/admin/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/images/logo.png", "sizes": "1536x1536", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Daftar Akun", "short_name": "Akun", "url": "/admin/accounts",
+      "icons": [{ "src": "/images/logo.png", "sizes": "1536x1536" }] },
+    { "name": "Tambah Akun", "short_name": "Tambah", "url": "/admin/accounts/create",
+      "icons": [{ "src": "/images/logo.png", "sizes": "1536x1536" }] }
+  ]
+}

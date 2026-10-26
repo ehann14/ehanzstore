@@ -292,6 +292,35 @@ class AccountController extends Controller
         return back()->with('success', 'Foto dihapus.');
     }
 
+    /** Hapus beberapa foto sekaligus (pilih semua / pilih sebagian). */
+    public function destroyImages(Request $request, CocAccount $account)
+    {
+        $this->authorizeAccount($account);
+
+        $ids = array_values(array_filter((array) $request->input('image_ids', []), 'is_numeric'));
+
+        if (empty($ids)) {
+            return back()->withErrors(['images' => 'Pilih minimal satu foto untuk dihapus.']);
+        }
+
+        // Hanya foto milik akun ini yang boleh dihapus
+        $images = $account->images()->whereIn('id', $ids)->get();
+
+        foreach ($images as $image) {
+            Uploads::delete($image->image_path);
+            $image->delete();
+        }
+
+        // Jika foto utama ikut terhapus, jadikan foto pertama yang tersisa sebagai utama
+        if (! $account->images()->where('is_primary', true)->exists()) {
+            $account->images()->orderBy('sort_order')->orderBy('id')->first()?->update(['is_primary' => true]);
+        }
+
+        ActivityLog::record('delete_image', $account, 'Akun ' . $account->account_code . ' (' . $images->count() . ' foto)');
+
+        return back()->with('success', $images->count() . ' foto dihapus.');
+    }
+
     public function destroy(CocAccount $account)
     {
         $this->authorizeAccount($account);
@@ -427,7 +456,8 @@ class AccountController extends Controller
 
     /**
      * Ubah input "email bisa diganti dalam N hari" menjadi tanggal email_change_available_at.
-     * - Hanya berlaku bila status email = Bisa Ganti; selain itu tanggal dikosongkan.
+     * - Bila hari diisi > 0, status otomatis menjadi Bisa Ganti. Bila status Tidak Bisa Ganti
+     *   dan hari kosong/0, tanggal dikosongkan.
      * - Kosong / 0 = email sudah bisa diganti sekarang.
      * - Saat edit, jika angka hari sama dengan sisa hari saat ini, tanggal lama dipertahankan
      *   (supaya menyimpan form tanpa mengubah angka tidak mengulang hitungan dari awal).
@@ -440,6 +470,13 @@ class AccountController extends Controller
         // Clan tidak punya status email, jadi tidak disentuh
         if (! array_key_exists('email_change_status', $validated)) {
             return;
+        }
+
+        // Admin mengisi jumlah hari (> 0) berarti maksudnya "Bisa Ganti dalam N hari".
+        // Tanpa ini, angka diam-diam dibuang bila radio masih "Tidak Bisa Ganti"
+        // dan data terlihat "tidak tersimpan" (tidak ada pesan error apa pun).
+        if ((int) $days > 0) {
+            $validated['email_change_status'] = 'Changeable';
         }
 
         if ($validated['email_change_status'] !== 'Changeable' || ! $days) {

@@ -98,6 +98,12 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
             'updateBuyer'
         ])->name('sales.buyer.update');
 
+        // Hapus banyak foto sekaligus (pilih semua)
+        Route::delete('accounts/{account}/images', [
+            AccountController::class,
+            'destroyImages'
+        ])->name('accounts.images.bulk-destroy');
+
         Route::delete('accounts/{account}/images/{image}', [
             AccountController::class,
             'destroyImage'
