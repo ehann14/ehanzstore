@@ -101,6 +101,9 @@
     </div>
     </div>
 
+    <!-- Akun belum terjual + total harga -->
+    @include('super-admin._unsold-card')
+
     <!-- Pengingat stok lama -->
     @include('admin.stale._alert')
 

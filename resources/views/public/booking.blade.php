@@ -12,7 +12,7 @@
     $acc       = $booking->account;
     $img       = $acc?->primaryImage?->image_path ? upload_url($acc->primaryImage->image_path) : null;
     $payHours  = (int) config('store.booking_pay_hours', 24);
-    $holdDays  = (int) config('store.booking_hold_days', 3);
+    $holdDays  = implode(' atau ', \App\Models\Booking::holdOptions());
     $status    = $booking->status;
     $holding   = $booking->isHolding();
 

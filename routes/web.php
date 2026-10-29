@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\StaleStockController;
 use App\Http\Controllers\SuperAdmin\SecurityController;
+use App\Http\Controllers\SuperAdmin\UnsoldAccountController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboard;
 
 // Public Routes
@@ -136,6 +137,10 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
             'toggle'
         ])->name('banners.toggle');
 
+        // Catat booking DP langsung dari Kelola Akun (pembeli bayar DP dulu, lunas 7 / 14 hari)
+        Route::get('accounts/{account}/booking', [AdminBookingController::class, 'createForAccount'])->name('accounts.booking');
+        Route::post('accounts/{account}/booking', [AdminBookingController::class, 'storeForAccount'])->name('accounts.booking.store');
+
         // Booking akun (DP 20%): konfirmasi DP, perpanjang, batalkan
         Route::get('bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
         Route::post('bookings/{booking}/confirm', [AdminBookingController::class, 'confirm'])->name('bookings.confirm');
@@ -180,6 +185,10 @@ Route::middleware(['auth', 'role:super_admin', 'two-factor'])
 
         Route::get('/sales', [SuperAdminDashboard::class, 'sales'])
             ->name('sales');
+
+        // Akun yang belum terjual + total harganya
+        Route::get('/unsold', [UnsoldAccountController::class, 'index'])
+            ->name('unsold');
 
         // Ekspor Excel/PDF: daftar transaksi dan laporan bulanan
         Route::get('/sales/export', [ReportController::class, 'exportSales'])

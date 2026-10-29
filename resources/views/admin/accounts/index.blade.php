@@ -30,6 +30,9 @@
         @php
             // Gaya dasar semua tombol aksi pada kartu (warna & border ditambahkan per tombol).
             $btn = 'inline-flex items-center justify-center w-full sm:w-auto px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition whitespace-nowrap';
+
+            // Booking (DP) yang sedang menahan akun-akun di halaman ini
+            $holds = \App\Models\Booking::holdingMap($accounts->pluck('id')->all());
         @endphp
 
         <div class="space-y-4">
@@ -55,6 +58,9 @@
                         : (float) $account->cost_price;
                     $profitShown = $doneSale ? ((float) $doneSale->sale_price - $costShown) : $account->estimatedProfit();
                     $priceShown  = $doneSale ? (float) $doneSale->sale_price : (float) $account->price;
+
+                    // Booking DP yang menahan akun ini (hanya untuk akun yang masih tersedia)
+                    $hold = $account->sale_status === 'available' ? ($holds[$account->id] ?? null) : null;
                 @endphp
 
                 <div class="glass-panel rounded-2xl border border-white/5 hover:border-electric/30 transition-colors overflow-hidden">
@@ -108,12 +114,33 @@
                                 </span>
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $saleBadge[1] }}">{{ $saleBadge[0] }}</span>
 
+                                @if($hold)
+                                    <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-amber-500/15 text-amber-300 border-amber-500/30">
+                                        {{ $hold->status === 'pending' ? 'Booking · menunggu DP' : 'Di-booking (DP masuk)' }}
+                                    </span>
+                                    <span {!! $hold->countdownAttrs($hold->status === 'pending' ? 'Batas bayar DP · sisa ' : 'Harus lunas · sisa ', 'Waktu habis') !!}
+                                          class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-white/5 text-slate-300 border-white/10">
+                                        Batas {{ $hold->deadlineLabel() }}
+                                    </span>
+                                @endif
+
                                 @if($doneSale)
                                     @php [$wText, $wCls] = $doneSale->warrantyBadge(); @endphp
                                     <span {!! $doneSale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!}
                                           class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $wCls }}">{{ $wText }}</span>
                                 @endif
                             </div>
+
+                            @if($hold)
+                                <p class="text-[11px] sm:text-xs text-slate-500 mt-2 truncate">
+                                    Booking <span class="font-mono">{{ $hold->booking_code }}</span>
+                                    &middot; Pembeli: <span class="text-slate-300">{{ $hold->buyer_name }}</span>
+                                    @if($hold->status === 'active')
+                                        &middot; DP Rp {{ number_format((float) $hold->dp_amount, 0, ',', '.') }}
+                                        &middot; Sisa <span class="text-amber-300 font-semibold">Rp {{ number_format($hold->remaining(), 0, ',', '.') }}</span>
+                                    @endif
+                                </p>
+                            @endif
 
                             @if($doneSale && $doneSale->hasBuyerData())
                                 <p class="text-[11px] sm:text-xs text-slate-500 mt-2 truncate">
@@ -165,9 +192,23 @@
                                     </button>
                                 @endif
                             </div>
+                        @elseif($account->sale_status === 'available' && $hold)
+                            <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                                @if($hold->status === 'active')
+                                    {{-- DP sudah masuk: pelunasan = tandai terjual (booking otomatis selesai, DP dihitung sebagai bagian bayar) --}}
+                                    <a href="{{ route('admin.accounts.sell', ['account' => $account->id, 'booking' => $hold->id]) }}"
+                                       class="{{ $btn }} border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">Lunas &rarr; Terjual</a>
+                                @endif
+                                <a href="{{ route('admin.bookings.index', ['status' => 'open', 'q' => $hold->booking_code]) }}"
+                                   class="{{ $btn }} border-amber-500/30 text-amber-300 hover:bg-amber-500/10">Kelola Booking</a>
+                            </div>
                         @elseif($account->sale_status === 'available')
-                            <a href="{{ route('admin.accounts.sell', $account) }}"
-                               class="{{ $btn }} sm:w-auto border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">Tandai Terjual</a>
+                            <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                                <a href="{{ route('admin.accounts.sell', $account) }}"
+                                   class="{{ $btn }} border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">Terjual (Lunas)</a>
+                                <a href="{{ route('admin.accounts.booking', $account) }}"
+                                   class="{{ $btn }} border-amber-500/30 text-amber-300 hover:bg-amber-500/10">Booking / DP</a>
+                            </div>
                         @endif
 
                         {{-- Pendorong: aksi umum rata kanan di layar lebar --}}

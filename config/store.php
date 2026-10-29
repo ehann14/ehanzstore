@@ -26,8 +26,11 @@ return [
     // Batas waktu pembeli membayar DP setelah booking dibuat (jam). Lewat dari ini booking batal otomatis.
     'booking_pay_hours' => (int) env('BOOKING_PAY_HOURS', 24),
 
-    // Batas pelunasan setelah DP diterima admin (hari). Selama masa ini akun ditahan untuk pembeli.
-    'booking_hold_days' => (int) env('BOOKING_HOLD_DAYS', 3),
+    // Batas pelunasan bawaan setelah DP diterima admin (hari). Selama masa ini akun ditahan untuk pembeli.
+    'booking_hold_days' => (int) env('BOOKING_HOLD_DAYS', 7),
+
+    // Pilihan batas pelunasan yang bisa dipilih admin (hari). Lewat batas = akun ditarik kembali, DP hangus.
+    'booking_hold_options' => [7, 14],
 
     // Maksimal booking aktif (menunggu DP / DP diterima) per nomor WhatsApp
     'booking_max_per_phone' => (int) env('BOOKING_MAX_PER_PHONE', 2),

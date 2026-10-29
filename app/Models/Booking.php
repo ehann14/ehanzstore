@@ -15,7 +15,9 @@ use Throwable;
  *   active    -> DP diterima admin, akun ditahan (batas pelunasan: store.booking_hold_days)
  *   completed -> pelunasan selesai, akun terjual (DP dihitung sebagai bagian pembayaran)
  *   cancelled -> dibatalkan (pembeli / toko)
- *   expired   -> lewat batas waktu (DP belum dibayar, atau lewat batas pelunasan)
+ *   expired   -> lewat batas waktu. DP belum dibayar: booking hangus tanpa dampak uang.
+ *                DP sudah diterima tapi tidak lunas sampai batas (7 / 14 hari): akun otomatis
+ *                ditarik kembali (tersedia lagi) dan DP otomatis hangus.
  *
  * Status DP (dp_state): unpaid | held | applied | forfeited | refunded
  */
@@ -117,6 +119,30 @@ class Booking extends Model
         return (int) min($dp, (int) $price);
     }
 
+    /** Pilihan batas pelunasan (hari) yang bisa dipilih admin. Bawaan: 7 atau 14 hari. */
+    public static function holdOptions(): array
+    {
+        $options = array_values(array_unique(array_filter(
+            array_map('intval', (array) config('store.booking_hold_options', [7, 14])),
+            fn ($d) => $d > 0
+        )));
+
+        return $options ?: [7, 14];
+    }
+
+    public static function defaultHoldDays(): int
+    {
+        $days = (int) config('store.booking_hold_days', 7);
+
+        return in_array($days, static::holdOptions(), true) ? $days : static::holdOptions()[0];
+    }
+
+    /** Pastikan lama pelunasan salah satu dari pilihan yang diizinkan (selain itu pakai bawaan). */
+    public static function normalizeHoldDays(?int $days): int
+    {
+        return in_array((int) $days, static::holdOptions(), true) ? (int) $days : static::defaultHoldDays();
+    }
+
     public function remaining(): float
     {
         return max(0, (float) $this->price_snapshot - (float) $this->dp_amount);
@@ -173,6 +199,29 @@ class Booking extends Model
         }
     }
 
+    /**
+     * Booking yang sedang menahan akun, untuk banyak akun sekaligus (satu query).
+     *
+     * @return array<int, self> id akun => booking
+     */
+    public static function holdingMap(array $accountIds): array
+    {
+        if (empty($accountIds)) {
+            return [];
+        }
+
+        try {
+            return static::holding()
+                ->whereIn('coc_account_id', $accountIds)
+                ->orderBy('id')
+                ->get()
+                ->keyBy('coc_account_id')
+                ->all();
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
     public function isHolding(): bool
     {
         return in_array($this->status, [self::PENDING, self::ACTIVE], true)
@@ -183,8 +232,18 @@ class Booking extends Model
     // Label & tampilan
     // ------------------------------------------------------------------
 
+    /** Booking berakhir karena tidak lunas sampai batas waktu (DP hangus). */
+    public function isForfeited(): bool
+    {
+        return $this->dp_state === self::DP_FORFEITED;
+    }
+
     public function statusLabel(): string
     {
+        if ($this->status === self::EXPIRED && $this->isForfeited()) {
+            return 'Tidak lunas, DP hangus';
+        }
+
         return self::STATUS_LABELS[$this->status] ?? ucfirst($this->status);
     }
 
@@ -196,6 +255,10 @@ class Booking extends Model
     /** Kelas warna lencana status. */
     public function statusTone(): string
     {
+        if ($this->status === self::EXPIRED && $this->isForfeited()) {
+            return 'bg-red-500/15 text-red-300 border-red-500/30';
+        }
+
         return match ($this->status) {
             self::PENDING   => 'bg-amber-500/15 text-amber-300 border-amber-500/30',
             self::ACTIVE    => 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
@@ -310,6 +373,70 @@ class Booking extends Model
         }
     }
 
+    /**
+     * Admin mencatat booking langsung dari Kelola Akun: pembeli sudah membayar DP, jadi booking
+     * langsung aktif dan akun ditahan sampai batas pelunasan (7 / 14 hari).
+     * Tidak lunas sampai batas waktu -> akun ditarik kembali dan DP hangus otomatis (lihat expireOverdue).
+     *
+     * @param array{buyer_name: string, buyer_phone: string, dp_amount: float|int|string, hold_days?: int|string|null, notes?: ?string} $data
+     * @return array{0: ?self, 1: ?string} [booking, pesan error]
+     */
+    public static function placeByAdmin(CocAccount $account, array $data, ?int $userId): array
+    {
+        try {
+            return DB::transaction(function () use ($account, $data, $userId) {
+                $locked = CocAccount::lockForUpdate()->find($account->id);
+
+                if (! $locked || $locked->sale_status !== 'available') {
+                    return [null, 'Akun ini sudah tidak tersedia.'];
+                }
+
+                if (static::holding()->where('coc_account_id', $locked->id)->exists()) {
+                    return [null, 'Akun ini sudah dibooking. Kelola lewat menu Booking DP.'];
+                }
+
+                $price = (float) $locked->price;
+                $dp    = (float) $data['dp_amount'];
+
+                if ($price <= 0) {
+                    return [null, 'Harga akun belum valid untuk booking.'];
+                }
+
+                if ($dp <= 0 || $dp >= $price) {
+                    return [null, 'DP harus lebih dari 0 dan kurang dari harga akun (Rp ' . number_format($price, 0, ',', '.') . '). Kalau sudah lunas, pakai tombol Terjual.'];
+                }
+
+                $days = static::normalizeHoldDays(isset($data['hold_days']) ? (int) $data['hold_days'] : null);
+
+                $booking = static::create([
+                    'coc_account_id'        => $locked->id,
+                    'account_code_snapshot' => $locked->account_code,
+                    'account_name_snapshot' => $locked->name,
+                    'buyer_name'            => trim($data['buyer_name']),
+                    'buyer_phone'           => $data['buyer_phone'],
+                    'price_snapshot'        => $price,
+                    'dp_percent'            => (int) max(1, min(100, round($dp / $price * 100))),
+                    'dp_amount'             => $dp,
+                    'status'                => self::ACTIVE,
+                    'dp_state'              => self::DP_HELD,
+                    'dp_paid_at'            => now(),
+                    'confirmed_by'          => $userId,
+                    'expires_at'            => now()->addDays($days),
+                    'notes'                 => filled($data['notes'] ?? null) ? trim($data['notes']) : null,
+                    'terms_accepted_at'     => now(),
+                ]);
+
+                static::forgetCache();
+
+                return [$booking, null];
+            });
+        } catch (Throwable $e) {
+            report($e);
+
+            return [null, 'Booking belum bisa disimpan saat ini. Silakan coba lagi.'];
+        }
+    }
+
     // ------------------------------------------------------------------
     // Tindakan admin
     // ------------------------------------------------------------------
@@ -320,9 +447,9 @@ class Booking extends Model
      *
      * @return string|null pesan error, null jika berhasil
      */
-    public function confirmDp(?int $userId): ?string
+    public function confirmDp(?int $userId, ?int $days = null): ?string
     {
-        return DB::transaction(function () use ($userId) {
+        return DB::transaction(function () use ($userId, $days) {
             $account = CocAccount::lockForUpdate()->find($this->coc_account_id);
 
             if (! $account || $account->sale_status !== 'available') {
@@ -351,7 +478,7 @@ class Booking extends Model
                 'confirmed_by'  => $userId,
                 'cancelled_at'  => null,
                 'cancel_reason' => null,
-                'expires_at'    => now()->addDays(max(1, (int) config('store.booking_hold_days', 3))),
+                'expires_at'    => now()->addDays(static::normalizeHoldDays($days)),
             ]);
 
             static::forgetCache();
@@ -415,19 +542,30 @@ class Booking extends Model
     // ------------------------------------------------------------------
 
     /**
-     * Booking yang lewat batas waktu dilepas supaya akun bisa dibeli lagi.
-     * DP yang sudah diterima TIDAK otomatis hangus: tetap berstatus "ditahan"
-     * sampai admin memutuskan (hangus / dikembalikan).
+     * Booking yang lewat batas waktu dilepas supaya akun bisa dibeli lagi (akun "ditarik kembali").
+     *  - Menunggu DP, DP tidak dibayar sampai batas: booking kedaluwarsa, tidak ada dampak uang.
+     *  - DP sudah diterima tapi tidak lunas sampai batas (7 / 14 hari): booking kedaluwarsa dan
+     *    DP otomatis HANGUS (sesuai syarat & ketentuan). Tidak perlu keputusan admin lagi.
      */
     public static function expireOverdue(): int
     {
         try {
-            $count = static::whereIn('status', [self::PENDING, self::ACTIVE])
+            $count = static::where('status', self::PENDING)
                 ->whereNotNull('expires_at')
                 ->where('expires_at', '<=', now())
                 ->update([
                     'status'       => self::EXPIRED,
                     'cancelled_at' => now(),
+                ]);
+
+            $count += static::where('status', self::ACTIVE)
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<=', now())
+                ->update([
+                    'status'        => self::EXPIRED,
+                    'dp_state'      => self::DP_FORFEITED,
+                    'cancelled_at'  => now(),
+                    'cancel_reason' => 'Tidak lunas sampai batas waktu: akun ditarik kembali dan DP hangus.',
                 ]);
         } catch (Throwable $e) {
             return 0; // tabel bookings belum dibuat: abaikan

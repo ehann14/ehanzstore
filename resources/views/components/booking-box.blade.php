@@ -9,7 +9,7 @@
     $dp        = \App\Models\Booking::calculateDp($price);
     $percent   = \App\Models\Booking::dpPercent();
     $payHours  = (int) config('store.booking_pay_hours', 24);
-    $holdDays  = (int) config('store.booking_hold_days', 3);
+    $holdDays  = implode(' atau ', \App\Models\Booking::holdOptions());
     $rp        = fn ($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
     $bag       = $errors->getBag('booking');
     $fieldCls  = 'w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-electric transition';

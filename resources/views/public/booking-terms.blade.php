@@ -8,7 +8,7 @@
     $percent  = \App\Models\Booking::dpPercent();
     $rest     = 100 - $percent;
     $payHours = (int) config('store.booking_pay_hours', 24);
-    $holdDays = (int) config('store.booking_hold_days', 3);
+    $holdDays = implode(' atau ', \App\Models\Booking::holdOptions());
     $maxPhone = (int) config('store.booking_max_per_phone', 2);
     $waAsk    = $storeWaUrl . '?text=' . rawurlencode('Halo Admin EHANZSTORE, saya mau tanya soal booking DP.');
 

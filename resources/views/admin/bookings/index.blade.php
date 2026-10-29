@@ -10,6 +10,7 @@
         'pending' => ['Menunggu DP', $counts['pending']],
         'active'  => ['DP diterima', $counts['active']],
         'decide'  => ['Perlu keputusan DP', $counts['decide']],
+        'forfeited' => ['DP Hangus', null],
         'completed' => ['Selesai', null],
         'cancelled' => ['Batal', null],
         'expired'   => ['Kedaluwarsa', null],
@@ -22,8 +23,14 @@
     <div class="mb-8">
         <h1 class="text-2xl sm:text-3xl font-display font-bold text-white">Booking Akun</h1>
         <p class="text-sm text-slate-400 mt-1">
-            Pembeli booking dengan DP {{ \App\Models\Booking::dpPercent() }}%. Tandai DP diterima setelah bukti transfer dicek; akun otomatis ditahan
-            {{ config('store.booking_hold_days') }} hari untuk pelunasan. Setelah lunas, lanjutkan lewat tombol <b class="text-slate-200">Proses Penjualan</b>.
+            Booking dibuat pembeli lewat website (DP {{ \App\Models\Booking::dpPercent() }}%) atau dicatat admin lewat tombol <b class="text-slate-200">Booking / DP</b> di Kelola Akun.
+            Setelah DP diterima, akun ditahan {{ implode(' atau ', \App\Models\Booking::holdOptions()) }} hari untuk pelunasan. Setelah lunas, lanjutkan lewat tombol <b class="text-slate-200">Proses Penjualan</b>.
+        </p>
+        <p class="text-sm text-amber-300/90 mt-2">
+            Tidak lunas sampai batas waktu: akun otomatis ditarik kembali (tersedia lagi) dan DP hangus.
+            @if($forfeitedTotal > 0)
+                Total DP hangus: <b class="text-amber-200">{{ 'Rp ' . number_format($forfeitedTotal, 0, ',', '.') }}</b>.
+            @endif
         </p>
     </div>
 
@@ -105,7 +112,10 @@
                                     <span {!! $b->countdownAttrs('sisa ', 'Waktu habis') !!}>{{ $b->deadlineLabel() }}</span>
                                 </p>
                             @elseif($b->cancel_reason)
-                                <p>{{ $b->cancel_reason }}</p>
+                                <p class="{{ $b->isForfeited() ? 'text-red-300 font-semibold' : '' }}">{{ $b->cancel_reason }}</p>
+                            @endif
+                            @if($b->status === 'expired' && $b->isForfeited())
+                                <p class="text-red-300">DP {{ $rp($b->dp_amount) }} hangus. Akun sudah dibuka kembali untuk dijual.</p>
                             @endif
                             @if($b->status === 'expired' && $b->dp_state === 'held')
                                 <p class="text-amber-300 font-semibold">Lewat batas pelunasan. DP {{ $rp($b->dp_amount) }} masih ditahan, tentukan nasibnya.</p>
@@ -117,8 +127,13 @@
                             <a href="{{ $b->publicUrl() }}" target="_blank" rel="noopener" class="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold transition">Halaman Booking</a>
 
                             @if($b->status === 'pending' || ($b->status === 'expired' && $b->dp_state === 'unpaid'))
-                                <form method="POST" action="{{ route('admin.bookings.confirm', $b) }}" onsubmit="return confirm('Konfirmasi DP {{ $rp($b->dp_amount) }} sudah masuk ke rekening?')">
+                                <form method="POST" action="{{ route('admin.bookings.confirm', $b) }}" class="flex items-center gap-2" onsubmit="return confirm('Konfirmasi DP {{ $rp($b->dp_amount) }} sudah masuk ke rekening?')">
                                     @csrf
+                                    <select name="days" title="Batas pelunasan" class="rounded-full bg-slate-900 border border-white/10 text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-electric">
+                                        @foreach(\App\Models\Booking::holdOptions() as $opt)
+                                            <option value="{{ $opt }}" @selected($opt === \App\Models\Booking::defaultHoldDays())>Lunas {{ $opt }} hari</option>
+                                        @endforeach
+                                    </select>
                                     <button class="px-4 py-2 rounded-full bg-electric hover:bg-blue-500 text-white text-xs font-bold transition">
                                         {{ $b->status === 'pending' ? 'DP Sudah Diterima' : 'Aktifkan Lagi (DP Diterima)' }}
                                     </button>
@@ -133,6 +148,11 @@
                                     @csrf
                                     <input type="hidden" name="days" value="1">
                                     <button class="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold transition">+1 hari</button>
+                                </form>
+                                <form method="POST" action="{{ route('admin.bookings.extend', $b) }}" class="flex" onsubmit="return confirm('Perpanjang batas pelunasan 7 hari?')">
+                                    @csrf
+                                    <input type="hidden" name="days" value="7">
+                                    <button class="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold transition">+7 hari</button>
                                 </form>
                             @endif
 

@@ -38,6 +38,7 @@ class ActivityLog extends Model
         'delete_review'  => ['label' => 'Hapus ulasan',       'tone' => 'red'],
         'apply_price_suggestion' => ['label' => 'Terapkan saran harga', 'tone' => 'blue'],
         // Booking DP
+        'create_booking'     => ['label' => 'Catat booking DP',      'tone' => 'green'],
         'confirm_booking_dp' => ['label' => 'Konfirmasi DP booking', 'tone' => 'green'],
         'extend_booking'     => ['label' => 'Perpanjang booking',    'tone' => 'blue'],
         'cancel_booking'     => ['label' => 'Batalkan booking',      'tone' => 'red'],
