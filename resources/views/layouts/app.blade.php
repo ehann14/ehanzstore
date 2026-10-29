@@ -7,10 +7,11 @@
     <meta name="description" content="@yield('description', 'Marketplace akun Clash of Clans terpercaya. Akun TH tinggi, hero upgrade, transaksi aman via WhatsApp dengan garansi.')">
     @stack('meta')
     @include('layouts.partials.favicon')
+    @include('layouts.partials.csrf-refresh')
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -25,7 +26,7 @@
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
-                        display: ['Space Grotesk', 'sans-serif'],
+                        display: ['Nunito', 'Inter', 'sans-serif'],
                     },
                 }
             }
@@ -35,7 +36,18 @@
     <script src="//unpkg.com/alpinejs" defer></script>
     <style>
         [x-cloak] { display: none !important; }
-        body { background-color: #020617; color: #e2e8f0; }
+        body {
+            background-color: #020617;
+            color: #e2e8f0;
+            /* Cahaya halus di latar supaya tampilan tidak terasa datar/kaku (warna tetap sama) */
+            background-image:
+                radial-gradient(900px 520px at 8% -8%, rgba(6, 69, 173, 0.22), transparent 60%),
+                radial-gradient(700px 440px at 100% 2%, rgba(59, 130, 246, 0.10), transparent 55%);
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+        /* Font judul/harga: Nunito (ujung huruf membulat), sedikit lebih rapat agar tetap rapi */
+        .font-display { letter-spacing: -0.01em; }
 
         .glass {
             background: rgba(15, 23, 42, 0.5);
@@ -76,6 +88,15 @@
     </a>
 
     {{-- Bar pembanding akun (disembunyikan di halaman perbandingan itu sendiri) --}}
+    {{-- Penanda untuk admin yang sedang login saat mode maintenance menyala (pengunjung umum melihat halaman maintenance) --}}
+    @if(auth()->check() && \App\Support\Maintenance::isActive())
+        <a href="{{ auth()->user()->isSuperAdmin() ? route('super-admin.maintenance') : route('admin.dashboard') }}"
+           class="fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-amber-500 text-slate-900 text-xs font-bold shadow-xl shadow-black/40 hover:bg-amber-400 transition">
+            <span class="w-2 h-2 rounded-full bg-slate-900 animate-pulse"></span>
+            Mode maintenance AKTIF (pengunjung tidak bisa melihat halaman ini)
+        </a>
+    @endif
+
     @unless(request()->routeIs('compare'))
         <x-compare-bar />
     @endunless

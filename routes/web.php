@@ -7,6 +7,10 @@ use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WarrantyCheckController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\Admin\BookingController as AdminBookingController;
+use App\Http\Controllers\SuperAdmin\ActivityLogController;
+use App\Http\Controllers\SuperAdmin\MaintenanceController;
 use App\Http\Controllers\SuperAdmin\ReviewModerationController;
 use App\Http\Controllers\SuperAdmin\ReportController;
 use App\Http\Controllers\Admin\AccountController;
@@ -22,6 +26,21 @@ Route::get('/akun/{account_code}', [PublicController::class, 'detail'])->name('a
 Route::post('/track/event', [PublicController::class, 'trackEvent'])->name('track.event');
 Route::get('/cara-membeli', [PublicController::class, 'howToBuy'])->name('how.to.buy');
 Route::get('/garansi', [PublicController::class, 'warranty'])->name('warranty');
+
+// Booking akun dengan DP: syarat & ketentuan, buat booking, halaman booking pembeli
+Route::get('/syarat-dp', [BookingController::class, 'terms'])->name('booking.terms');
+Route::post('/akun/{account_code}/booking', [BookingController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('booking.store');
+Route::get('/booking/{token}', [BookingController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('booking.show');
+
+// Token CSRF segar untuk form yang dibiarkan terbuka lama (dipanggil otomatis oleh JS).
+// Sekaligus memperpanjang masa aktif sesi.
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->name('csrf.token');
 
 // Cek sisa garansi pembeli lewat kode transaksi (data dari tabel sales)
 Route::get('/cek-garansi', [WarrantyCheckController::class, 'index'])
@@ -117,6 +136,13 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
             'toggle'
         ])->name('banners.toggle');
 
+        // Booking akun (DP 20%): konfirmasi DP, perpanjang, batalkan
+        Route::get('bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
+        Route::post('bookings/{booking}/confirm', [AdminBookingController::class, 'confirm'])->name('bookings.confirm');
+        Route::post('bookings/{booking}/extend', [AdminBookingController::class, 'extend'])->name('bookings.extend');
+        Route::post('bookings/{booking}/cancel', [AdminBookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('bookings/{booking}/resolve', [AdminBookingController::class, 'resolve'])->name('bookings.resolve');
+
         // Pengingat stok lama + saran penurunan harga
         Route::get('stale-stock', [StaleStockController::class, 'index'])
             ->name('stale.index');
@@ -171,6 +197,17 @@ Route::middleware(['auth', 'role:super_admin', 'two-factor'])
         // Riwayat aktivitas admin
         Route::get('/activity-logs', [SuperAdminDashboard::class, 'activityLogs'])
             ->name('activity-logs');
+
+        // Hapus riwayat aktivitas (satu, terpilih, atau dibersihkan massal dengan password)
+        Route::post('/activity-logs/bulk-delete', [ActivityLogController::class, 'bulkDestroy'])->name('activity-logs.bulk-delete');
+        Route::post('/activity-logs/clear', [ActivityLogController::class, 'clear'])
+            ->middleware('throttle:10,1')
+            ->name('activity-logs.clear');
+        Route::delete('/activity-logs/{log}', [ActivityLogController::class, 'destroy'])->name('activity-logs.destroy');
+
+        // Mode maintenance
+        Route::get('/maintenance', [MaintenanceController::class, 'edit'])->name('maintenance');
+        Route::post('/maintenance', [MaintenanceController::class, 'update'])->name('maintenance.update');
 
         // Konfirmasi penjualan oleh Super Admin
         Route::post('/sales/confirm', [

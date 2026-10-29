@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Booking;
 use App\Models\CocAccount;
 use Closure;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class ExpireHotDeals
         if (! $request->is('uploads/*', 'track/event', 'up')) {
             try {
                 CocAccount::expireHotDeals();
+                Booking::expireOverdue(); // booking yang lewat batas waktu dilepas otomatis
             } catch (Throwable $e) {
                 // Mis. kolom belum ada karena migrasi belum dijalankan: jangan sampai situs ikut error.
                 report($e);

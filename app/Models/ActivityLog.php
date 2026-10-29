@@ -37,6 +37,15 @@ class ActivityLog extends Model
         'reject_review'  => ['label' => 'Tolak ulasan',       'tone' => 'amber'],
         'delete_review'  => ['label' => 'Hapus ulasan',       'tone' => 'red'],
         'apply_price_suggestion' => ['label' => 'Terapkan saran harga', 'tone' => 'blue'],
+        // Booking DP
+        'confirm_booking_dp' => ['label' => 'Konfirmasi DP booking', 'tone' => 'green'],
+        'extend_booking'     => ['label' => 'Perpanjang booking',    'tone' => 'blue'],
+        'cancel_booking'     => ['label' => 'Batalkan booking',      'tone' => 'red'],
+        'resolve_booking_dp' => ['label' => 'Putuskan DP booking',   'tone' => 'amber'],
+        // Maintenance & pembersihan log
+        'toggle_maintenance'   => ['label' => 'Mode maintenance',        'tone' => 'amber'],
+        'delete_activity_logs' => ['label' => 'Hapus catatan aktivitas', 'tone' => 'red'],
+        'clear_activity_logs'  => ['label' => 'Bersihkan riwayat',       'tone' => 'red'],
         // Keamanan login
         'login_failed'   => ['label' => 'Login gagal',        'tone' => 'amber'],
         'login_locked'   => ['label' => 'Login diblokir sementara', 'tone' => 'red'],

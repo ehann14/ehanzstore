@@ -16,4 +16,20 @@ return [
     // Jumlah akun serupa di bawah halaman detail
     'similar_limit' => 4,
 
+    // ------------------------------------------------------------------
+    // Booking akun (DP)
+    // ------------------------------------------------------------------
+
+    // Persen DP dari harga akun saat booking
+    'booking_dp_percent' => (int) env('BOOKING_DP_PERCENT', 20),
+
+    // Batas waktu pembeli membayar DP setelah booking dibuat (jam). Lewat dari ini booking batal otomatis.
+    'booking_pay_hours' => (int) env('BOOKING_PAY_HOURS', 24),
+
+    // Batas pelunasan setelah DP diterima admin (hari). Selama masa ini akun ditahan untuk pembeli.
+    'booking_hold_days' => (int) env('BOOKING_HOLD_DAYS', 3),
+
+    // Maksimal booking aktif (menunggu DP / DP diterima) per nomor WhatsApp
+    'booking_max_per_phone' => (int) env('BOOKING_MAX_PER_PHONE', 2),
+
 ];

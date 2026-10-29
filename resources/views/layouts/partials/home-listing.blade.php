@@ -25,10 +25,10 @@
 
     @if(! $isClanBlock && isset($townHalls) && $townHalls->count())
         <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
-            <a href="{{ route('catalog', ['type' => 'account']) }}" class="snap-start shrink-0 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide bg-electric text-white shadow-lg shadow-electric/20">Semua</a>
+            <a href="{{ route('catalog', ['type' => 'account']) }}" class="snap-start shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide bg-electric text-white shadow-lg shadow-electric/20">Semua</a>
             @foreach($townHalls as $th)
                 <a href="{{ route('catalog', ['type' => 'account', 'th' => $th]) }}"
-                   class="snap-start shrink-0 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white transition">
+                   class="snap-start shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white transition">
                     TH {{ $th }}
                 </a>
             @endforeach
@@ -39,7 +39,7 @@
         @forelse($available as $account)
             @include('components.account-card', ['account' => $account])
         @empty
-            <div class="col-span-full rounded-2xl border border-white/5 bg-white/[0.02] p-14 text-center text-slate-500">
+            <div class="col-span-full rounded-3xl border border-white/5 bg-white/[0.02] p-14 text-center text-slate-500">
                 Stok {{ $noun }} sedang kosong. Chat admin untuk request {{ $noun }} sesuai kebutuhanmu.
             </div>
         @endforelse
@@ -48,7 +48,7 @@
     @if($available->count())
         <div class="mt-10 text-center">
             <a href="{{ $catalogUrl }}"
-               class="inline-flex items-center gap-2 px-7 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-sm font-semibold transition">
+               class="inline-flex items-center gap-2 px-7 py-3 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white text-sm font-semibold transition">
                 Lihat Semua {{ $isClanBlock ? 'Clan' : 'Akun' }}
             </a>
         </div>

@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\VisitorEvent;
 use Closure;
 use Illuminate\Http\Request;
+use Throwable;
 
 class VisitorTracking
 {
@@ -12,27 +13,34 @@ class VisitorTracking
     {
         $response = $next($request);
 
-        // Hanya track jika method GET dan bukan asset/admin
-        if ($request->isMethod('GET') && !$request->is('admin/*') && !$request->is('super-admin/*') && !$request->is('uploads/*')) {
-            
+        // Hanya track GET untuk halaman publik (bukan asset, admin, login, atau endpoint token)
+        if (
+            $request->isMethod('GET')
+            && $response->getStatusCode() !== 503 // halaman maintenance tidak dihitung sebagai kunjungan
+            && ! $request->is('admin/*', 'super-admin/*', 'uploads/*', 'login', 'login/*', 'csrf-token', 'up')
+        ) {
             // Cek apakah ini page_view atau event spesifik (misal klik WA)
             $eventType = 'page_view';
-            
-            // Contoh deteksi klik WhatsApp dari URL parameter atau referrer jika ada
+
             if ($request->has('track') && $request->get('track') === 'whatsapp_click') {
                 $eventType = 'click_whatsapp';
             }
 
-            VisitorEvent::create([
-                'anonymous_session_id' => session()->getId(),
-                'event_type' => $eventType,
-                'page_path' => $request->path(),
-                'event_metadata' => json_encode([
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                    'referer' => $request->header('referer'),
-                ]),
-            ]);
+            try {
+                VisitorEvent::create([
+                    'anonymous_session_id' => session()->getId(),
+                    'event_type' => $eventType,
+                    'page_path' => $request->path(),
+                    'event_metadata' => json_encode([
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'referer' => $request->header('referer'),
+                    ]),
+                ]);
+            } catch (Throwable $e) {
+                // Tracking tidak boleh membuat halaman ikut error
+                report($e);
+            }
         }
 
         return $response;

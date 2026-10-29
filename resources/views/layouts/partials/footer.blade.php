@@ -4,10 +4,10 @@
         <!-- Brand -->
         <div class="md:col-span-1">
             <div class="flex items-center gap-3 mb-5">
-                <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center overflow-hidden">
+                <div class="w-11 h-11 bg-white rounded-2xl flex items-center justify-center overflow-hidden">
                     <img src="{{ asset('images/logo.png') }}" alt="EHANZSTORE.ID" class="w-9 h-9 object-contain">
                 </div>
-                <span class="font-display font-bold text-white text-lg">EHANZSTORE</span>
+                <span class="font-display font-extrabold text-white text-xl">EHANZSTORE</span>
             </div>
             <p class="text-sm leading-relaxed text-slate-400 mb-6">
                 Marketplace jual beli akun Clash of Clans. Transaksi aman, akun dicek sebelum listing, dan ada garansi setelah pembelian.
@@ -32,6 +32,7 @@
                 <li><a href="{{ route('catalog') }}" class="text-slate-400 hover:text-white transition">Katalog Akun</a></li>
                 <li><a href="{{ route('how.to.buy') }}" class="text-slate-400 hover:text-white transition">Cara Membeli</a></li>
                 <li><a href="{{ route('warranty') }}" class="text-slate-400 hover:text-white transition">Ketentuan Garansi</a></li>
+                <li><a href="{{ route('booking.terms') }}" class="text-slate-400 hover:text-white transition">Syarat &amp; Ketentuan Booking DP</a></li>
             </ul>
         </div>
 

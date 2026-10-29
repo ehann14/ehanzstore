@@ -61,6 +61,42 @@
         @endif
     </div>
 
+    {{-- Booking DP aktif untuk akun ini: isi data pembeli otomatis dan tampilkan sisa pelunasan --}}
+    @php
+        $booking = null;
+
+        if (! $isEdit) {
+            try {
+                $booking = \App\Models\Booking::where('coc_account_id', $account->id)
+                    ->where('status', \App\Models\Booking::ACTIVE)
+                    ->latest('id')
+                    ->first();
+            } catch (\Throwable $e) {
+                $booking = null;
+            }
+
+            if ($booking && empty(old())) {
+                session()->now('_old_input', [
+                    'buyer_name'  => $booking->buyer_name,
+                    'buyer_phone' => $booking->localPhone(),
+                    'price'       => (int) $booking->price_snapshot,
+                ]);
+            }
+        }
+    @endphp
+
+    @if($booking)
+        <div class="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+            <p class="font-semibold text-emerald-100">Akun ini dibooking: {{ $booking->booking_code }}</p>
+            <p class="mt-1">
+                Pembeli <b>{{ $booking->buyer_name }}</b> sudah membayar DP <b>Rp {{ number_format((float) $booking->dp_amount, 0, ',', '.') }}</b>.
+                Sisa yang harus dilunasi: <b>Rp {{ number_format($booking->remaining(), 0, ',', '.') }}</b>
+                (harga dikunci Rp {{ number_format((float) $booking->price_snapshot, 0, ',', '.') }}).
+            </p>
+            <p class="mt-1 text-xs text-emerald-300/80">Data pembeli dan harga sudah diisi dari booking. Pastikan pelunasan sudah diterima sebelum menekan Konfirmasi Terjual; booking akan otomatis selesai.</p>
+        </div>
+    @endif
+
     <!-- Form -->
     <form action="{{ $isEdit ? route('admin.sales.buyer.update', $sale) : route('admin.accounts.sell.store', $account) }}"
           method="POST" class="glass-panel rounded-3xl p-6 md:p-8 space-y-8">

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login Admin - EHANZSTORE.ID</title>
     @include('layouts.partials.favicon')
+    @include('layouts.partials.csrf-refresh')
     @include('layouts.partials.pwa')
     
     <!-- Fonts & Tailwind -->

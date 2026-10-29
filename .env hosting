@@ -2,7 +2,7 @@ APP_NAME=EHANZSTORE.ID
 APP_ENV=production
 APP_KEY=base64:FoqM3RnQ2OMepFPCjBy9pRK9Uy9acI+j+8eQ5KyyrjI=
 APP_DEBUG=true
-APP_URL=https://ehangg.my.id/
+APP_URL=https://ehangg.my.id
 
 APP_LOCALE=en
 APP_FALLBACK_LOCALE=en

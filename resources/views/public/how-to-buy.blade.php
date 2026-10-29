@@ -166,6 +166,15 @@
             @endforeach
         </div>
 
+        <!-- Opsi booking DP -->
+        <div class="mt-14 rounded-3xl border border-electric/30 bg-electric/10 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
+            <div class="flex-1">
+                <p class="font-display font-extrabold text-xl text-white">Belum bisa bayar penuh? Booking dulu dengan DP {{ \App\Models\Booking::dpPercent() }}%</p>
+                <p class="text-sm text-slate-300 mt-1">Tahan akun incaranmu selama {{ (int) config('store.booking_hold_days', 3) }} hari setelah DP diterima, sisanya dilunasi saat siap. Klik tombol Booking di halaman detail akun.</p>
+            </div>
+            <a href="{{ route('booking.terms') }}" class="shrink-0 inline-flex items-center justify-center bg-electric hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-full transition">Baca Syarat DP</a>
+        </div>
+
         <!-- Final CTA -->
         <div class="mt-16 text-center">
             <p class="text-slate-400 mb-6">

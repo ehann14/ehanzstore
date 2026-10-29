@@ -183,6 +183,20 @@
                     <a href="{{ route('catalog') }}" class="block text-center text-sm text-electric hover:text-white transition">
                         Lihat {{ $noun }} lain yang tersedia
                     </a>
+                @elseif($account->isBooked())
+                    @php $held = $account->activeBooking(); @endphp
+                    <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-center space-y-1.5">
+                        <p class="font-display font-extrabold text-lg text-amber-200">{{ ucfirst($noun) }} ini sedang dibooking</p>
+                        <p class="text-xs text-amber-100/80">
+                            Pembeli lain sudah menahan {{ $noun }} ini dengan DP.
+                            @if($held && $held->expires_at)
+                                Jika tidak dilunasi, {{ $noun }} tersedia lagi sekitar <span {!! $held->countdownAttrs('dalam ', 'sebentar lagi') !!}>{{ $held->deadlineLabel() }}</span>.
+                            @endif
+                        </p>
+                    </div>
+                    <a href="{{ route('catalog') }}" class="block text-center text-sm text-electric hover:text-white transition">
+                        Lihat {{ $noun }} lain yang tersedia
+                    </a>
                 @else
                 <a
                     href="{{ account_wa_url($account, $storeWa ?? null) }}"
@@ -200,6 +214,9 @@
                 <p class="text-[10px] text-slate-500 text-center">
                     Anda akan diarahkan ke chat admin dengan pesan otomatis.
                 </p>
+
+                {{-- Booking dengan DP --}}
+                <x-booking-box :account="$account" />
 
                 {{-- Bandingkan dengan akun lain (2 sampai 3 akun) --}}
                 <button type="button" data-compare-btn

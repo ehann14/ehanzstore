@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title') - EHANZ Admin</title>
     @include('layouts.partials.favicon')
+    @include('layouts.partials.csrf-refresh')
     @include('layouts.partials.pwa')
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -18,7 +19,7 @@
                         electric: '#3b82f6',
                         brand: { 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#0645AD', 950: '#0b1220' },
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] }
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Nunito', 'Inter', 'sans-serif'] }
                 }
             }
         }
@@ -54,12 +55,26 @@
             $staleBadge = 0;
         }
 
+        // Jumlah booking yang menunggu DP / keputusan (lencana di menu Booking)
+        try {
+            $bookingBadge = \App\Models\Booking::where(function ($q) {
+                    $q->where('status', \App\Models\Booking::PENDING)
+                      ->orWhere(fn ($x) => $x->where('status', \App\Models\Booking::EXPIRED)->where('dp_state', \App\Models\Booking::DP_HELD));
+                })
+                ->when(! $isSuper, fn ($q) => $q->whereHas('account', fn ($a) => $a->where('created_by', $user->id)))
+                ->count();
+        } catch (\Throwable $e) {
+            $bookingBadge = 0;
+        }
+
         $sections = [
             'Menu' => [
                 ['href' => route($isSuper ? 'super-admin.dashboard' : 'admin.dashboard'), 'label' => 'Dashboard', 'active' => request()->routeIs('*.dashboard'),
                  'icon' => 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z'],
                 ['href' => route('admin.accounts.index'), 'label' => 'Kelola Akun', 'active' => request()->routeIs('admin.accounts.*'),
                  'icon' => 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'],
+                ['href' => route('admin.bookings.index'), 'label' => 'Booking DP', 'active' => request()->routeIs('admin.bookings.*'), 'badge' => $bookingBadge,
+                 'icon' => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
                 ['href' => route('admin.stale.index'), 'label' => 'Stok Lama', 'active' => request()->routeIs('admin.stale.*'), 'badge' => $staleBadge,
                  'icon' => 'M5 3h14M5 21h14M7 3v3a5 5 0 002 4l3 2-3 2a5 5 0 00-2 4v3m10-18v3a5 5 0 01-2 4l-3 2 3 2a5 5 0 012 4v3'],
                 ['href' => route('admin.banners.index'), 'label' => 'Banner Beranda', 'active' => request()->routeIs('admin.banners.*'),
@@ -81,6 +96,8 @@
                  'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'],
                 ['href' => route('super-admin.activity-logs'), 'label' => 'Riwayat Aktivitas', 'active' => request()->routeIs('super-admin.activity-logs'),
                  'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
+                ['href' => route('super-admin.maintenance'), 'label' => 'Maintenance', 'active' => request()->routeIs('super-admin.maintenance*'),
+                 'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z'],
                 ['href' => route('super-admin.security'), 'label' => 'Keamanan', 'active' => request()->routeIs('super-admin.security*'),
                  'icon' => 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'],
             ];

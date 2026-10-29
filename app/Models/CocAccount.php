@@ -209,6 +209,9 @@ class CocAccount extends Model
             if ($account->sale_status === 'sold') {
                 // Akun ditandai terjual -> pastikan ada transaksi selesai
                 Sale::recordForAccount($account);
+
+                // Booking DP milik akun ini ikut diselesaikan (DP dihitung sebagai bagian pembayaran)
+                Booking::settleForSoldAccount($account);
             } elseif ($account->getOriginal('sale_status') === 'sold') {
                 // Status terjual dibatalkan -> transaksi lama dibatalkan
                 // agar pendapatan tidak dihitung dua kali
@@ -270,6 +273,23 @@ class CocAccount extends Model
     public function sales()
     {
         return $this->hasMany(Sale::class);
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /** Akun ini sedang ditahan booking (menunggu DP / DP diterima)? Memakai cache satu query per request. */
+    public function isBooked(): bool
+    {
+        return $this->sale_status === 'available' && in_array((int) $this->id, Booking::heldAccountIds(), true);
+    }
+
+    /** Booking yang sedang menahan akun ini (null bila tidak ada). */
+    public function activeBooking(): ?Booking
+    {
+        return $this->isBooked() ? Booking::holdingFor($this->id) : null;
     }
 
     /** Transaksi selesai terakhir (berisi data pembeli & garansi). */

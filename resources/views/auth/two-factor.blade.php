@@ -6,6 +6,7 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Verifikasi Dua Langkah - EHANZSTORE.ID</title>
     @include('layouts.partials.favicon')
+    @include('layouts.partials.csrf-refresh')
     @include('layouts.partials.pwa')
 
     <!-- Fonts & Tailwind -->
