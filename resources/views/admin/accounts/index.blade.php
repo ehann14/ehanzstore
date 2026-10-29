@@ -112,6 +112,12 @@
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $published ? 'bg-electric/15 text-blue-300 border-electric/30' : 'bg-amber-500/15 text-amber-300 border-amber-500/30' }}">
                                     {{ $published ? 'Terbit' : 'Draft' }}
                                 </span>
+                                @if($account->isScheduled())
+                                    <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-violet-500/15 text-violet-300 border-violet-500/30"
+                                          title="Terbit otomatis sesuai jadwal">
+                                        Tayang {{ $account->publishAtLabel() }}
+                                    </span>
+                                @endif
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $saleBadge[1] }}">{{ $saleBadge[0] }}</span>
 
                                 @if($hold)

@@ -135,6 +135,7 @@
                         <option value="draft" {{ old('publication_status', $account->publication_status) == 'draft' ? 'selected' : '' }}>Draft (disembunyikan)</option>
                         <option value="published" {{ old('publication_status', $account->publication_status) == 'published' ? 'selected' : '' }}>Terbit (tampil di katalog)</option>
                     </select>
+                    <p class="text-[11px] text-slate-500 mt-1.5">Pilih Draft lalu atur Jadwal Tayang di bawah agar akun terbit otomatis.</p>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 mb-2">Status Penjualan</label>
@@ -151,6 +152,8 @@
                 </div>
             </div>
         </div>
+
+        @include('admin.accounts._publish-schedule', ['account' => $account])
 
         <!-- Deskripsi & Aksi -->
         <div class="space-y-6 pt-4">

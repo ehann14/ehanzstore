@@ -19,7 +19,7 @@ class CocAccount extends Model
         'builder_count', 'gems', 'cn_information',
         'listing_type', 'clan_level', 'capital_hall_level', 'clan_members', 'clan_league',
         'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'original_price', 'is_hot_deal', 'hot_deal_ends_at', 'cost_price', 'description',
-        'publication_status', 'sale_status', 'created_by'
+        'publication_status', 'publish_at', 'sale_status', 'created_by'
     ];
 
     protected $casts = [
@@ -27,6 +27,7 @@ class CocAccount extends Model
         'original_price' => 'decimal:2',
         'is_hot_deal' => 'boolean',
         'hot_deal_ends_at' => 'datetime',
+        'publish_at' => 'datetime',
         'cost_price' => 'decimal:2',
         'email_change_available_at' => 'datetime',
     ];
@@ -165,6 +166,45 @@ class CocAccount extends Model
                 'is_hot_deal'      => false,
                 'hot_deal_ends_at' => null,
             ]);
+    }
+
+    // ------------------------------------------------------------------
+    // Jadwal tayang (publish_at)
+    // ------------------------------------------------------------------
+
+    /**
+     * Terbitkan semua akun draft yang jadwal tayangnya sudah tiba.
+     * Dipanggil otomatis oleh middleware ExpireHotDeals di setiap request (tanpa cron).
+     * Akun draft tanpa jadwal tidak disentuh. Jadwal dikosongkan setelah terbit.
+     */
+    public static function publishDue(): int
+    {
+        return DB::table('coc_accounts')
+            ->where('publication_status', 'draft')
+            ->whereNotNull('publish_at')
+            ->where('publish_at', '<=', now())
+            ->whereNull('deleted_at')
+            ->update([
+                'publication_status' => 'published',
+                'publish_at'         => null,
+                'updated_at'         => now(),
+            ]);
+    }
+
+    /** Masih draft dan punya jadwal tayang di masa depan? */
+    public function isScheduled(): bool
+    {
+        return $this->publication_status === 'draft'
+            && $this->publish_at !== null
+            && $this->publish_at->isFuture();
+    }
+
+    /** Teks jadwal tayang untuk admin, contoh: "30 Oct, 19:00 WIB". Null jika tidak dijadwalkan. */
+    public function publishAtLabel(): ?string
+    {
+        return $this->publish_at
+            ? $this->publish_at->clone()->timezone(Sale::DISPLAY_TZ)->format('d M, H:i') . ' WIB'
+            : null;
     }
 
     /** Tag yang relevan untuk jenis listing ini (tag clan untuk clan, tag akun untuk akun pemain). */

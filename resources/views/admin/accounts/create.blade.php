@@ -143,6 +143,8 @@
 
         @include('admin.accounts._photos', ['account' => null])
 
+        @include('admin.accounts._publish-schedule', ['account' => null])
+
         <!-- Deskripsi & Aksi -->
         <div class="space-y-6 pt-4">
             <div>

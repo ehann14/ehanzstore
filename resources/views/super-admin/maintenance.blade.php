@@ -103,21 +103,10 @@
             @endphp
             <div class="flex flex-wrap items-center gap-2">
                 <div class="flex-1 min-w-[10rem]">
-                    <input id="m_until_date" type="date" name="until_date" value="{{ old('until_date', $untilDate) }}" aria-label="Tanggal" class="{{ $fieldClass }}">
+                    <input id="m_until_date" type="date" name="until_date" value="{{ old('until_date', $untilDate) }}" aria-label="Tanggal" class="{{ $fieldClass }} [color-scheme:dark]">
                 </div>
-                <select name="until_hour" aria-label="Jam (00-23)" class="{{ $fieldClass }} !w-24">
-                    <option value="">Jam</option>
-                    @for($h = 0; $h < 24; $h++)
-                        <option value="{{ $h }}" @selected((string) $selHour !== '' && (int) $selHour === $h)>{{ sprintf('%02d', $h) }}</option>
-                    @endfor
-                </select>
-                <span class="text-slate-500 font-bold">:</span>
-                <select name="until_minute" aria-label="Menit (00-59)" class="{{ $fieldClass }} !w-24">
-                    <option value="">Menit</option>
-                    @for($i = 0; $i < 60; $i++)
-                        <option value="{{ $i }}" @selected((string) $selMinute !== '' && (int) $selMinute === $i)>{{ sprintf('%02d', $i) }}</option>
-                    @endfor
-                </select>
+                <x-time-picker hour-name="until_hour" minute-name="until_minute" :hour="$selHour" :minute="$selMinute"
+                               :step="5" label="Pilih jam perkiraan selesai" />
                 <span class="text-xs font-semibold text-slate-400">WIB</span>
             </div>
             @if($untilLabel)

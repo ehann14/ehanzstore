@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use App\Support\Uploads;
 use App\Support\Watermark;
 
@@ -52,6 +53,7 @@ class AccountController extends Controller
         $validated['listing_type']        = $type;
         $validated['cost_price']          = $validated['cost_price'] ?? 0;
         $this->applyDiscount($validated, $request);
+        $this->applyPublishSchedule($validated, willBePublished: false);
         $this->applyAccountInfoDefaults($validated);
         $validated['protection_status']   ??= 'Unprotected';
         $validated['email_change_status'] ??= 'Unchangeable';
@@ -126,6 +128,7 @@ class AccountController extends Controller
 
         $validated['cost_price'] = $validated['cost_price'] ?? 0;
         $this->applyDiscount($validated, $request);
+        $this->applyPublishSchedule($validated, willBePublished: $validated['publication_status'] === 'published');
         $this->applyAccountInfoDefaults($validated);
 
         $this->applyEmailDelay($validated, $account);
@@ -190,7 +193,14 @@ class AccountController extends Controller
                 ->with('success', 'Isi data pembeli untuk menandai akun terjual.');
         }
 
-        $account->update(array_filter($data));
+        $changes = array_filter($data);
+
+        // Terbit / sembunyikan manual berarti jadwal tayang tidak diperlukan lagi
+        if (isset($changes['publication_status'])) {
+            $changes['publish_at'] = null;
+        }
+
+        $account->update($changes);
 
         ActivityLog::record('update_status', $account, 'Akun ' . $account->account_code, [
             'changes' => array_filter($data),
@@ -411,6 +421,10 @@ class AccountController extends Controller
             ],
             // harga modal: hanya terlihat admin, tidak pernah tampil di halaman publik
             'cost_price'           => 'nullable|numeric|min:0|max:999999999',
+            // jadwal tayang otomatis (WIB). Kosong = tidak dijadwalkan. Hanya dipakai bila status Draft.
+            'publish_date'         => ['nullable', 'required_with:publish_hour', 'date_format:Y-m-d'],
+            'publish_hour'         => ['nullable', 'required_with:publish_date', 'integer', 'between:0,23'],
+            'publish_minute'       => ['nullable', 'integer', 'between:0,59'],
             'description'          => 'nullable|string|max:5000',
             'images'               => 'nullable|array|max:' . self::MAX_IMAGES,
             // 5 MB per foto; foto dari browser sudah dikompres otomatis (~0.5 MB)
@@ -525,6 +539,41 @@ class AccountController extends Controller
             : null;
     }
 
+    /**
+     * Ubah input tanggal + jam + menit (WIB) menjadi kolom publish_at (disimpan dalam zona waktu aplikasi).
+     * - Akun yang langsung terbit (atau tanggal dikosongkan) -> publish_at = NULL.
+     * - Jadwal harus di masa depan, kalau tidak form dikembalikan dengan pesan error.
+     * Kolom bantu publish_date/hour/minute dibuang supaya tidak ikut ke database.
+     */
+    private function applyPublishSchedule(array &$validated, bool $willBePublished): void
+    {
+        $date   = $validated['publish_date'] ?? null;
+        $hour   = $validated['publish_hour'] ?? null;
+        $minute = $validated['publish_minute'] ?? null;
+
+        unset($validated['publish_date'], $validated['publish_hour'], $validated['publish_minute']);
+
+        if ($willBePublished || blank($date)) {
+            $validated['publish_at'] = null;
+
+            return;
+        }
+
+        $at = Carbon::createFromFormat(
+            'Y-m-d H:i',
+            sprintf('%s %02d:%02d', $date, (int) $hour, (int) ($minute ?? 0)),
+            Sale::DISPLAY_TZ
+        );
+
+        if ($at->lte(now())) {
+            throw ValidationException::withMessages([
+                'publish_date' => 'Jadwal tayang harus di masa depan (WIB).',
+            ]);
+        }
+
+        $validated['publish_at'] = $at->setTimezone(config('app.timezone'));
+    }
+
     private function messages(): array
     {
         return [
@@ -545,6 +594,13 @@ class AccountController extends Controller
             'original_price.max'     => 'Harga coret terlalu besar (maksimal Rp 999.999.999).',
             'original_price.gt'      => 'Harga coret harus lebih besar dari harga jual. Kosongkan jika tidak ada diskon.',
             'hot_deal_ends_at.date'  => 'Format tanggal berakhir promo tidak valid.',
+            'publish_date.date_format'    => 'Tanggal jadwal tayang tidak valid.',
+            'publish_date.required_with'  => 'Pilih tanggal jadwal tayang.',
+            'publish_hour.required_with'  => 'Pilih jam jadwal tayang (00-23, WIB).',
+            'publish_hour.integer'        => 'Jam jadwal tayang tidak valid.',
+            'publish_hour.between'        => 'Jam jadwal tayang harus antara 00 dan 23.',
+            'publish_minute.integer'      => 'Menit jadwal tayang tidak valid.',
+            'publish_minute.between'      => 'Menit jadwal tayang harus antara 00 dan 59.',
             'player_tag.regex'  => 'Tag akun tidak valid. Gunakan huruf dan angka saja, contoh: #P2LQ8Y0R.',
             'clan_tag.regex'    => 'Tag clan tidak valid. Gunakan huruf dan angka saja, contoh: #2Y8LQ0R.',
             'builder_count.max' => 'Jumlah tukang maksimal 6.',
