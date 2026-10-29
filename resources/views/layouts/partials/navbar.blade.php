@@ -49,6 +49,9 @@
                 @endforeach
             </div>
 
+            <!-- Status jam operasional (layar lebar; di layar lebih kecil ada di tombol WA melayang & menu mobile) -->
+            <x-store-hours-badge class="hidden xl:inline-flex" />
+
             <!-- CTA -->
             <a href="{{ $storeWaUrl }}" target="_blank" rel="noopener"
                class="hidden sm:inline-flex items-center gap-2 bg-electric hover:bg-blue-500 text-white px-5 py-2.5 rounded-full text-sm font-bold transition shadow-lg shadow-electric/20 hover:-translate-y-0.5">
@@ -86,6 +89,7 @@
                     {{ $link['label'] }}
                 </a>
             @endforeach
+            <x-store-hours-badge />
             <a href="{{ $storeWaUrl }}" target="_blank" rel="noopener"
                class="block w-full text-center bg-electric text-white py-3 rounded-full font-bold">
                 Hubungi Admin via WhatsApp

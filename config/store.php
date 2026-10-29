@@ -54,4 +54,13 @@ return [
         'min_inquiries'        => (int) env('SOCIAL_PROOF_MIN_INQUIRIES', 1),
     ],
 
+    // ------------------------------------------------------------------
+    // Jam operasional toko (WIB, format 24 jam "H:i").
+    // Dipakai badge Buka/Tutup dan tombol WhatsApp melayang.
+    // ------------------------------------------------------------------
+    'operating_hours' => [
+        'open'  => env('STORE_OPEN_TIME', '06:00'),
+        'close' => env('STORE_CLOSE_TIME', '22:00'),
+    ],
+
 ];

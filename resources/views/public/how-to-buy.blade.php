@@ -142,7 +142,7 @@
                     ],
                     [
                         'q' => 'Berapa lama proses serah terima setelah bayar?',
-                        'a' => 'Normalnya 5-15 menit pada jam kerja (09.00 - 22.00 WIB). Di luar jam operasional, maksimal 1x24 jam. Akun prioritas akan diproses lebih cepat.',
+                        'a' => 'Normalnya 5-15 menit pada jam operasional (' . \App\Support\StoreHours::rangeLabel() . '). Di luar jam operasional, maksimal 1x24 jam. Akun prioritas akan diproses lebih cepat.',
                     ],
                 ];
             @endphp

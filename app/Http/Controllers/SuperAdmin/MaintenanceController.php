@@ -18,11 +18,15 @@ class MaintenanceController extends Controller
     {
         $settings = Maintenance::settings();
 
-        $untilInput = $settings['until']
-            ? $settings['until']->clone()->timezone(Sale::DISPLAY_TZ)->format('Y-m-d\TH:i')
-            : '';
+        // Perkiraan selesai ditampilkan dalam WIB, format 24 jam (tanpa AM/PM)
+        $until = $settings['until']?->clone()->timezone(Sale::DISPLAY_TZ);
 
-        return view('super-admin.maintenance', compact('settings', 'untilInput'));
+        $untilDate   = $until?->format('Y-m-d') ?? '';
+        $untilHour   = $until?->format('H') ?? '';
+        $untilMinute = $until?->format('i') ?? '';
+        $untilLabel  = $until ? $until->format('d M Y, H:i') . ' WIB' : null;
+
+        return view('super-admin.maintenance', compact('settings', 'untilDate', 'untilHour', 'untilMinute', 'untilLabel'));
     }
 
     public function update(Request $request)
@@ -31,13 +35,20 @@ class MaintenanceController extends Controller
             'active'       => ['nullable', 'boolean'],
             'title'        => ['nullable', 'string', 'max:80'],
             'message'      => ['nullable', 'string', 'max:500'],
-            'until'        => ['nullable', 'date'],
+            'until_date'   => ['nullable', 'date_format:Y-m-d'],
+            'until_hour'   => ['nullable', 'required_with:until_date', 'integer', 'between:0,23'],
+            'until_minute' => ['nullable', 'integer', 'between:0,59'],
             'image'        => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:3072'],
             'remove_image' => ['nullable', 'boolean'],
         ], [
             'title.max'      => 'Judul maksimal 80 karakter.',
             'message.max'    => 'Pesan maksimal 500 karakter.',
-            'until.date'     => 'Format perkiraan selesai tidak valid.',
+            'until_date.date_format'  => 'Tanggal perkiraan selesai tidak valid.',
+            'until_hour.required_with' => 'Pilih jam perkiraan selesai (00-23, WIB).',
+            'until_hour.integer'      => 'Jam perkiraan selesai tidak valid.',
+            'until_hour.between'      => 'Jam perkiraan selesai harus antara 00 dan 23.',
+            'until_minute.integer'    => 'Menit perkiraan selesai tidak valid.',
+            'until_minute.between'    => 'Menit perkiraan selesai harus antara 00 dan 59.',
             'image.image'    => 'File harus berupa gambar.',
             'image.mimes'    => 'Format gambar harus JPG, PNG, atau WebP.',
             'image.max'      => 'Ukuran gambar maksimal 3 MB.',
@@ -45,7 +56,18 @@ class MaintenanceController extends Controller
         ]);
 
         $active  = $request->boolean('active');
-        $until   = ! empty($data['until']) ? Carbon::parse($data['until'], Sale::DISPLAY_TZ) : null;
+
+        // Tanggal + jam (00-23) + menit dibaca sebagai WIB, lalu disimpan sebagai UTC oleh Maintenance::save().
+        $until = null;
+
+        if (! empty($data['until_date'])) {
+            $until = Carbon::createFromFormat(
+                'Y-m-d H:i',
+                sprintf('%s %02d:%02d', $data['until_date'], (int) $data['until_hour'], (int) ($data['until_minute'] ?? 0)),
+                Sale::DISPLAY_TZ
+            );
+        }
+
         $current = Maintenance::settings()['image'];
 
         // null = gambar tidak berubah, '' = hapus gambar kustom, path = gambar baru

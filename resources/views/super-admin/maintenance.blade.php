@@ -96,9 +96,34 @@
         </div>
 
         <div>
-            <label for="m_until" class="block text-xs font-semibold text-slate-400 mb-2">Perkiraan selesai <span class="text-slate-600 font-normal">(opsional, WIB)</span></label>
-            <input id="m_until" type="datetime-local" name="until" value="{{ old('until', $untilInput) }}" class="{{ $fieldClass }}">
-            <p class="text-[11px] text-slate-500 mt-1.5">Jika diisi, halaman maintenance menampilkan hitung mundur. Mode tidak mati otomatis saat waktunya lewat; matikan manual setelah selesai.</p>
+            <label for="m_until_date" class="block text-xs font-semibold text-slate-400 mb-2">Perkiraan selesai <span class="text-slate-600 font-normal">(opsional, WIB, format 24 jam)</span></label>
+            @php
+                $selHour   = old('until_hour', $untilHour);
+                $selMinute = old('until_minute', $untilMinute);
+            @endphp
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex-1 min-w-[10rem]">
+                    <input id="m_until_date" type="date" name="until_date" value="{{ old('until_date', $untilDate) }}" aria-label="Tanggal" class="{{ $fieldClass }}">
+                </div>
+                <select name="until_hour" aria-label="Jam (00-23)" class="{{ $fieldClass }} !w-24">
+                    <option value="">Jam</option>
+                    @for($h = 0; $h < 24; $h++)
+                        <option value="{{ $h }}" @selected((string) $selHour !== '' && (int) $selHour === $h)>{{ sprintf('%02d', $h) }}</option>
+                    @endfor
+                </select>
+                <span class="text-slate-500 font-bold">:</span>
+                <select name="until_minute" aria-label="Menit (00-59)" class="{{ $fieldClass }} !w-24">
+                    <option value="">Menit</option>
+                    @for($i = 0; $i < 60; $i++)
+                        <option value="{{ $i }}" @selected((string) $selMinute !== '' && (int) $selMinute === $i)>{{ sprintf('%02d', $i) }}</option>
+                    @endfor
+                </select>
+                <span class="text-xs font-semibold text-slate-400">WIB</span>
+            </div>
+            @if($untilLabel)
+                <p class="text-[11px] text-slate-400 mt-2">Tersimpan saat ini: <span class="text-white font-semibold">{{ $untilLabel }}</span></p>
+            @endif
+            <p class="text-[11px] text-slate-500 mt-1.5">Jika diisi, halaman maintenance menampilkan hitung mundur. Kosongkan tanggal untuk menghapus perkiraan selesai. Mode tidak mati otomatis saat waktunya lewat; matikan manual setelah selesai.</p>
         </div>
 
         <div class="flex flex-col-reverse sm:flex-row sm:items-center gap-3 pt-4 border-t border-white/5">
