@@ -204,30 +204,17 @@ class BookingController extends Controller
 
     private function scopedQuery()
     {
-        $query = Booking::query();
-
-        if (! Auth::user()->isSuperAdmin()) {
-            $query->whereHas('account', fn ($q) => $q->where('created_by', Auth::id()));
-        }
-
-        return $query;
+        // Semua admin melihat booking yang sama (stok akun dipakai bersama).
+        return Booking::query();
     }
 
     private function authorizeBooking(Booking $booking): void
     {
-        $user = Auth::user();
-
-        if (! $user->isSuperAdmin() && $booking->account?->created_by !== $user->id) {
-            abort(403, 'Unauthorized action.');
-        }
+        // Semua admin boleh menangani booking apa pun.
     }
 
     private function authorizeAccount(CocAccount $account): void
     {
-        $user = Auth::user();
-
-        if ($account->created_by !== $user->id && ! $user->isSuperAdmin()) {
-            abort(403);
-        }
+        // Semua admin boleh membuat booking untuk akun apa pun.
     }
 }

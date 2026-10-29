@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title') - EHANZ Admin</title>
+    <title>@yield('title') - {{ auth()->user()?->isSuperAdmin() ? 'EHANZ' : 'Admin Posting' }}</title>
     @include('layouts.partials.favicon')
     @include('layouts.partials.csrf-refresh')
     @include('layouts.partials.pwa')
@@ -45,6 +45,8 @@
     @php
         $user    = auth()->user();
         $isSuper = $user->isSuperAdmin();
+        // Nama yang tampil di panel: Super Admin cukup "EHANZ", admin biasa "Admin Posting"
+        $brand   = $isSuper ? 'EHANZ' : 'Admin Posting';
 
         // Jumlah stok lama (belum laku > N hari) untuk lencana di menu
         try {
@@ -119,8 +121,7 @@
                 <div class="hidden absolute inset-0 bg-electric text-white font-display font-bold text-xl items-center justify-center">E</div>
             </div>
             <div>
-                <h1 class="font-display font-bold text-white leading-none">EHANZSTORE</h1>
-                <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">{{ $isSuper ? 'Super Admin' : 'Panel Admin' }}</p>
+                <h1 class="font-display font-bold text-white leading-none">{{ $brand }}</h1>
             </div>
         </div>
 
@@ -160,7 +161,6 @@
                 </div>
                 <div class="min-w-0">
                     <p class="text-sm font-semibold text-white truncate">{{ $user->name }}</p>
-                    <p class="text-[11px] text-slate-500 truncate">{{ $isSuper ? 'Super Administrator' : 'Administrator' }}</p>
                 </div>
             </div>
             <button onclick="openLogout()" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
@@ -176,7 +176,7 @@
             <!-- Header mobile -->
             <div class="lg:hidden mb-6 sticky top-3 z-30">
                 <div class="flex justify-between items-center glass-strong p-4 rounded-2xl">
-                    <span class="font-display font-bold text-white">EHANZ {{ $isSuper ? 'SUPER ADMIN' : 'ADMIN' }}</span>
+                    <span class="font-display font-bold text-white">{{ $brand }}</span>
                     <span class="ml-auto mr-3 font-mono text-xs text-electric" data-live-clock="time">{{ now()->timezone('Asia/Jakarta')->format('H:i:s') }}</span>
                     <button onclick="document.getElementById('mobileMenu').classList.toggle('hidden')" class="text-white" aria-label="Menu">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>

@@ -19,18 +19,51 @@ class AccountController extends Controller
 {
     private const MAX_IMAGES = 10;
 
-    public function index()
+    public function index(Request $request)
     {
-        $query = CocAccount::with(['primaryImage', 'latestCompletedSale.review'])->orderByDesc('created_at');
-
         // Admin biasa hanya melihat akun miliknya; super admin melihat semua.
-        if (!Auth::user()->isSuperAdmin()) {
-            $query->where('created_by', Auth::id());
+        $base = fn () => CocAccount::query()
+            ->when(!Auth::user()->isSuperAdmin(), fn ($q) => $q->where('created_by', Auth::id()));
+
+        // Dua bagian: "ready" (belum terjual: tersedia + arsip) dan "sold" (sudah terjual)
+        $tab = $request->query('tab') === 'sold' ? 'sold' : 'ready';
+
+        $search = trim((string) $request->query('q', ''));
+
+        $query = $base()->with(['primaryImage', 'latestCompletedSale.review']);
+
+        if ($tab === 'sold') {
+            $query->where('sale_status', 'sold')
+                ->orderByDesc(
+                    Sale::select('id')
+                        ->whereColumn('sales.coc_account_id', 'coc_accounts.id')
+                        ->where('transaction_status', 'completed')
+                        ->orderByDesc('id')
+                        ->limit(1)
+                )
+                ->orderByDesc('coc_accounts.updated_at');
+        } else {
+            $query->where('sale_status', '!=', 'sold')
+                ->orderByDesc('created_at');
         }
 
-        $accounts = $query->paginate(10);
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('account_code', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            });
+        }
 
-        return view('admin.accounts.index', compact('accounts'));
+        $accounts = $query->paginate(10)->withQueryString();
+
+        // Ringkasan untuk kedua tab (tidak terpengaruh pencarian)
+        $readyCount = $base()->where('sale_status', '!=', 'sold')->count();
+        $soldCount  = $base()->where('sale_status', 'sold')->count();
+        $readyValue = (float) $base()->where('sale_status', 'available')->sum('price');
+
+        return view('admin.accounts.index', compact(
+            'accounts', 'tab', 'search', 'readyCount', 'soldCount', 'readyValue'
+        ));
     }
 
     public function create()
@@ -285,7 +318,7 @@ class AccountController extends Controller
             'buyer'       => $sale->buyer_name,
         ]);
 
-        return redirect()->route('admin.accounts.index')->with(
+        return redirect()->route('admin.accounts.index', ['tab' => 'sold'])->with(
             'success',
             "Data pembeli diperbarui. Garansi aktif sampai {$sale->warrantyUntilLabel()}."
         );

@@ -4,10 +4,10 @@
 
 @section('content')
 <div class="max-w-6xl mx-auto pb-20">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-bold text-white">Kelola Akun COC</h1>
-            <p class="text-sm text-slate-400 mt-1">{{ $accounts->total() }} akun &middot; akun berstatus draft tidak tampil di katalog.</p>
+            <p class="text-sm text-slate-400 mt-1">Akun berstatus draft tidak tampil di katalog.</p>
         </div>
         <a href="{{ route('admin.accounts.create') }}"
            class="inline-flex items-center justify-center gap-2 bg-electric hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-lg shadow-electric/20">
@@ -16,6 +16,32 @@
         </a>
     </div>
 
+    {{-- ===== Dua bagian: Akun Ready & Akun Terjual ===== --}}
+    <div class="grid grid-cols-2 gap-3 mb-4">
+        <a href="{{ route('admin.accounts.index', ['tab' => 'ready']) }}"
+           class="rounded-2xl border p-4 transition {{ $tab === 'ready' ? 'bg-emerald-500/10 border-emerald-500/40' : 'glass-panel border-white/5 hover:border-emerald-500/30' }}">
+            <p class="text-[11px] uppercase tracking-wider {{ $tab === 'ready' ? 'text-emerald-300' : 'text-slate-500' }}">Akun Ready</p>
+            <p class="text-2xl font-bold text-white mt-1">{{ $readyCount }}</p>
+            <p class="text-[11px] text-slate-500 mt-0.5 truncate">Nilai tersedia Rp {{ number_format($readyValue, 0, ',', '.') }}</p>
+        </a>
+        <a href="{{ route('admin.accounts.index', ['tab' => 'sold']) }}"
+           class="rounded-2xl border p-4 transition {{ $tab === 'sold' ? 'bg-red-500/10 border-red-500/40' : 'glass-panel border-white/5 hover:border-red-500/30' }}">
+            <p class="text-[11px] uppercase tracking-wider {{ $tab === 'sold' ? 'text-red-300' : 'text-slate-500' }}">Akun Terjual</p>
+            <p class="text-2xl font-bold text-white mt-1">{{ $soldCount }}</p>
+            <p class="text-[11px] text-slate-500 mt-0.5 truncate">Sudah laku &middot; ada garansi &amp; invoice</p>
+        </a>
+    </div>
+
+    <form method="GET" action="{{ route('admin.accounts.index') }}" class="flex gap-2 mb-6">
+        <input type="hidden" name="tab" value="{{ $tab }}">
+        <input type="text" name="q" value="{{ $search }}" placeholder="Cari kode atau nama akun..."
+               class="flex-1 min-w-0 bg-midnight border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-electric">
+        <button type="submit" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm text-slate-200 transition">Cari</button>
+        @if($search !== '')
+            <a href="{{ route('admin.accounts.index', ['tab' => $tab]) }}" class="px-4 py-2.5 rounded-xl border border-white/10 text-sm text-slate-400 hover:text-white transition">Reset</a>
+        @endif
+    </form>
+
     @include('admin.stale._alert')
 
     @if($accounts->isEmpty())
@@ -23,8 +49,16 @@
             <div class="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
             </div>
-            <p class="text-slate-300 mb-1 font-medium">Belum ada akun.</p>
-            <p class="text-sm text-slate-500">Klik "Tambah Akun" untuk memposting akun pertama.</p>
+            @if($search !== '')
+                <p class="text-slate-300 mb-1 font-medium">Tidak ada hasil untuk "{{ $search }}".</p>
+                <p class="text-sm text-slate-500">Coba kata kunci lain.</p>
+            @elseif($tab === 'sold')
+                <p class="text-slate-300 mb-1 font-medium">Belum ada akun yang terjual.</p>
+                <p class="text-sm text-slate-500">Akun yang ditandai terjual akan muncul di sini.</p>
+            @else
+                <p class="text-slate-300 mb-1 font-medium">Belum ada akun ready.</p>
+                <p class="text-sm text-slate-500">Klik "Tambah Akun" untuk memposting akun pertama.</p>
+            @endif
         </div>
     @else
         @php

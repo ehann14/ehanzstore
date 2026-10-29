@@ -58,12 +58,6 @@ class StaleStockController extends Controller
     /** Terapkan saran harga dengan satu klik. Harga dihitung ulang di server, bukan dari form. */
     public function applyPrice(CocAccount $account)
     {
-        $user = Auth::user();
-
-        if ($account->created_by !== $user->id && ! $user->isSuperAdmin()) {
-            abort(403);
-        }
-
         $isStale = CocAccount::stale()->whereKey($account->id)->exists();
 
         if (! $isStale) {
@@ -99,9 +93,9 @@ class StaleStockController extends Controller
         );
     }
 
-    /** Admin biasa hanya melihat akun miliknya; Super Admin melihat semua. */
+    /** Semua admin melihat stok lama yang sama, jadi tidak ada filter pemilik (null = semua). */
     private function ownerId(): ?int
     {
-        return Auth::user()->isSuperAdmin() ? null : Auth::id();
+        return null;
     }
 }
