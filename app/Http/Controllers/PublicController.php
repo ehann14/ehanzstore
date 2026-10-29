@@ -331,7 +331,7 @@ class PublicController extends Controller
     public function upload(string $path)
     {
         abort_unless(
-            preg_match('#^(accounts|banners)/[A-Za-z0-9._-]+\.(jpe?g|png|webp|gif)$#i', $path),
+            preg_match('#^(accounts|banners|maintenance)/[A-Za-z0-9._-]+\.(jpe?g|png|webp|gif)$#i', $path),
             404
         );
 

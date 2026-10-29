@@ -21,6 +21,11 @@ use App\Http\Controllers\SuperAdmin\UnsoldAccountController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboard;
 
 // Public Routes
+// Tombol pada layout untuk kembali ke halaman pengaturan maintenance.
+Route::get('/maintenance/exit', function () {
+    return redirect()->route('super-admin.maintenance');
+})->name('maintenance.exit');
+
 Route::get('/', [PublicController::class, 'home'])->name('home');
 Route::get('/katalog', [PublicController::class, 'catalog'])->name('catalog');
 Route::get('/akun/{account_code}', [PublicController::class, 'detail'])->name('account.detail');
@@ -66,7 +71,7 @@ Route::post('/ulasan/{token}', [ReviewController::class, 'store'])
 
 // Upload fallback: digunakan jika Apache tidak menemukan file fisiknya
 Route::get('/uploads/{path}', [PublicController::class, 'upload'])
-    ->where('path', '(accounts|banners)/.*')
+    ->where('path', '(accounts|banners|maintenance)/.*')
     ->name('uploads.fallback');
 
 // Auth Routes
@@ -217,6 +222,7 @@ Route::middleware(['auth', 'role:super_admin', 'two-factor'])
         // Mode maintenance
         Route::get('/maintenance', [MaintenanceController::class, 'edit'])->name('maintenance');
         Route::post('/maintenance', [MaintenanceController::class, 'update'])->name('maintenance.update');
+        Route::get('/maintenance/preview', [MaintenanceController::class, 'preview'])->name('maintenance.preview');
 
         // Konfirmasi penjualan oleh Super Admin
         Route::post('/sales/confirm', [

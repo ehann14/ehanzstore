@@ -9,6 +9,10 @@ use Throwable;
 /**
  * Mode maintenance berbasis database (tabel store_settings), bisa dinyalakan
  * dari panel Super Admin tanpa SSH / "php artisan down".
+ *
+ * Kunci yang dipakai di store_settings:
+ *   maintenance_mode, maintenance_title, maintenance_message,
+ *   maintenance_until, maintenance_image (path relatif, mis. "maintenance/xxx.webp")
  */
 class Maintenance
 {
@@ -42,11 +46,20 @@ class Maintenance
             }
         }
 
+        // Gambar kustom hanya diterima bila berada di folder uploads/maintenance.
+        $image = Uploads::normalize($raw['maintenance_image'] ?? '');
+
+        if (! preg_match('#^maintenance/[^/]+$#', $image)) {
+            $image = '';
+        }
+
         return static::$cache = [
-            'active'  => ($raw['maintenance_mode'] ?? '0') === '1',
-            'title'   => trim((string) ($raw['maintenance_title'] ?? '')) ?: self::DEFAULT_TITLE,
-            'message' => trim((string) ($raw['maintenance_message'] ?? '')) ?: self::DEFAULT_MESSAGE,
-            'until'   => $until,
+            'active'    => ($raw['maintenance_mode'] ?? '0') === '1',
+            'title'     => trim((string) ($raw['maintenance_title'] ?? '')) ?: self::DEFAULT_TITLE,
+            'message'   => trim((string) ($raw['maintenance_message'] ?? '')) ?: self::DEFAULT_MESSAGE,
+            'until'     => $until,
+            'image'     => $image,
+            'image_url' => $image !== '' ? '/uploads/' . $image : '',
         ];
     }
 
@@ -60,13 +73,22 @@ class Maintenance
         static::$cache = null;
     }
 
-    /** Simpan pengaturan. $until berupa waktu WIB (atau null). */
-    public static function save(bool $active, ?string $title, ?string $message, ?Carbon $until): void
+    /**
+     * Simpan pengaturan. $until berupa waktu WIB (atau null).
+     *
+     * $image: null = gambar tidak diubah, '' = hapus gambar kustom (kembali ke ilustrasi bawaan),
+     * "maintenance/xxx.webp" = pakai gambar baru.
+     */
+    public static function save(bool $active, ?string $title, ?string $message, ?Carbon $until, ?string $image = null): void
     {
         StoreSetting::set('maintenance_mode', $active ? '1' : '0');
         StoreSetting::set('maintenance_title', (string) $title);
         StoreSetting::set('maintenance_message', (string) $message);
         StoreSetting::set('maintenance_until', $until ? $until->clone()->utc()->toIso8601String() : '');
+
+        if ($image !== null) {
+            StoreSetting::set('maintenance_image', $image);
+        }
 
         static::forget();
     }

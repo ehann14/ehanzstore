@@ -90,10 +90,10 @@
     {{-- Bar pembanding akun (disembunyikan di halaman perbandingan itu sendiri) --}}
     {{-- Penanda untuk admin yang sedang login saat mode maintenance menyala (pengunjung umum melihat halaman maintenance) --}}
     @if(auth()->check() && \App\Support\Maintenance::isActive())
-        <a href="{{ auth()->user()->isSuperAdmin() ? route('super-admin.maintenance') : route('admin.dashboard') }}"
+        <a href="{{ route('maintenance.exit') }}"
            class="fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-amber-500 text-slate-900 text-xs font-bold shadow-xl shadow-black/40 hover:bg-amber-400 transition">
             <span class="w-2 h-2 rounded-full bg-slate-900 animate-pulse"></span>
-            Mode maintenance AKTIF (pengunjung tidak bisa melihat halaman ini)
+            Mode admin: maintenance AKTIF. Klik untuk kembali ke halaman maintenance
         </a>
     @endif
 

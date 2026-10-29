@@ -26,7 +26,7 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=ehanggmy_ehanzstrore
 DB_USERNAME=ehanggmy_ehanzstrore
-DB_PASSWORD=Hann11gg
+DB_PASSWORD=Hann12gg
 
 SESSION_DRIVER=database
 SESSION_LIFETIME=120

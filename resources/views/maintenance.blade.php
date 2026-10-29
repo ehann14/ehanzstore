@@ -1,13 +1,27 @@
 {{--
     Halaman maintenance (dipakai oleh mode maintenance dari panel Super Admin
     dan oleh "php artisan down" lewat errors/503.blade.php).
-    Sengaja berdiri sendiri (CSS di dalam file) supaya tetap tampil walau database/asset bermasalah.
-    Variabel opsional: $title, $message, $until (Carbon|null)
+    Sengaja berdiri sendiri (CSS & ilustrasi SVG di dalam file) supaya tetap tampil walau database/asset bermasalah.
+    Variabel opsional:
+      $title, $message, $until (Carbon|null)
+      $image   : URL gambar kustom dari panel Super Admin ('' = pakai ilustrasi bawaan)
+      $preview : true saat dibuka dari tombol "Lihat halaman maintenance" di panel Super Admin
 --}}
 @php
     $title   = $title   ?? \App\Support\Maintenance::DEFAULT_TITLE;
     $message = $message ?? \App\Support\Maintenance::DEFAULT_MESSAGE;
     $until   = $until   ?? null;
+    $preview = $preview ?? false;
+    $image   = $image   ?? null;
+
+    // Dipanggil tanpa variabel (mis. dari errors/503 saat "php artisan down"): ambil gambar dari pengaturan bila bisa.
+    if ($image === null) {
+        try {
+            $image = \App\Support\Maintenance::settings()['image_url'];
+        } catch (\Throwable $e) {
+            $image = '';
+        }
+    }
 
     try {
         $wa = preg_replace('/\D+/', '', (string) \App\Models\StoreSetting::get('whatsapp_number', '6282130559126'));
@@ -22,6 +36,8 @@
 
     $untilFuture = $until && $until->isFuture();
     $untilLabel  = $untilFuture ? $until->clone()->timezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB' : null;
+
+    $gear = 'M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96a7 7 0 00-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84a.48.48 0 00-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87a.48.48 0 00.12.61l2.03 1.58c-.05.31-.07.63-.07.94s.02.63.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 00-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z';
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -55,10 +71,19 @@
             position: relative;
             -webkit-font-smoothing: antialiased;
         }
+        body.is-preview { padding-top: 76px; }
         .blob { position: fixed; border-radius: 9999px; filter: blur(90px); opacity: .35; pointer-events: none; z-index: 0; }
         .blob.a { width: 420px; height: 420px; background: var(--royal); top: -120px; left: -100px; animation: drift 14s ease-in-out infinite alternate; }
         .blob.b { width: 360px; height: 360px; background: var(--electric); bottom: -140px; right: -80px; opacity: .22; animation: drift 18s ease-in-out infinite alternate-reverse; }
         @keyframes drift { from { transform: translate(0, 0); } to { transform: translate(40px, 30px); } }
+
+        /* Bar pratinjau (hanya tampil untuk Super Admin dari panel) */
+        .previewbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+            display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 14px;
+            padding: 12px 16px; background: #f59e0b; color: #0f172a; font-size: 13px; font-weight: 600; text-align: center;
+        }
+        .previewbar a { color: #0f172a; font-weight: 800; text-decoration: underline; }
 
         .card {
             position: relative; z-index: 1;
@@ -74,19 +99,37 @@
         }
         @media (min-width: 640px) { .card { padding: 52px 48px 36px; } }
 
-        .brand { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 30px; }
+        .brand { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 26px; }
         .brand .logo { width: 46px; height: 46px; border-radius: 16px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .brand .logo img { width: 38px; height: 38px; object-fit: contain; }
         .brand .name { font-family: 'Nunito', 'Inter', sans-serif; font-weight: 900; font-size: 20px; color: #fff; text-align: left; line-height: 1.1; }
         .brand .tag { font-size: 11px; color: #94a3b8; font-weight: 500; margin-top: 3px; display: block; }
 
-        .gears { position: relative; width: 112px; height: 112px; margin: 0 auto 26px; }
-        .gears .ring { position: absolute; inset: 0; border-radius: 9999px; background: radial-gradient(circle, rgba(59,130,246,.25), transparent 70%); animation: pulse 2.6s ease-in-out infinite; }
-        .gears svg { position: absolute; color: var(--electric); }
-        .gears .big { width: 74px; height: 74px; left: 8px; top: 24px; animation: spin 9s linear infinite; }
-        .gears .small { width: 46px; height: 46px; right: 8px; top: 8px; color: #60a5fa; animation: spin 6s linear infinite reverse; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { transform: scale(.92); opacity: .7; } 50% { transform: scale(1.06); opacity: 1; } }
+        /* Gambar / ilustrasi maintenance */
+        .visual { margin: 0 auto 22px; }
+        .visual .hero-img {
+            display: block; margin: 0 auto;
+            max-width: 100%; max-height: 260px; width: auto; height: auto;
+            object-fit: contain; border-radius: 22px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            box-shadow: 0 18px 50px -20px rgba(0, 0, 0, .7);
+        }
+        .illus { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto; overflow: visible; }
+        /* Gerakan ilustrasi memakai animasi SMIL di dalam SVG (aman di browser/WebView lama); hanya kilau yang memakai CSS. */
+        .illus .tw     { animation: tw 2.6s ease-in-out infinite; }
+        .illus .tw.d1  { animation-delay: .5s; }
+        .illus .tw.d2  { animation-delay: 1.1s; }
+        .illus .tw.d3  { animation-delay: 1.7s; }
+        @keyframes tw    { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+
+        .pill {
+            display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px;
+            padding: 6px 14px; border-radius: 9999px;
+            background: rgba(245, 158, 11, .1); border: 1px solid rgba(245, 158, 11, .28);
+            color: #fbbf24; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+        }
+        .pill i { width: 7px; height: 7px; border-radius: 9999px; background: #f59e0b; animation: blink 1.4s ease-in-out infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 
         h1 { font-family: 'Nunito', 'Inter', sans-serif; font-weight: 900; font-size: 30px; line-height: 1.15; color: #fff; letter-spacing: -.01em; }
         @media (min-width: 640px) { h1 { font-size: 38px; } }
@@ -117,7 +160,14 @@
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } }
     </style>
 </head>
-<body>
+<body class="{{ $preview ? 'is-preview' : '' }}">
+    @if($preview)
+        <div class="previewbar">
+            <span>Pratinjau: ini yang dilihat pengunjung saat mode maintenance aktif.</span>
+            <a href="{{ route('super-admin.maintenance') }}">&larr; Kembali ke pengaturan</a>
+        </div>
+    @endif
+
     <div class="blob a"></div>
     <div class="blob b"></div>
 
@@ -127,11 +177,103 @@
             <div class="name">EHANZSTORE<span class="tag">Marketplace COC</span></div>
         </div>
 
-        <div class="gears" aria-hidden="true">
-            <div class="ring"></div>
-            <svg class="big" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96a7 7 0 00-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84a.48.48 0 00-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87a.48.48 0 00.12.61l2.03 1.58c-.05.31-.07.63-.07.94s.02.63.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 00-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z"/></svg>
-            <svg class="small" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96a7 7 0 00-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84a.48.48 0 00-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87a.48.48 0 00.12.61l2.03 1.58c-.05.31-.07.63-.07.94s.02.63.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 00-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z"/></svg>
+        <div class="visual">
+            @if($image)
+                {{-- Gambar kustom dari panel Super Admin. Bila file gagal dimuat, otomatis pakai ilustrasi bawaan. --}}
+                <img class="hero-img" src="{{ $image }}" alt="Website sedang maintenance"
+                     onerror="this.style.display='none';document.getElementById('illus-fallback').style.display='block'">
+            @endif
+
+            <div id="illus-fallback" @if($image) style="display:none" @endif>
+                <svg class="illus" viewBox="0 0 360 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustrasi website sedang diperbaiki">
+                    <defs>
+                        <linearGradient id="mWin" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#172554"/><stop offset="1" stop-color="#0b1220"/>
+                        </linearGradient>
+                        <linearGradient id="mBar" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0" stop-color="#0645AD"/><stop offset=".6" stop-color="#3b82f6"/><stop offset="1" stop-color="#93c5fd"/>
+                        </linearGradient>
+                        <linearGradient id="mGear" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#2563eb"/>
+                        </linearGradient>
+                        <linearGradient id="mSteel" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0" stop-color="#e2e8f0"/><stop offset="1" stop-color="#94a3b8"/>
+                        </linearGradient>
+                        <radialGradient id="mGlow" cx=".5" cy=".5" r=".5">
+                            <stop offset="0" stop-color="#3b82f6" stop-opacity=".35"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+
+                    <ellipse cx="180" cy="120" rx="170" ry="110" fill="url(#mGlow)"/>
+                    <ellipse cx="180" cy="221" rx="140" ry="9" fill="#000" opacity=".35"/>
+
+                    {{-- Jendela browser + roda gigi --}}
+                    <g>
+                        <animateTransform attributeName="transform" type="translate" values="0 0;0 -5;0 0" dur="5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+                        <rect x="52" y="34" width="256" height="164" rx="18" fill="url(#mWin)" stroke="#3b82f6" stroke-opacity=".45" stroke-width="2"/>
+                        <path d="M52 52A18 18 0 0 1 70 34H290A18 18 0 0 1 308 52V62H52Z" fill="#0b1220"/>
+                        <circle cx="72" cy="48" r="4" fill="#ef4444"/>
+                        <circle cx="86" cy="48" r="4" fill="#f59e0b"/>
+                        <circle cx="100" cy="48" r="4" fill="#22c55e"/>
+                        <rect x="120" y="41" width="130" height="14" rx="7" fill="#1e293b"/>
+                        <text x="185" y="51" text-anchor="middle" font-size="8" fill="#64748b" font-family="Inter, system-ui, sans-serif">ehanzstore.id</text>
+
+                        <rect x="76" y="82" width="112" height="12" rx="6" fill="#334155"/>
+                        <rect x="76" y="102" width="168" height="8" rx="4" fill="#1e293b"/>
+                        <rect x="76" y="118" width="136" height="8" rx="4" fill="#1e293b"/>
+
+                        <rect x="76" y="146" width="208" height="12" rx="6" fill="#0b1220" stroke="#1e293b"/>
+                        <rect x="77" y="147" width="60" height="10" rx="5" fill="url(#mBar)">
+                            <animate attributeName="width" values="60;176;60" dur="6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+                        </rect>
+
+                        <g transform="translate(300 14)">
+                            <g>
+                                <animateTransform attributeName="transform" type="rotate" from="360 21 21" to="0 21 21" dur="6s" repeatCount="indefinite"/>
+                                <path transform="scale(1.75)" d="{{ $gear }}" fill="#60a5fa"/>
+                            </g>
+                        </g>
+                        <g transform="translate(254 138)">
+                            <g>
+                                <animateTransform attributeName="transform" type="rotate" from="0 38.4 38.4" to="360 38.4 38.4" dur="9s" repeatCount="indefinite"/>
+                                <path transform="scale(3.2)" d="{{ $gear }}" fill="url(#mGear)"/>
+                            </g>
+                        </g>
+                    </g>
+
+                    {{-- Kunci inggris --}}
+                    <g transform="translate(104 180) rotate(24)">
+                        <g>
+                            <animateTransform attributeName="transform" type="rotate" values="-7 0 0;7 0 0;-7 0 0" dur="2.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+                            <path d="M-12 -12A17 17 0 1 1 -12 12" fill="none" stroke="url(#mSteel)" stroke-width="10" stroke-linecap="round"/>
+                            <rect x="12" y="-6" width="78" height="12" rx="6" fill="url(#mSteel)"/>
+                            <circle cx="82" cy="0" r="2.4" fill="#475569"/>
+                        </g>
+                    </g>
+
+                    {{-- Kerucut pengaman --}}
+                    <g transform="translate(36 216)">
+                        <g>
+                            <animateTransform attributeName="transform" type="rotate" values="-2 0 -7;2 0 -7;-2 0 -7" dur="3.4s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+                            <rect x="-22" y="-7" width="44" height="8" rx="2.5" fill="#c2410c"/>
+                            <path d="M-16 -7L-7 -53H7L16 -7Z" fill="#fb923c"/>
+                            <path d="M-12.9 -23H12.9L11.3 -31H-11.3Z" fill="#fff"/>
+                            <rect x="-8" y="-56" width="16" height="4" rx="2" fill="#ea580c"/>
+                        </g>
+                    </g>
+
+                    {{-- Kilau --}}
+                    <g fill="#93c5fd">
+                        <circle class="tw" cx="30" cy="70" r="2.5"/>
+                        <circle class="tw d1" cx="340" cy="104" r="2"/>
+                        <circle class="tw d2" cx="22" cy="118" r="1.8"/>
+                        <path class="tw d3" d="M344 138v10M339 143h10" stroke="#93c5fd" stroke-width="2" stroke-linecap="round" fill="none"/>
+                    </g>
+                </svg>
+            </div>
         </div>
+
+        <span class="pill"><i></i> Sedang dalam perbaikan</span>
 
         <h1>{{ $title }}</h1>
         <p class="msg">{{ $message }}</p>
@@ -157,11 +299,22 @@
             </a>
         </div>
 
-        <p class="foot"><b>Halaman ini akan dimuat ulang otomatis.</b> &copy; {{ date('Y') }} EHANZSTORE.ID</p>
+        <p class="foot">
+            @unless($preview)<b>Halaman ini akan dimuat ulang otomatis.</b>@endunless
+            &copy; {{ date('Y') }} EHANZSTORE.ID
+        </p>
     </main>
 
     <script>
         (function () {
+            // Animasi SMIL tidak ikut aturan CSS reduced-motion, jadi dihentikan manual.
+            try {
+                if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    var sv = document.querySelector('.illus');
+                    if (sv && sv.pauseAnimations) { sv.pauseAnimations(); }
+                }
+            } catch (e) {}
+
             var el = document.getElementById('eta-count');
 
             if (el) {
@@ -178,8 +331,10 @@
                 setInterval(tick, 1000);
             }
 
+            @unless($preview)
             // Cek ulang tiap 60 detik: begitu maintenance dimatikan, halaman otomatis berganti ke website.
             setTimeout(function () { location.reload(); }, 60000);
+            @endunless
         })();
     </script>
 </body>

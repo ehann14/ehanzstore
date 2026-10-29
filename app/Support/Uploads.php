@@ -8,11 +8,12 @@ use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 /**
- * Satu-satunya pintu untuk file upload (foto akun & banner).
+ * Satu-satunya pintu untuk file upload (foto akun, banner, & gambar halaman maintenance).
  *
  * File disimpan LANGSUNG di folder publik web server (disk "uploads"):
  *   <document root>/uploads/accounts/xxx.jpg
  *   <document root>/uploads/banners/xxx.png
+ *   <document root>/uploads/maintenance/xxx.webp
  * sehingga tidak butuh symlink `storage` (yang sering tidak didukung
  * shared hosting / DirectAdmin). Path di database selalu relatif,
  * misalnya "accounts/xxx.jpg"; URL publiknya dibuat oleh upload_url().
@@ -22,7 +23,7 @@ class Uploads
     public const DISK = 'uploads';
 
     /** Sub-folder yang diizinkan. */
-    public const DIRS = ['accounts', 'banners'];
+    public const DIRS = ['accounts', 'banners', 'maintenance'];
 
     public static function disk(): Filesystem
     {
