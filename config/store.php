@@ -35,4 +35,23 @@ return [
     // Maksimal booking aktif (menunggu DP / DP diterima) per nomor WhatsApp
     'booking_max_per_phone' => (int) env('BOOKING_MAX_PER_PHONE', 2),
 
+    // ------------------------------------------------------------------
+    // Social proof di halaman detail akun (angka nyata dari tabel visitor_events)
+    // ------------------------------------------------------------------
+    'social_proof' => [
+        // Matikan semua tampilan social proof dengan SOCIAL_PROOF_ENABLED=false
+        'enabled' => (bool) env('SOCIAL_PROOF_ENABLED', true),
+
+        // "Dilihat N orang hari ini": baru tampil bila pengunjung unik hari ini >= angka ini
+        'min_views_today' => (int) env('SOCIAL_PROOF_MIN_VIEWS', 3),
+
+        // "N orang lain sedang melihat": pengunjung lain dalam sekian menit terakhir
+        'live_window_minutes' => (int) env('SOCIAL_PROOF_LIVE_MINUTES', 5),
+        'min_live'            => (int) env('SOCIAL_PROOF_MIN_LIVE', 1),
+
+        // "N orang menanyakan": yang menekan tombol Beli via WhatsApp dalam sekian jam terakhir
+        'inquiry_window_hours' => (int) env('SOCIAL_PROOF_INQUIRY_HOURS', 6),
+        'min_inquiries'        => (int) env('SOCIAL_PROOF_MIN_INQUIRIES', 1),
+    ],
+
 ];

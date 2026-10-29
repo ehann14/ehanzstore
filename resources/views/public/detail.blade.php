@@ -161,6 +161,9 @@
                     @endif
                 </div>
 
+                {{-- Social proof: pengunjung & penanya akun ini (hanya bila akun masih tersedia) --}}
+                <x-social-proof :social="$social ?? null" :noun="$noun" />
+
                 @if($account->sale_status !== 'available')
                     <div class="w-full text-center bg-red-500/10 border border-red-500/30 text-red-300 font-bold py-4 rounded-xl">
                         {{ ucfirst($noun) }} ini sudah terjual
@@ -200,6 +203,7 @@
                 @else
                 <a
                     href="{{ account_wa_url($account, $storeWa ?? null) }}"
+                    data-wa-track="{{ route('track.wa', $account->account_code) }}"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="flex items-center justify-center gap-3 w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-900/20 hover:shadow-green-900/40 active:scale-[0.98]"
@@ -471,6 +475,28 @@
         ? max(0, (int) $account->images->search(fn ($i) => $i->id === $startImg->id))
         : 0;
 @endphp
+
+{{-- Catat klik "Beli via WhatsApp" per akun (untuk social proof & analitik) --}}
+<script>
+(function () {
+    var link = document.querySelector('[data-wa-track]');
+    if (!link) return;
+
+    link.addEventListener('click', function () {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        var data = new FormData();
+        data.append('_token', meta ? meta.content : '');
+
+        try {
+            if (navigator.sendBeacon && navigator.sendBeacon(link.dataset.waTrack, data)) return;
+        } catch (e) {}
+
+        try {
+            fetch(link.dataset.waTrack, { method: 'POST', body: data, keepalive: true, credentials: 'same-origin' });
+        } catch (e) {}
+    });
+})();
+</script>
 
 {{-- Lightbox foto akun: tampil penuh + zoom --}}
 <div id="lightbox" class="hidden fixed inset-0 z-[100] bg-black/95" role="dialog" aria-modal="true" aria-label="Foto akun {{ $account->name }}">

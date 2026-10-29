@@ -6,6 +6,7 @@ use App\Models\Banner;
 use App\Models\CocAccount;
 use App\Models\Review;
 use App\Models\VisitorEvent;
+use App\Support\SocialProof;
 use App\Support\Uploads;
 use Illuminate\Http\Request;
 
@@ -249,18 +250,25 @@ class PublicController extends Controller
             ->where('account_code', $account_code)
             ->firstOrFail();
 
-        // Catat kunjungan ke detail akun
-        $this->trackEvent(
-            'view_account',
-            request()->path(),
-            $account->id
-        );
+        // Catat kunjungan ke detail akun (crawler & pratinjau link tidak dihitung)
+        if (! SocialProof::isBot(request()->userAgent())) {
+            $this->trackEvent(
+                'view_account',
+                request()->path(),
+                $account->id
+            );
+        }
+
+        // Social proof hanya untuk akun yang masih bisa dibeli
+        $social = $account->sale_status === 'available' && ! $account->isBooked()
+            ? SocialProof::forAccount($account, session()->getId())
+            : null;
 
         // 4 akun lain dengan Town Hall & rentang harga mirip (mengarahkan pembeli melihat stok lain,
         // terutama bila akun yang dibuka sudah terjual)
         $similar = $account->similarListings((int) config('store.similar_limit', 4));
 
-        return view('public.detail', compact('account', 'similar'));
+        return view('public.detail', compact('account', 'similar', 'social'));
     }
 
     /**
@@ -311,6 +319,33 @@ class PublicController extends Controller
             'coc_account_id' => $accountId,
             'created_at' => now(),
         ]);
+    }
+
+    /**
+     * Mencatat klik tombol "Beli via WhatsApp" pada halaman detail akun (dipanggil lewat JS).
+     * Satu sesi hanya dicatat sekali per akun per jam, dan crawler diabaikan.
+     */
+    public function trackWhatsappClick(Request $request, string $account_code)
+    {
+        if (SocialProof::isBot($request->userAgent())) {
+            return response()->noContent();
+        }
+
+        $account = CocAccount::listed()->where('account_code', $account_code)->first();
+
+        if ($account) {
+            $alreadyCounted = VisitorEvent::where('anonymous_session_id', session()->getId())
+                ->where('coc_account_id', $account->id)
+                ->where('event_type', 'click_whatsapp')
+                ->where('created_at', '>=', now()->subHour())
+                ->exists();
+
+            if (! $alreadyCounted) {
+                $this->trackEvent('click_whatsapp', 'akun/' . $account->account_code, $account->id);
+            }
+        }
+
+        return response()->noContent();
     }
 
     public function howToBuy()
