@@ -10,6 +10,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
+use App\Http\Controllers\SuperAdmin\CustomerController;
 use App\Http\Controllers\SuperAdmin\MaintenanceController;
 use App\Http\Controllers\SuperAdmin\ReviewModerationController;
 use App\Http\Controllers\SuperAdmin\ReportController;
@@ -194,6 +195,16 @@ Route::middleware(['auth', 'role:super_admin', 'two-factor'])
         // Akun yang belum terjual + total harganya
         Route::get('/unsold', [UnsoldAccountController::class, 'index'])
             ->name('unsold');
+
+        // Pelanggan: riwayat beli per nomor WhatsApp, pembeli berulang, dan catatan
+        Route::get('/customers', [CustomerController::class, 'index'])
+            ->name('customers');
+        Route::get('/customers/{phone}', [CustomerController::class, 'show'])
+            ->where('phone', '[0-9]{8,16}')
+            ->name('customers.show');
+        Route::put('/customers/{phone}/note', [CustomerController::class, 'updateNote'])
+            ->where('phone', '[0-9]{8,16}')
+            ->name('customers.note');
 
         // Ekspor Excel/PDF: daftar transaksi dan laporan bulanan
         Route::get('/sales/export', [ReportController::class, 'exportSales'])

@@ -33,6 +33,7 @@ class ActivityLog extends Model
         'confirm_sale'   => ['label' => 'Konfirmasi penjualan', 'tone' => 'green'],
         'sell_account'   => ['label' => 'Jual akun + data pembeli', 'tone' => 'green'],
         'update_buyer'   => ['label' => 'Ubah data pembeli',  'tone' => 'blue'],
+        'update_customer_note' => ['label' => 'Catatan pelanggan', 'tone' => 'blue'],
         'approve_review' => ['label' => 'Setujui ulasan',     'tone' => 'green'],
         'reject_review'  => ['label' => 'Tolak ulasan',       'tone' => 'amber'],
         'delete_review'  => ['label' => 'Hapus ulasan',       'tone' => 'red'],
