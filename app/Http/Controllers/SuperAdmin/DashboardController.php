@@ -167,7 +167,7 @@ class DashboardController extends Controller
 
         $availableAccounts = CocAccount::where('sale_status', 'available')
             ->orderBy('account_code')
-            ->get(['id', 'account_code', 'name', 'town_hall', 'listing_type', 'price', 'cost_price']);
+            ->get(['id', 'account_code', 'name', 'town_hall', 'listing_type', 'price', 'cost_price', 'is_consignment', 'consignor_name']);
 
         return view('super-admin.sales', compact('sales', 'stats', 'availableAccounts'));
     }

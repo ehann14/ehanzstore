@@ -31,6 +31,7 @@ class Sale extends Model
         'buyer_name', 'buyer_phone',
         'sale_price', 'cost_price', 'transaction_status', 'payment_status', 'payment_method',
         'processed_by', 'sold_at', 'handover_at', 'warranty_days', 'warranty_expires_at', 'notes', 'review_token', 'invoice_token',
+        'is_consignment', 'consignor_name', 'consignor_phone', 'commission_amount', 'consignor_payout', 'consignor_paid_at',
     ];
 
     protected $casts = [
@@ -40,7 +41,76 @@ class Sale extends Model
         'handover_at'         => 'datetime',
         'warranty_days'       => 'integer',
         'warranty_expires_at' => 'datetime',
+        'is_consignment'      => 'boolean',
+        'commission_amount'   => 'decimal:2',
+        'consignor_payout'    => 'decimal:2',
+        'consignor_paid_at'   => 'datetime',
     ];
+
+    // ------------------------------------------------------------------
+    // Titip jual (konsinyasi)
+    // ------------------------------------------------------------------
+
+    /** Hanya transaksi akun titipan. */
+    public function scopeConsignment($query)
+    {
+        return $query->where('is_consignment', true);
+    }
+
+    /** Setoran ke pemilik akun sudah dilunasi? */
+    public function consignorIsPaid(): bool
+    {
+        return $this->consignor_paid_at !== null;
+    }
+
+    /** Nomor WhatsApp pemilik (format 08xx) untuk ditampilkan. */
+    public function consignorLocalPhone(): ?string
+    {
+        return $this->consignor_phone ? preg_replace('/^62/', '0', $this->consignor_phone) : null;
+    }
+
+    /** Link WhatsApp ke pemilik akun. Null bila nomor tidak diisi. */
+    public function consignorWhatsappUrl(?string $text = null): ?string
+    {
+        if (! $this->consignor_phone) {
+            return null;
+        }
+
+        return 'https://wa.me/' . $this->consignor_phone . ($text ? '?text=' . rawurlencode($text) : '');
+    }
+
+    /** Waktu setoran ke pemilik dalam WIB, mis. "30 Oct 2026, 19:30 WIB". */
+    public function consignorPaidLabel(): ?string
+    {
+        return $this->consignor_paid_at
+            ? $this->consignor_paid_at->clone()->timezone(self::DISPLAY_TZ)->format('d M Y, H:i') . ' WIB'
+            : null;
+    }
+
+    /**
+     * Snapshot titip jual untuk transaksi baru / diubah. Komisi dihitung dari HARGA JUAL AKHIR
+     * (bukan harga listing), jadi kalau ada nego, bagian pemilik dan komisi ikut menyesuaikan.
+     * cost_price diisi bagian pemilik supaya laba transaksi = komisi dan laporan lama tetap benar.
+     * Kosong bila akun bukan titipan.
+     */
+    public static function consignmentPayload(CocAccount $account, float $salePrice): array
+    {
+        if (! $account->isConsignment()) {
+            return [];
+        }
+
+        $commission = $account->commissionFor($salePrice);
+        $payout     = max(0.0, $salePrice - $commission);
+
+        return [
+            'is_consignment'    => true,
+            'consignor_name'    => $account->consignor_name,
+            'consignor_phone'   => $account->consignor_phone,
+            'commission_amount' => $commission,
+            'consignor_payout'  => $payout,
+            'cost_price'        => $payout,
+        ];
+    }
 
     // ------------------------------------------------------------------
     // Modal & laba
@@ -440,7 +510,7 @@ class Sale extends Model
                 return null;
             }
 
-            $sale = static::create(array_merge(['cost_price' => $account->cost_price], static::buyerPayload($validated), [
+            $sale = static::create(array_merge(['cost_price' => $account->cost_price], static::buyerPayload($validated), static::consignmentPayload($account, (float) $validated['price']), [
                 'transaction_code'      => static::generateCode(),
                 'coc_account_id'        => $account->id,
                 'account_code_snapshot' => $account->account_code,
@@ -463,7 +533,14 @@ class Sale extends Model
      */
     public static function updateBuyer(self $sale, array $validated): self
     {
-        $sale->update(static::buyerPayload($validated));
+        $payload = static::buyerPayload($validated);
+
+        // Akun titipan: komisi & bagian pemilik dihitung ulang dari harga jual yang baru.
+        if ($sale->is_consignment && $sale->account) {
+            $payload = array_merge($payload, static::consignmentPayload($sale->account, (float) $payload['sale_price']));
+        }
+
+        $sale->update($payload);
 
         return $sale;
     }
@@ -487,17 +564,19 @@ class Sale extends Model
             ?? $account->created_by
             ?? User::where('role', 'super_admin')->value('id');
 
-        return static::create([
+        $salePrice = $price ?? (float) $account->price;
+
+        return static::create(array_merge([
             'transaction_code'      => static::generateCode(),
             'coc_account_id'        => $account->id,
             'account_code_snapshot' => $account->account_code,
-            'sale_price'            => $price ?? $account->price,
+            'sale_price'            => $salePrice,
             'cost_price'            => $account->cost_price ?? 0,
             'transaction_status'    => 'completed',
             'payment_status'        => 'paid',
             'processed_by'          => $processedBy,
             'sold_at'               => now(),
             'notes'                 => $notes,
-        ]);
+        ], static::consignmentPayload($account, $salePrice)));
     }
 }

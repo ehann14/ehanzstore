@@ -58,7 +58,7 @@ class UnsoldAccountController extends Controller
         $row = $filtered()->selectRaw(
             'COUNT(*) as total_count,'
             . ' COALESCE(SUM(price), 0) as total_price,'
-            . ' COALESCE(SUM(cost_price), 0) as total_capital,'
+            . ' COALESCE(SUM(CASE WHEN is_consignment = 1 THEN 0 ELSE cost_price END), 0) as total_capital,'
             . ' COALESCE(SUM(CASE WHEN cost_price > 0 THEN price - cost_price ELSE 0 END), 0) as total_profit,'
             . ' COALESCE(SUM(CASE WHEN cost_price > 0 THEN 0 ELSE 1 END), 0) as no_cost_count'
         )->first();

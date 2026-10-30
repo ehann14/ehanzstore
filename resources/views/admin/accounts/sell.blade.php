@@ -46,13 +46,16 @@
             <div class="flex flex-wrap items-center gap-2 mb-0.5">
                 <span class="text-[11px] font-mono text-slate-500">{{ $account->account_code }}</span>
                 <span class="px-2 py-0.5 rounded-md bg-electric/15 text-electric text-[11px] font-bold">{{ $account->badgeLabel() }}</span>
+                @if($account->isConsignment())
+                    <span class="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 text-[11px] font-bold border border-amber-500/30">TITIP</span>
+                @endif
                 @if($isEdit)
                     <span class="text-[11px] font-mono text-slate-500">{{ $sale->transaction_code }}</span>
                 @endif
             </div>
             <h2 class="font-semibold text-white truncate">{{ $account->name }}</h2>
             <p class="text-brand-400 font-bold text-sm">Harga listing: Rp {{ number_format($account->price, 0, ',', '.') }}
-                <span class="text-slate-500 font-normal">&middot; Modal: Rp {{ number_format($account->cost_price, 0, ',', '.') }}</span>
+                <span class="text-slate-500 font-normal">&middot; {{ $account->isConsignment() ? 'Bagian pemilik' : 'Modal' }}: Rp {{ number_format($account->cost_price, 0, ',', '.') }}</span>
             </p>
         </div>
         @if($isEdit)
@@ -111,6 +114,8 @@
                 'defaultPrice' => $account->price,
                 'defaultCost'  => $account->cost_price,
                 'idPrefix'     => 'buyer',
+                // Titip jual: komisi & bagian pemilik dihitung dari harga jual akhir
+                'consignAccount' => ($isEdit ? (bool) $sale->is_consignment : $account->isConsignment()) ? $account : null,
             ])
         </div>
 

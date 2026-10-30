@@ -19,7 +19,8 @@ class CocAccount extends Model
         'builder_count', 'gems', 'cn_information',
         'listing_type', 'clan_level', 'capital_hall_level', 'clan_members', 'clan_league',
         'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'original_price', 'is_hot_deal', 'hot_deal_ends_at', 'cost_price', 'description',
-        'publication_status', 'publish_at', 'sale_status', 'created_by'
+        'publication_status', 'publish_at', 'sale_status', 'created_by',
+        'is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value',
     ];
 
     protected $casts = [
@@ -30,7 +31,18 @@ class CocAccount extends Model
         'publish_at' => 'datetime',
         'cost_price' => 'decimal:2',
         'email_change_available_at' => 'datetime',
+        'is_consignment' => 'boolean',
+        'commission_value' => 'decimal:2',
     ];
+
+    /** Jenis komisi titip jual: kunci => label. */
+    public const COMMISSION_TYPES = [
+        'percent' => 'Persen (%)',
+        'fixed'   => 'Nominal (Rp)',
+    ];
+
+    /** Komisi persen maksimal (supaya bagian pemilik tidak habis). */
+    public const COMMISSION_MAX_PERCENT = 90;
 
     /** Liga Clan War League dari yang terendah ke tertinggi (urutan dipakai untuk filter "liga minimum"). */
     public const CLAN_LEAGUES = [
@@ -49,6 +61,92 @@ class CocAccount extends Model
     public function estimatedProfit(): float
     {
         return (float) $this->price - (float) $this->cost_price;
+    }
+
+    // ------------------------------------------------------------------
+    // Titip jual (konsinyasi)
+    // ------------------------------------------------------------------
+
+    /** Akun ini titipan orang lain? */
+    public function isConsignment(): bool
+    {
+        return (bool) $this->is_consignment;
+    }
+
+    /**
+     * Komisi toko (Rp) bila akun terjual di harga $salePrice.
+     * Persen: dihitung dari harga jual, dibulatkan ke rupiah. Nominal: tetap, tapi tidak melebihi harga jual.
+     */
+    public function commissionFor(float $salePrice): float
+    {
+        $salePrice = max(0.0, $salePrice);
+        $value     = (float) $this->commission_value;
+
+        $commission = $this->commission_type === 'fixed'
+            ? min($value, $salePrice)
+            : round($salePrice * $value / 100);
+
+        return (float) max(0.0, min($commission, $salePrice));
+    }
+
+    /** Bagian pemilik akun (Rp) = harga jual - komisi. */
+    public function payoutFor(float $salePrice): float
+    {
+        return max(0.0, $salePrice - $this->commissionFor($salePrice));
+    }
+
+    /** Aturan komisi dalam teks singkat: "15%" atau "Rp 5.000". Null bila bukan titipan. */
+    public function commissionLabel(): ?string
+    {
+        if (! $this->isConsignment()) {
+            return null;
+        }
+
+        $value = (float) $this->commission_value;
+
+        return $this->commission_type === 'fixed'
+            ? 'Rp ' . number_format($value, 0, ',', '.')
+            : rtrim(rtrim(number_format($value, 2, ',', '.'), '0'), ',') . '%';
+    }
+
+    /** Nomor WhatsApp pemilik (format 08xx) untuk ditampilkan. */
+    public function consignorLocalPhone(): ?string
+    {
+        return $this->consignor_phone ? preg_replace('/^62/', '0', $this->consignor_phone) : null;
+    }
+
+    /** Link WhatsApp ke pemilik akun. Null bila nomor tidak diisi. */
+    public function consignorWhatsappUrl(?string $text = null): ?string
+    {
+        if (! $this->consignor_phone) {
+            return null;
+        }
+
+        return 'https://wa.me/' . $this->consignor_phone . ($text ? '?text=' . rawurlencode($text) : '');
+    }
+
+    /** Hanya akun titipan. */
+    public function scopeConsignment($query)
+    {
+        return $query->where('is_consignment', true);
+    }
+
+    /**
+     * Hitung ulang modal (= bagian pemilik) semua akun titipan yang belum terjual langsung di database.
+     * Dipakai setelah harga berubah lewat query massal (mis. promo berakhir). Satu query.
+     */
+    public static function syncConsignmentCosts(): int
+    {
+        return DB::table('coc_accounts')
+            ->where('is_consignment', 1)
+            ->where('sale_status', '!=', 'sold')
+            ->update([
+                'cost_price' => DB::raw(
+                    "CASE WHEN commission_type = 'fixed'"
+                    . ' THEN (CASE WHEN commission_value > price THEN 0 ELSE price - commission_value END)'
+                    . ' ELSE price - ROUND(price * commission_value / 100) END'
+                ),
+            ]);
     }
 
     /** Ada harga coret? (harga normal lebih tinggi dari harga jual sekarang) */
@@ -156,7 +254,7 @@ class CocAccount extends Model
      */
     public static function expireHotDeals(): int
     {
-        return DB::table('coc_accounts')
+        $ended = DB::table('coc_accounts')
             ->whereNotNull('hot_deal_ends_at')
             ->where('hot_deal_ends_at', '<=', now())
             ->where('sale_status', '!=', 'sold')
@@ -166,6 +264,13 @@ class CocAccount extends Model
                 'is_hot_deal'      => false,
                 'hot_deal_ends_at' => null,
             ]);
+
+        // Harga berubah lewat query massal (tanpa event model): akun titipan perlu hitung ulang bagian pemilik.
+        if ($ended > 0) {
+            static::syncConsignmentCosts();
+        }
+
+        return $ended;
     }
 
     // ------------------------------------------------------------------
@@ -240,6 +345,15 @@ class CocAccount extends Model
 
     protected static function booted(): void
     {
+        // Akun titipan: harga modal = bagian pemilik (harga - komisi), selalu dihitung otomatis
+        // supaya estimasi laba = komisi dan saran harga stok lama tidak pernah menekan hak pemilik.
+        // Akun yang sudah terjual tidak disentuh (angka resminya ada di snapshot transaksi).
+        static::saving(function (CocAccount $account) {
+            if ($account->isConsignment() && $account->sale_status !== 'sold') {
+                $account->cost_price = $account->payoutFor((float) $account->price);
+            }
+        });
+
         // Sinkronkan tabel transaksi dengan status penjualan akun.
         static::updated(function (CocAccount $account) {
             if (! $account->wasChanged('sale_status')) {
@@ -526,7 +640,7 @@ class CocAccount extends Model
     {
         $row = static::stale()
             ->when($ownerId, fn ($q) => $q->where('created_by', $ownerId))
-            ->selectRaw('COUNT(*) as total, COALESCE(SUM(cost_price), 0) as capital, COALESCE(SUM(price), 0) as value, MIN(created_at) as oldest')
+            ->selectRaw('COUNT(*) as total, COALESCE(SUM(CASE WHEN is_consignment = 1 THEN 0 ELSE cost_price END), 0) as capital, COALESCE(SUM(price), 0) as value, MIN(created_at) as oldest')
             ->first();
 
         $oldest = $row?->oldest ? Carbon::parse($row->oldest) : null;

@@ -81,6 +81,8 @@
             @include('admin.accounts._discount-field', ['account' => $account])
 
             @include('admin.accounts._cost-field', ['account' => $account])
+
+            @include('admin.accounts._consignment-field', ['account' => $account])
         </div>
 
         @unless($account->isClan())

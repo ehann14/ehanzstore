@@ -124,6 +124,9 @@
                                     <div class="flex flex-wrap items-center gap-2 mb-1">
                                         <span class="text-[11px] font-mono text-slate-500">{{ $account->account_code }}</span>
                                         <span class="px-2 py-0.5 rounded-md bg-electric/15 text-electric text-[11px] font-bold">{{ $account->badgeLabel() }}</span>
+                                        @if($account->isConsignment())
+                                            <span class="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 text-[11px] font-bold border border-amber-500/30" title="Titip jual dari {{ $account->consignor_name }}">TITIP</span>
+                                        @endif
                                     </div>
                                     <h3 class="font-semibold text-white truncate text-base sm:text-lg" title="{{ $account->name }}">{{ $account->name }}</h3>
                                 </div>
@@ -137,8 +140,13 @@
                             </div>
 
                             <p class="text-[11px] sm:text-xs text-slate-500 mt-1">
-                                Modal Rp {{ number_format($costShown, 0, ',', '.') }}
-                                &middot; {{ $doneSale ? 'Laba' : 'Est. laba' }}
+                                @if($account->isConsignment())
+                                    Setor ke {{ $account->consignor_name }} Rp {{ number_format($costShown, 0, ',', '.') }}
+                                    &middot; {{ $doneSale ? 'Komisi' : 'Est. komisi' }}
+                                @else
+                                    Modal Rp {{ number_format($costShown, 0, ',', '.') }}
+                                    &middot; {{ $doneSale ? 'Laba' : 'Est. laba' }}
+                                @endif
                                 <span class="font-semibold whitespace-nowrap {{ $profitShown < 0 ? 'text-red-400' : ($profitShown > 0 ? 'text-emerald-400' : 'text-slate-400') }}">{{ $profitShown < 0 ? '-' : '' }}Rp {{ number_format(abs($profitShown), 0, ',', '.') }}</span>
                             </p>
 

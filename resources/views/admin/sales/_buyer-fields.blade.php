@@ -23,6 +23,10 @@
     if (! in_array($warrantyDays, $warrantyOptions, true)) {
         $warrantyDays = \App\Models\Sale::WARRANTY_DAYS;
     }
+
+    // Titip jual: akun titipan (CocAccount) yang sedang dijual / transaksinya diubah. Null = akun biasa.
+    $consign      = $consignAccount ?? null;
+    $consignPaid  = $sale && $sale->is_consignment && $sale->consignorIsPaid();
 @endphp
 
 <div class="space-y-4" data-buyer-fields="{{ $idPrefix }}">
@@ -45,13 +49,38 @@
         </div>
     </div>
 
+    @if($consign)
+        <div class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4" data-consign-info
+             data-type="{{ $consign->commission_type === 'fixed' ? 'fixed' : 'percent' }}" data-value="{{ (float) $consign->commission_value }}">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-amber-200">Akun titipan</p>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Pemilik: <span class="text-white font-medium">{{ $consign->consignor_name }}</span>
+                        @if($consign->consignorLocalPhone()) &middot; {{ $consign->consignorLocalPhone() }} @endif
+                        &middot; Komisi toko {{ $consign->commissionLabel() }}
+                    </p>
+                </div>
+                <span class="shrink-0 px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 text-[11px] font-bold border border-amber-500/30">TITIP</span>
+            </div>
+            <div class="mt-3 grid sm:grid-cols-2 gap-2 text-sm">
+                <p class="text-slate-400">Komisi toko: <span id="{{ $idPrefix }}_commission" class="font-bold text-emerald-400">-</span></p>
+                <p class="text-slate-400">Setor ke pemilik: <span id="{{ $idPrefix }}_payout" class="font-bold text-white">-</span></p>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2">Komisi dihitung dari harga jual akhir (kalau ada nego, bagian pemilik ikut menyesuaikan). Status setoran dicatat di menu Titip Jual.</p>
+            @if($consignPaid)
+                <p class="text-[11px] text-amber-300 mt-2">Setoran ke pemilik sudah ditandai lunas, jadi harga jual dikunci. Batalkan tanda lunas di menu Titip Jual bila perlu mengubahnya.</p>
+            @endif
+        </div>
+    @endif
+
     <div class="grid md:grid-cols-2 gap-4">
         <div>
-            <label for="{{ $idPrefix }}_cost" class="{{ $labelCls }}">Harga Modal (Rp) <span class="text-slate-600 font-normal">(opsional)</span></label>
+            <label for="{{ $idPrefix }}_cost" class="{{ $labelCls }}">{{ $consign ? 'Bagian Pemilik / Modal (Rp)' : 'Harga Modal (Rp)' }} @unless($consign)<span class="text-slate-600 font-normal">(opsional)</span>@endunless</label>
             <input id="{{ $idPrefix }}_cost" type="number" name="cost_price" min="0" max="999999999" step="1"
-                   value="{{ $costVal }}" placeholder="0"
-                   class="{{ $inputCls }} @error('cost_price') border-red-500 @enderror">
-            <p class="text-[11px] text-slate-500 mt-1">Terisi dari modal akun. Laba: <span id="{{ $idPrefix }}_profit" class="font-bold text-slate-300">-</span></p>
+                   value="{{ $costVal }}" placeholder="0" @if($consign) readonly @endif
+                   class="{{ $inputCls }} @if($consign) opacity-60 cursor-not-allowed @endif @error('cost_price') border-red-500 @enderror">
+            <p class="text-[11px] text-slate-500 mt-1">{{ $consign ? 'Otomatis = harga jual - komisi.' : 'Terisi dari modal akun.' }} {{ $consign ? 'Komisi (laba)' : 'Laba' }}: <span id="{{ $idPrefix }}_profit" class="font-bold text-slate-300">-</span></p>
             @error('cost_price') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
         <div class="hidden md:block"></div>
@@ -61,8 +90,8 @@
         <div>
             <label for="{{ $idPrefix }}_price" class="{{ $labelCls }}">Harga Jual (Rp) <span class="text-red-400">*</span></label>
             <input id="{{ $idPrefix }}_price" type="number" name="price" required min="0" max="999999999" step="1"
-                   value="{{ $priceVal }}" placeholder="0"
-                   class="{{ $inputCls }} @error('price') border-red-500 @enderror">
+                   value="{{ $priceVal }}" placeholder="0" @if($consignPaid) readonly @endif
+                   class="{{ $inputCls }} @if($consignPaid) opacity-60 cursor-not-allowed @endif @error('price') border-red-500 @enderror">
             <p class="text-[11px] text-slate-500 mt-1">Terisi dari harga akun, ubah jika ada nego.</p>
             @error('price') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
@@ -162,6 +191,7 @@
     })();
 
     // Laba = harga jual - modal, dihitung langsung saat diketik.
+    // Akun titipan: modal = bagian pemilik (harga jual - komisi), jadi laba = komisi.
     (function () {
         const price  = document.getElementById('{{ $idPrefix }}_price');
         const cost   = document.getElementById('{{ $idPrefix }}_cost');
@@ -170,7 +200,23 @@
 
         const rp = n => (n < 0 ? '-Rp ' : 'Rp ') + Math.abs(Math.round(n)).toLocaleString('id-ID');
 
+        const info    = document.querySelector('[data-buyer-fields="{{ $idPrefix }}"] [data-consign-info]');
+        const outCom  = document.getElementById('{{ $idPrefix }}_commission');
+        const outPay  = document.getElementById('{{ $idPrefix }}_payout');
+
+        function syncConsignment() {
+            if (!info) return;
+            const p = parseFloat(price.value) || 0;
+            const v = parseFloat(info.dataset.value) || 0;
+            const c = info.dataset.type === 'fixed' ? Math.min(v, p) : Math.round(p * v / 100);
+            const payout = Math.max(0, p - c);
+            if (outCom) outCom.textContent = rp(c);
+            if (outPay) outPay.textContent = rp(payout);
+            cost.value = Math.round(payout);
+        }
+
         function render() {
+            syncConsignment();
             const profit = (parseFloat(price.value) || 0) - (parseFloat(cost.value) || 0);
             output.textContent = rp(profit);
             output.className = 'font-bold ' + (profit < 0 ? 'text-red-400' : (profit > 0 ? 'text-emerald-400' : 'text-slate-300'));

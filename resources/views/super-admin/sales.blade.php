@@ -90,7 +90,11 @@
                                 <td class="px-4 py-4 font-mono text-xs text-slate-400 whitespace-nowrap">{{ $sale->transaction_code }}</td>
                                 <td class="px-4 py-4 min-w-[150px]">
                                     <p class="text-white font-medium">{{ $sale->account?->name ?? 'Akun dihapus' }}</p>
-                                    <p class="text-[11px] text-slate-500 font-mono">{{ $sale->account_code_snapshot }}</p>
+                                    <p class="text-[11px] text-slate-500 font-mono">{{ $sale->account_code_snapshot }}
+                                        @if($sale->is_consignment)
+                                            <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-bold font-sans" title="Titip jual dari {{ $sale->consignor_name }}">TITIP</span>
+                                        @endif
+                                    </p>
                                     @if($sale->notes)
                                         <p class="text-[11px] text-slate-500 mt-1 max-w-[180px] truncate" title="{{ $sale->notes }}">{{ $sale->notes }}</p>
                                     @endif
@@ -216,7 +220,7 @@
                     <option value="" disabled {{ old('account_id') ? '' : 'selected' }} class="bg-slate-900">Pilih akun yang terjual&hellip;</option>
                     @foreach($availableAccounts as $acc)
                         <option value="{{ $acc->id }}" data-price="{{ (int) $acc->price }}" data-cost="{{ (int) $acc->cost_price }}" class="bg-slate-900" @selected(old('account_id') == $acc->id)>
-                            {{ $acc->account_code }} &mdash; {{ $acc->badgeLabel() }} &mdash; {{ $acc->name }}
+                            {{ $acc->account_code }} &mdash; {{ $acc->badgeLabel() }} &mdash; {{ $acc->name }}{{ $acc->is_consignment ? ' (Titip: ' . $acc->consignor_name . ')' : '' }}
                         </option>
                     @endforeach
                 </select>

@@ -60,7 +60,7 @@
                            class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition @error('name') border-red-500 @enderror">
                     @error('name') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
 
-                    {{-- Tag langsung di bawah nama: Tag Akun (akun pemain) / Tag Clan (clan) --}}
+                    {{-- Tag langsung di bawah nama: Tag Akun (akun) / Tag Clan (clan) --}}
                     <div class="mt-4" data-type-section="account">
                         @include('admin.accounts._tag-field', ['account' => null, 'kind' => 'account'])
                     </div>
@@ -99,6 +99,8 @@
             @include('admin.accounts._discount-field', ['account' => null])
 
             @include('admin.accounts._cost-field', ['account' => null])
+
+            @include('admin.accounts._consignment-field', ['account' => null])
         </div>
 
         <!-- Informasi Akun (hanya akun pemain) -->

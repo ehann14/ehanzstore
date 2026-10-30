@@ -17,6 +17,7 @@ use App\Http\Controllers\SuperAdmin\ReportController;
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\StaleStockController;
+use App\Http\Controllers\Admin\ConsignmentController;
 use App\Http\Controllers\SuperAdmin\SecurityController;
 use App\Http\Controllers\SuperAdmin\UnsoldAccountController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboard;
@@ -164,6 +165,11 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
 
         Route::post('stale-stock/{account}/apply-price', [StaleStockController::class, 'applyPrice'])
             ->name('stale.apply');
+
+        // Titip jual (konsinyasi): rekap komisi & setoran ke pemilik akun
+        Route::get('consignments', [ConsignmentController::class, 'index'])->name('consignments.index');
+        Route::post('consignments/{sale}/pay', [ConsignmentController::class, 'markPaid'])->name('consignments.pay');
+        Route::post('consignments/{sale}/unpay', [ConsignmentController::class, 'markUnpaid'])->name('consignments.unpay');
     });
 
 // Pengaturan keamanan Super Admin (2FA). Sengaja di luar grup di bawah:

@@ -85,6 +85,7 @@ class AccountController extends Controller
 
         $validated['listing_type']        = $type;
         $validated['cost_price']          = $validated['cost_price'] ?? 0;
+        $this->applyConsignment($validated, $request);
         $this->applyDiscount($validated, $request);
         $this->applyPublishSchedule($validated, willBePublished: false);
         $this->applyAccountInfoDefaults($validated);
@@ -160,6 +161,7 @@ class AccountController extends Controller
         }
 
         $validated['cost_price'] = $validated['cost_price'] ?? 0;
+        $this->applyConsignment($validated, $request, $account);
         $this->applyDiscount($validated, $request);
         $this->applyPublishSchedule($validated, willBePublished: $validated['publication_status'] === 'published');
         $this->applyAccountInfoDefaults($validated);
@@ -172,7 +174,8 @@ class AccountController extends Controller
         // dan laba membaca modal dari transaksi (snapshot), bukan dari akun, jadi tanpa ini
         // modal yang baru diisi di form akun terlihat "tidak tersimpan".
         // Disinkronkan juga bila modal akun > 0 tapi transaksinya masih 0 (data lama yang belum sinkron).
-        if ($account->sale_status === 'sold') {
+        // Akun titipan dilewati: bagian pemilik di transaksinya dihitung dari harga jual akhir, bukan dari form akun.
+        if ($account->sale_status === 'sold' && ! $account->isConsignment()) {
             $sale = $account->sales()
                 ->where('transaction_status', 'completed')
                 ->latest('id')
@@ -280,11 +283,20 @@ class AccountController extends Controller
             'price'       => $sale->sale_price,
             'cost'        => $sale->cost_price,
             'profit'      => $sale->profit(),
+            ...($sale->is_consignment ? [
+                'consignor'  => $sale->consignor_name,
+                'commission' => $sale->commission_amount,
+                'payout'     => $sale->consignor_payout,
+            ] : []),
         ]);
+
+        $consignNote = $sale->is_consignment
+            ? ' Titip jual: setor ke pemilik (' . $sale->consignor_name . ') Rp ' . number_format((float) $sale->consignor_payout, 0, ',', '.') . '.'
+            : '';
 
         return redirect()->route('admin.accounts.index')->with(
             'success',
-            "Akun {$account->account_code} terjual ke {$sale->buyer_name}. Laba: Rp " . number_format($sale->profit(), 0, ',', '.') . ". Garansi aktif sampai {$sale->warrantyUntilLabel()}."
+            "Akun {$account->account_code} terjual ke {$sale->buyer_name}. " . ($sale->is_consignment ? 'Komisi' : 'Laba') . ': Rp ' . number_format($sale->profit(), 0, ',', '.') . ". Garansi aktif sampai {$sale->warrantyUntilLabel()}." . $consignNote
         );
     }
 
@@ -305,11 +317,21 @@ class AccountController extends Controller
 
         $validated = $request->validate(Sale::buyerRules(), Sale::buyerMessages());
 
+        // Titip jual yang sudah dilunasi ke pemilik: harga jual dikunci supaya angka setoran tidak berubah diam-diam.
+        if ($sale->is_consignment
+            && $sale->consignorIsPaid()
+            && (float) $validated['price'] !== (float) $sale->sale_price) {
+            return back()->withInput()->withErrors([
+                'price' => 'Setoran ke pemilik sudah ditandai lunas, jadi harga jual tidak bisa diubah. Batalkan tanda lunas di menu Titip Jual dulu.',
+            ]);
+        }
+
         Sale::updateBuyer($sale, $validated);
 
         // Modal yang diisi di form pembeli juga disimpan ke akunnya, supaya form Edit Akun
         // dan daftar akun menampilkan angka yang sama (tidak saling menimpa dengan 0).
-        if (isset($validated['cost_price']) && $validated['cost_price'] !== '') {
+        // Akun titipan dilewati: modalnya adalah bagian pemilik yang dihitung otomatis.
+        if (! $sale->is_consignment && isset($validated['cost_price']) && $validated['cost_price'] !== '') {
             $sale->account?->update(['cost_price' => $validated['cost_price']]);
         }
 
@@ -454,6 +476,41 @@ class AccountController extends Controller
             ],
             // harga modal: hanya terlihat admin, tidak pernah tampil di halaman publik
             'cost_price'           => 'nullable|numeric|min:0|max:999999999',
+            // titip jual (konsinyasi): pemilik akun + komisi toko. Hanya admin yang melihat, tidak pernah tampil di publik.
+            'is_consignment'       => 'nullable|boolean',
+            'consignor_name'       => [Rule::requiredIf(fn () => request()->boolean('is_consignment')), 'nullable', 'string', 'min:2', 'max:100'],
+            'consignor_phone'      => [
+                'nullable', 'string', 'max:25',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if (! request()->boolean('is_consignment') || blank($value)) {
+                        return;
+                    }
+
+                    $phone = Sale::normalizePhone($value);
+
+                    if (! $phone || ! preg_match('/^628[0-9]{8,12}$/', $phone)) {
+                        $fail('Nomor WhatsApp pemilik tidak valid. Contoh: 0812-3456-7890.');
+                    }
+                },
+            ],
+            'commission_type'      => [Rule::requiredIf(fn () => request()->boolean('is_consignment')), 'nullable', Rule::in(array_keys(CocAccount::COMMISSION_TYPES))],
+            'commission_value'     => [
+                Rule::requiredIf(fn () => request()->boolean('is_consignment')),
+                'nullable', 'numeric', 'min:0', 'max:999999999',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if (! request()->boolean('is_consignment') || $value === null || $value === '') {
+                        return;
+                    }
+
+                    if (request()->input('commission_type') === 'fixed') {
+                        if ((float) $value > (float) request()->input('price', 0)) {
+                            $fail('Komisi nominal tidak boleh lebih besar dari harga jual.');
+                        }
+                    } elseif ((float) $value > CocAccount::COMMISSION_MAX_PERCENT) {
+                        $fail('Komisi persen maksimal ' . CocAccount::COMMISSION_MAX_PERCENT . '%.');
+                    }
+                },
+            ],
             // jadwal tayang otomatis (WIB). Kosong = tidak dijadwalkan. Hanya dipakai bila status Draft.
             'publish_date'         => ['nullable', 'required_with:publish_hour', 'date_format:Y-m-d'],
             'publish_hour'         => ['nullable', 'required_with:publish_date', 'integer', 'between:0,23'],
@@ -640,7 +697,52 @@ class AccountController extends Controller
             'cost_price.numeric' => 'Harga modal harus berupa angka.',
             'cost_price.min'     => 'Harga modal tidak boleh negatif.',
             'cost_price.max'     => 'Harga modal terlalu besar (maksimal Rp 999.999.999).',
+            'consignor_name.required'    => 'Nama pemilik akun wajib diisi untuk titip jual.',
+            'consignor_name.min'         => 'Nama pemilik minimal 2 karakter.',
+            'consignor_name.max'         => 'Nama pemilik maksimal 100 karakter.',
+            'commission_type.required'   => 'Pilih jenis komisi (persen atau nominal).',
+            'commission_type.in'         => 'Jenis komisi tidak dikenal.',
+            'commission_value.required'  => 'Isi besar komisi toko.',
+            'commission_value.numeric'   => 'Komisi harus berupa angka.',
+            'commission_value.min'       => 'Komisi tidak boleh negatif.',
+            'commission_value.max'       => 'Komisi terlalu besar.',
         ];
+    }
+
+    /**
+     * Rapikan input titip jual (konsinyasi).
+     * - Checkbox tidak dicentang: semua data pemilik & komisi dikosongkan.
+     * - Akun yang sudah terjual TIDAK diubah lagi: angka resminya sudah tersimpan di transaksi
+     *   (snapshot), jadi input titip jual dari form diabaikan.
+     * Harga modal akun titipan dihitung otomatis oleh CocAccount (modal = harga - komisi).
+     */
+    private function applyConsignment(array &$validated, Request $request, ?CocAccount $account = null): void
+    {
+        $keys = ['is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value'];
+
+        if ($account && $account->sale_status === 'sold') {
+            foreach ($keys as $key) {
+                unset($validated[$key]);
+            }
+
+            return;
+        }
+
+        if (! $request->boolean('is_consignment')) {
+            $validated['is_consignment']   = false;
+            $validated['consignor_name']   = null;
+            $validated['consignor_phone']  = null;
+            $validated['commission_type']  = 'percent';
+            $validated['commission_value'] = 0;
+
+            return;
+        }
+
+        $validated['is_consignment']   = true;
+        $validated['consignor_name']   = trim((string) ($validated['consignor_name'] ?? ''));
+        $validated['consignor_phone']  = Sale::normalizePhone($validated['consignor_phone'] ?? null);
+        $validated['commission_type']  = $validated['commission_type'] === 'fixed' ? 'fixed' : 'percent';
+        $validated['commission_value'] = $validated['commission_value'] ?? 0;
     }
 
     /**
