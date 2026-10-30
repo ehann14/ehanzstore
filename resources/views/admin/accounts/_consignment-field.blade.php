@@ -18,6 +18,8 @@
     $typeVal   = $typeVal === 'fixed' ? 'fixed' : 'percent';
     $valueRaw  = old('commission_value', ($account && $account->is_consignment) ? (float) $account->commission_value : '');
     $valueVal  = ($valueRaw === '' || $valueRaw === null) ? '' : rtrim(rtrim(number_format((float) $valueRaw, 2, '.', ''), '0'), '.');
+    $emailOk   = session()->hasOldInput() ? (bool) old('consignor_email_ok') : (bool) ($account?->consignor_email_ok);
+    $maxWait   = max(0, (int) config('store.consign_max_email_wait_days', 0));
 @endphp
 
 @if($locked)
@@ -41,7 +43,7 @@
         </div>
     @endif
 @else
-    <div data-consign-box class="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+    <div data-consign-box data-listing-type="{{ $account?->listing_type }}" class="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
         <label class="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" name="is_consignment" value="1" data-consign-toggle @checked($isOn)
                    class="mt-1 w-4 h-4 rounded border-white/20 bg-brand-950/50 text-electric focus:ring-electric">
@@ -90,6 +92,28 @@
                 </div>
             </div>
 
+            {{-- SYARAT WAJIB: email akun harus bisa diganti ke Gmail pembeli (hanya berlaku untuk akun pemain, clan tidak punya email) --}}
+            <div class="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 @error('consignor_email_ok') border-red-500/60 @enderror">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" name="consignor_email_ok" value="1" data-consign-email-ok @checked($emailOk)
+                           class="mt-1 w-4 h-4 rounded border-white/20 bg-brand-950/50 text-electric focus:ring-electric">
+                    <span>
+                        <span class="block text-sm font-bold text-amber-200">Syarat wajib: email akun bisa diganti ke Gmail pembeli <span class="text-red-400">*</span></span>
+                        <span class="block text-xs text-slate-400 mt-0.5">
+                            Saya sudah memastikan email/Supercell ID akun ini
+                            {{ $maxWait === 0 ? 'SUDAH bisa diganti sekarang' : 'bisa diganti (maksimal menunggu ' . $maxWait . ' hari)' }}
+                            ke Gmail milik pembeli. Akun yang emailnya tidak bisa diganti tidak boleh dititip.
+                            Untuk clan, syarat ini tidak berlaku.
+                        </span>
+                    </span>
+                </label>
+                @error('consignor_email_ok') <p class="text-red-400 text-xs mt-2">{{ $message }}</p> @enderror
+                <p class="text-[11px] text-slate-500 mt-2">
+                    Pastikan juga status email di form ini diatur <span class="text-slate-300">Bisa Ganti</span>.
+                    Aturan lengkap untuk pemilik ada di <a href="{{ route('consignment.terms') }}" target="_blank" rel="noopener" class="text-electric hover:underline">halaman Syarat Titip Akun</a>.
+                </p>
+            </div>
+
             <div class="rounded-xl bg-brand-950/50 border border-white/5 p-3 text-sm grid sm:grid-cols-2 gap-2">
                 <p class="text-slate-400">Komisi toko: <span data-consign-commission class="font-bold text-emerald-400">-</span></p>
                 <p class="text-slate-400">Setor ke pemilik: <span data-consign-payout class="font-bold text-white">-</span></p>
@@ -119,10 +143,18 @@
             const price   = form.querySelector('input[name="price"]');
             const cost    = form.querySelector('input[name="cost_price"]');
             const name    = box.querySelector('input[name="consignor_name"]');
+            const emailOk = box.querySelector('[data-consign-email-ok]');
             const rp      = n => 'Rp ' + Math.max(0, Math.round(n)).toLocaleString('id-ID');
 
             // Modal manual dipulihkan kalau mode titip jual dimatikan lagi.
             let manualCost = toggle.checked ? null : (cost ? cost.value : null);
+
+            // Form clan tidak punya email akun, jadi syarat email tidak diwajibkan di browser.
+            const isClanForm = () => {
+                if (box.dataset.listingType) return box.dataset.listingType === 'clan';
+                const lt = form.querySelector('input[name="listing_type"]:checked');
+                return !!lt && lt.value === 'clan';
+            };
 
             const currentType = () => {
                 const checked = box.querySelector('input[name="commission_type"]:checked');
@@ -141,6 +173,7 @@
                 fields.classList.toggle('hidden', !on);
                 name.required = on;
                 value.required = on;
+                if (emailOk) emailOk.required = on && !isClanForm();
                 unit.textContent = currentType() === 'fixed' ? '(Rp)' : '(%)';
                 value.max = currentType() === 'fixed' ? '' : '{{ \App\Models\CocAccount::COMMISSION_MAX_PERCENT }}';
 
@@ -168,6 +201,7 @@
             toggle.addEventListener('change', render);
             value.addEventListener('input', render);
             types.forEach(t => t.addEventListener('change', render));
+            form.querySelectorAll('input[name="listing_type"]').forEach(r => r.addEventListener('change', render));
             price.addEventListener('input', render);
             price.addEventListener('change', render);
             render();

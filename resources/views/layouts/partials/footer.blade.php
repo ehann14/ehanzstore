@@ -33,6 +33,7 @@
                 <li><a href="{{ route('how.to.buy') }}" class="text-slate-400 hover:text-white transition">Cara Membeli</a></li>
                 <li><a href="{{ route('warranty') }}" class="text-slate-400 hover:text-white transition">Ketentuan Garansi</a></li>
                 <li><a href="{{ route('booking.terms') }}" class="text-slate-400 hover:text-white transition">Syarat &amp; Ketentuan Booking DP</a></li>
+                <li><a href="{{ route('consignment.terms') }}" class="text-slate-400 hover:text-white transition">Titip Akun untuk Dijual</a></li>
             </ul>
         </div>
 

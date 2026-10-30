@@ -83,6 +83,10 @@ class AccountController extends Controller
         $validated = $request->validate($rules, $this->messages());
         unset($validated['images']);
 
+        if ($errors = $this->consignmentEmailErrors($request, $type)) {
+            return back()->withInput()->withErrors($errors);
+        }
+
         $validated['listing_type']        = $type;
         $validated['cost_price']          = $validated['cost_price'] ?? 0;
         $this->applyConsignment($validated, $request);
@@ -144,6 +148,10 @@ class AccountController extends Controller
 
         $validated = $request->validate($rules, $this->messages());
         unset($validated['images']);
+
+        if ($errors = $this->consignmentEmailErrors($request, $account->listing_type ?? 'account', $account)) {
+            return back()->withInput()->withErrors($errors);
+        }
 
         // Batas total foto (yang sudah ada + yang baru)
         $newCount = count($request->file('images', []));
@@ -511,6 +519,8 @@ class AccountController extends Controller
                     }
                 },
             ],
+            // syarat wajib titip akun: konfirmasi email bisa diganti ke Gmail pembeli (dicek di consignmentEmailErrors)
+            'consignor_email_ok'   => 'nullable|boolean',
             // jadwal tayang otomatis (WIB). Kosong = tidak dijadwalkan. Hanya dipakai bila status Draft.
             'publish_date'         => ['nullable', 'required_with:publish_hour', 'date_format:Y-m-d'],
             'publish_hour'         => ['nullable', 'required_with:publish_date', 'integer', 'between:0,23'],
@@ -718,7 +728,7 @@ class AccountController extends Controller
      */
     private function applyConsignment(array &$validated, Request $request, ?CocAccount $account = null): void
     {
-        $keys = ['is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value'];
+        $keys = ['is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok'];
 
         if ($account && $account->sale_status === 'sold') {
             foreach ($keys as $key) {
@@ -734,6 +744,7 @@ class AccountController extends Controller
             $validated['consignor_phone']  = null;
             $validated['commission_type']  = 'percent';
             $validated['commission_value'] = 0;
+            $validated['consignor_email_ok'] = false;
 
             return;
         }
@@ -743,6 +754,46 @@ class AccountController extends Controller
         $validated['consignor_phone']  = Sale::normalizePhone($validated['consignor_phone'] ?? null);
         $validated['commission_type']  = $validated['commission_type'] === 'fixed' ? 'fixed' : 'percent';
         $validated['commission_value'] = $validated['commission_value'] ?? 0;
+        $validated['consignor_email_ok'] = $request->boolean('consignor_email_ok');
+    }
+
+    /**
+     * Syarat WAJIB titip akun: email akun harus bisa diganti ke Gmail pembeli.
+     * - Status email harus "Bisa Ganti" (atau hari tunggu diisi), bukan "Tidak Bisa Ganti".
+     * - Hari tunggu tidak boleh melebihi batas di config('store.consign_max_email_wait_days') (bawaan 0 = harus sudah bisa diganti sekarang).
+     * - Clan tidak punya email, akun yang sudah terjual tidak diperiksa lagi (sudah dikunci).
+     *
+     * @return array<string, string> pesan error (semua ditampilkan di kotak titip jual), kosong bila lolos
+     */
+    private function consignmentEmailErrors(Request $request, string $type, ?CocAccount $account = null): array
+    {
+        if ($type === 'clan' || ! $request->boolean('is_consignment')) {
+            return [];
+        }
+
+        if ($account && $account->sale_status === 'sold') {
+            return [];
+        }
+
+        if (! $request->boolean('consignor_email_ok')) {
+            return ['consignor_email_ok' => 'Syarat wajib titip akun: centang konfirmasi bahwa email akun bisa diganti ke Gmail pembeli.'];
+        }
+
+        $days   = (int) $request->input('email_change_days', 0);
+        $max    = max(0, (int) config('store.consign_max_email_wait_days', 0));
+        $status = $request->input('email_change_status');
+
+        if ($status !== 'Changeable' && $days <= 0) {
+            return ['consignor_email_ok' => 'Akun titipan wajib berstatus email "Bisa Ganti" ke Gmail pembeli. Jika email tidak bisa diganti, akun tidak bisa dititip.'];
+        }
+
+        if ($days > $max) {
+            return ['consignor_email_ok' => $max === 0
+                ? 'Akun titipan harus sudah bisa ganti email sekarang (kosongkan atau isi 0 hari).'
+                : "Akun titipan maksimal menunggu {$max} hari sampai email bisa diganti."];
+        }
+
+        return [];
     }
 
     /**

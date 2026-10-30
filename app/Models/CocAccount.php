@@ -20,7 +20,7 @@ class CocAccount extends Model
         'listing_type', 'clan_level', 'capital_hall_level', 'clan_members', 'clan_league',
         'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'original_price', 'is_hot_deal', 'hot_deal_ends_at', 'cost_price', 'description',
         'publication_status', 'publish_at', 'sale_status', 'created_by',
-        'is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value',
+        'is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok',
     ];
 
     protected $casts = [
@@ -32,6 +32,7 @@ class CocAccount extends Model
         'cost_price' => 'decimal:2',
         'email_change_available_at' => 'datetime',
         'is_consignment' => 'boolean',
+        'consignor_email_ok' => 'boolean',
         'commission_value' => 'decimal:2',
     ];
 

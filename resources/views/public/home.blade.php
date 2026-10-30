@@ -118,6 +118,40 @@
         </div>
     </section>
 
+    {{-- ===================== BANNER TITIP AKUN (strip kecil) ===================== --}}
+    <section class="max-w-7xl mx-auto px-4 pt-6 sm:pt-8">
+        <div class="relative overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-ink">
+            <div class="absolute -right-10 -top-16 w-48 h-48 rounded-full bg-electric/10 blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 px-4 sm:px-6 py-3.5 sm:py-4">
+                <span class="hidden sm:flex w-10 h-10 shrink-0 rounded-xl bg-electric/10 border border-electric/30 text-electric items-center justify-center" aria-hidden="true">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </span>
+
+                <div class="min-w-0 flex-1">
+                    <p class="font-display font-extrabold text-base sm:text-lg text-white leading-snug">
+                        Mau jual akun COC? <span class="text-electric">Titip aja di EHANZSTORE!</span>
+                    </p>
+                    <p class="text-xs sm:text-[13px] text-slate-400 mt-0.5 leading-snug">
+                        Tanpa biaya di depan, komisi hanya saat laku. <span class="text-white font-semibold">Syarat wajib:</span> email akun bisa diganti ke Gmail pembeli.
+                    </p>
+                </div>
+
+                <div class="flex gap-2 shrink-0">
+                    <a href="{{ route('consignment.terms') }}"
+                       class="inline-flex items-center justify-center gap-1.5 bg-electric hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg text-xs sm:text-sm transition">
+                        Baca Syarat
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </a>
+                    <a href="{{ $storeWaUrl }}?text={{ rawurlencode('Halo Admin EHANZSTORE, saya mau titip akun untuk dijual.') }}" target="_blank" rel="noopener"
+                       class="inline-flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-4 py-2 rounded-lg text-xs sm:text-sm transition">
+                        Titip via WA
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
     {{-- ===================== HOT DEAL ===================== --}}
     @if(isset($hotDeals) && $hotDeals->count())
         <section id="hot-deal" class="max-w-7xl mx-auto px-4 pt-10 sm:pt-14">

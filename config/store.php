@@ -39,6 +39,27 @@ return [
     'booking_max_per_phone' => (int) env('BOOKING_MAX_PER_PHONE', 2),
 
     // ------------------------------------------------------------------
+    // Titip akun (konsinyasi): angka yang tampil di halaman syarat & dipakai validasi admin
+    // ------------------------------------------------------------------
+
+    // Komisi toko bawaan yang ditampilkan di halaman syarat (persen dari harga jual). Besar komisi
+    // per akun tetap diisi admin di form akun dan disepakati lewat WhatsApp sebelum listing.
+    'consign_commission_percent' => (int) env('CONSIGN_COMMISSION_PERCENT', 10),
+
+    // Syarat WAJIB: email akun harus bisa diganti ke Gmail pembeli. Nilai ini = batas maksimal hari
+    // tunggu sebelum email bisa diganti. 0 = email harus SUDAH bisa diganti sekarang.
+    'consign_max_email_wait_days' => (int) env('CONSIGN_MAX_EMAIL_WAIT_DAYS', 0),
+
+    // Pemilik wajib mengganti email ke Gmail pembeli paling lambat sekian jam setelah akun laku.
+    'consign_handover_hours' => (int) env('CONSIGN_HANDOVER_HOURS', 24),
+
+    // Setoran bagian pemilik dikirim paling lambat sekian jam setelah serah terima selesai.
+    'consign_payout_hours' => (int) env('CONSIGN_PAYOUT_HOURS', 24),
+
+    // Lama masa titip. Lewat dari ini pemilik boleh menarik akun atau memperpanjang titipan (hari).
+    'consign_listing_days' => (int) env('CONSIGN_LISTING_DAYS', 30),
+
+    // ------------------------------------------------------------------
     // Social proof di halaman detail akun (angka nyata dari tabel visitor_events)
     // ------------------------------------------------------------------
     'social_proof' => [

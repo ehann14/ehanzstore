@@ -39,6 +39,9 @@ Route::post('/akun/{account_code}/klik-wa', [PublicController::class, 'trackWhat
 Route::get('/cara-membeli', [PublicController::class, 'howToBuy'])->name('how.to.buy');
 Route::get('/garansi', [PublicController::class, 'warranty'])->name('warranty');
 
+// Syarat titip akun untuk dijual (konsinyasi): wajib email bisa diganti ke Gmail pembeli
+Route::get('/syarat-titip-akun', [PublicController::class, 'consignmentTerms'])->name('consignment.terms');
+
 // Booking akun dengan DP: syarat & ketentuan, buat booking, halaman booking pembeli
 Route::get('/syarat-dp', [BookingController::class, 'terms'])->name('booking.terms');
 Route::post('/akun/{account_code}/booking', [BookingController::class, 'store'])

@@ -358,6 +358,12 @@ class PublicController extends Controller
         return view('public.warranty');
     }
 
+    /** Syarat & ketentuan titip akun untuk dijual (konsinyasi). */
+    public function consignmentTerms()
+    {
+        return view('public.consignment-terms');
+    }
+
     /**
      * Menampilkan file upload jika file fisiknya tidak ditemukan oleh Apache
      * (mis. foto lama yang masih ada di storage/app/public).
