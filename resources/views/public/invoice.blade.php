@@ -28,12 +28,16 @@
     <title>Invoice {{ $sale->transaction_code }}</title>
     @include('layouts.partials.favicon')
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
         * { box-sizing: border-box; }
         body {
             margin: 0; padding: 24px 12px 48px;
             background: #e9ecf1; color: #1a1a1a;
-            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             font-size: 14px; line-height: 1.5;
         }
         .wrap { max-width: 720px; margin: 0 auto; }
@@ -56,10 +60,10 @@
         .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
         .brand { display: flex; align-items: center; gap: 12px; }
         .brand img { width: 44px; height: 44px; object-fit: contain; }
-        .brand b { display: block; font-size: 17px; letter-spacing: .3px; }
+        .brand b { display: block; font-family: 'Nunito', 'Inter', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: .3px; }
         .brand span { font-size: 12.5px; color: #555; }
         .title { text-align: right; }
-        .title h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: 2px; color: #0645ad; }
+        .title h1 { margin: 0; font-family: 'Nunito', 'Inter', sans-serif; font-size: 26px; font-weight: 600; letter-spacing: 2px; color: #0645ad; }
         .title div { font-size: 13px; color: #555; margin-top: 2px; }
 
         hr { border: 0; border-top: 1px solid #1a1a1a; margin: 22px 0; }

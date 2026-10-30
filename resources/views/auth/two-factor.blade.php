@@ -11,7 +11,8 @@
 
     <!-- Fonts & Tailwind -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -25,13 +26,14 @@
                             950: '#020617',
                         }
                     },
-                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Nunito', 'Inter', 'sans-serif'] }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { letter-spacing: -0.01em; }
         .glass-card {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(20px);
@@ -48,7 +50,7 @@
             <div class="w-20 h-20 mx-auto mb-4 flex items-center justify-center bg-white rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20">
                 <img src="{{ asset('images/logo.png') }}" alt="EHANZ Logo" class="w-[72px] h-[72px] object-contain">
             </div>
-            <h1 class="text-2xl font-bold text-white tracking-tight">Verifikasi Dua Langkah</h1>
+            <h1 class="font-display text-2xl font-bold text-white">Verifikasi Dua Langkah</h1>
             <p class="text-slate-400 text-sm mt-2" x-show="!recovery">Buka aplikasi authenticator di HP Anda, lalu masukkan kode 6 digit.</p>
             <p class="text-slate-400 text-sm mt-2" x-show="recovery" x-cloak>Masukkan salah satu kode pemulihan. Setiap kode hanya berlaku sekali.</p>
         </div>

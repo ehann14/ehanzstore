@@ -7,6 +7,8 @@
     @include('layouts.partials.favicon')
     @include('layouts.partials.csrf-refresh')
     @include('layouts.partials.pwa')
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -26,7 +28,8 @@
     </script>
     <style type="text/tailwindcss">
         html, body { max-width: 100%; overflow-x: clip; }
-        body { background-color: #020617; color: #e2e8f0; }
+        body { background-color: #020617; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .font-display { letter-spacing: -0.01em; }
         .glass { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
         .glass-strong { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.08); }
         .glass-panel { background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
