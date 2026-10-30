@@ -87,18 +87,18 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-3 text-center lg:w-[360px] shrink-0">
-                            <div class="rounded-2xl bg-white/[0.04] p-2.5">
+                        <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center lg:w-[360px] shrink-0">
+                            <div class="rounded-2xl bg-white/[0.04] p-2 sm:p-2.5 min-w-0">
                                 <p class="text-[10px] uppercase tracking-wider text-slate-500">Harga</p>
-                                <p class="text-sm font-bold text-white mt-0.5">{{ $rp($b->price_snapshot) }}</p>
+                                <p class="text-xs sm:text-sm font-bold text-white mt-0.5 break-words">{{ $rp($b->price_snapshot) }}</p>
                             </div>
-                            <div class="rounded-2xl bg-electric/10 p-2.5">
+                            <div class="rounded-2xl bg-electric/10 p-2 sm:p-2.5 min-w-0">
                                 <p class="text-[10px] uppercase tracking-wider text-blue-300">DP {{ $b->dp_percent }}%</p>
-                                <p class="text-sm font-bold text-white mt-0.5">{{ $rp($b->dp_amount) }}</p>
+                                <p class="text-xs sm:text-sm font-bold text-white mt-0.5 break-words">{{ $rp($b->dp_amount) }}</p>
                             </div>
-                            <div class="rounded-2xl bg-white/[0.04] p-2.5">
+                            <div class="rounded-2xl bg-white/[0.04] p-2 sm:p-2.5 min-w-0">
                                 <p class="text-[10px] uppercase tracking-wider text-slate-500">Sisa</p>
-                                <p class="text-sm font-bold text-white mt-0.5">{{ $rp($b->remaining()) }}</p>
+                                <p class="text-xs sm:text-sm font-bold text-white mt-0.5 break-words">{{ $rp($b->remaining()) }}</p>
                             </div>
                         </div>
                     </div>

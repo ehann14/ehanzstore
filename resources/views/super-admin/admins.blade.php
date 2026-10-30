@@ -16,17 +16,17 @@
         <p class="text-sm text-slate-400 mt-1">Daftar pengguna yang memiliki akses ke panel kontrol.</p>
     </div>
 
-    <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="glass-panel rounded-2xl p-4 sm:p-5">
-            <p class="text-2xl sm:text-3xl font-display font-bold text-white">{{ $superCount }}</p>
+    <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+        <div class="glass-panel rounded-2xl p-3 sm:p-5 min-w-0">
+            <p class="text-xl sm:text-3xl font-display font-bold text-white">{{ $superCount }}</p>
             <p class="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider font-semibold mt-1">Super Admin</p>
         </div>
-        <div class="glass-panel rounded-2xl p-4 sm:p-5">
-            <p class="text-2xl sm:text-3xl font-display font-bold text-white">{{ $adminCount }}</p>
+        <div class="glass-panel rounded-2xl p-3 sm:p-5 min-w-0">
+            <p class="text-xl sm:text-3xl font-display font-bold text-white">{{ $adminCount }}</p>
             <p class="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider font-semibold mt-1">Admin</p>
         </div>
-        <div class="glass-panel rounded-2xl p-4 sm:p-5">
-            <p class="text-2xl sm:text-3xl font-display font-bold text-white">{{ $activeCount }}<span class="text-base text-slate-500">/{{ $admins->count() }}</span></p>
+        <div class="glass-panel rounded-2xl p-3 sm:p-5 min-w-0">
+            <p class="text-xl sm:text-3xl font-display font-bold text-white">{{ $activeCount }}<span class="text-base text-slate-500">/{{ $admins->count() }}</span></p>
             <p class="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider font-semibold mt-1">Aktif</p>
         </div>
     </div>

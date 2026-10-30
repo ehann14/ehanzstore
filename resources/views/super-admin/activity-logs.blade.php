@@ -33,17 +33,17 @@
     </div>
 
     <!-- Ringkasan -->
-    <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="glass-panel rounded-2xl p-4 sm:p-5">
-            <p class="text-2xl sm:text-3xl font-display font-bold text-white">{{ number_format($stats['total'], 0, ',', '.') }}</p>
+    <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+        <div class="glass-panel rounded-2xl p-3 sm:p-5 min-w-0">
+            <p class="text-xl sm:text-3xl font-display font-bold text-white">{{ number_format($stats['total'], 0, ',', '.') }}</p>
             <p class="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider font-semibold mt-1">Total Catatan</p>
         </div>
-        <div class="glass-panel rounded-2xl p-4 sm:p-5">
-            <p class="text-2xl sm:text-3xl font-display font-bold text-white">{{ number_format($stats['today'], 0, ',', '.') }}</p>
+        <div class="glass-panel rounded-2xl p-3 sm:p-5 min-w-0">
+            <p class="text-xl sm:text-3xl font-display font-bold text-white">{{ number_format($stats['today'], 0, ',', '.') }}</p>
             <p class="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider font-semibold mt-1">Hari Ini</p>
         </div>
-        <div class="glass-panel rounded-2xl p-4 sm:p-5">
-            <p class="text-2xl sm:text-3xl font-display font-bold text-white">{{ $stats['active_today'] }}</p>
+        <div class="glass-panel rounded-2xl p-3 sm:p-5 min-w-0">
+            <p class="text-xl sm:text-3xl font-display font-bold text-white">{{ $stats['active_today'] }}</p>
             <p class="text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider font-semibold mt-1">Pengguna Aktif Hari Ini</p>
         </div>
     </div>

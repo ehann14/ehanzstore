@@ -89,7 +89,52 @@
             <p class="text-sm text-slate-500">{{ $hasFilter ? 'Coba ubah atau reset filter.' : 'Pelanggan muncul setelah ada transaksi selesai dengan nomor WhatsApp pembeli.' }}</p>
         </div>
     @else
-        <div class="glass-panel rounded-2xl border border-white/5 overflow-hidden">
+        {{-- Tampilan kartu (HP) --}}
+        <div class="md:hidden space-y-3">
+            @foreach($customers as $c)
+                <div class="glass-panel rounded-2xl border border-white/5 p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <a href="{{ route('super-admin.customers.show', $c->buyer_phone) }}" class="font-semibold text-white truncate block">{{ $c->name }}</a>
+                            <a href="{{ $c->wa_url }}" target="_blank" rel="noopener" class="text-xs text-emerald-400 inline-block py-1">{{ $c->local }}</a>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <span class="text-white font-semibold">{{ $c->orders }}x</span>
+                            @if($c->orders >= 3)
+                                <span class="block mt-1 px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-300 border-emerald-500/30">Langganan</span>
+                            @elseif($c->orders >= 2)
+                                <span class="block mt-1 px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase bg-electric/15 text-blue-300 border-electric/30">Berulang</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if($c->note !== '')
+                        <p class="text-[11px] text-amber-300/80 mt-1 line-clamp-2">Catatan: {{ $c->note }}</p>
+                    @endif
+
+                    <div class="grid grid-cols-2 gap-2 mt-3">
+                        <div class="rounded-xl bg-white/[0.04] p-2.5 min-w-0">
+                            <p class="text-[10px] uppercase tracking-wider text-slate-500">Total belanja</p>
+                            <p class="text-sm font-bold text-white mt-0.5 truncate">{{ $rupiah($c->total_spent) }}</p>
+                        </div>
+                        <div class="rounded-xl bg-white/[0.04] p-2.5 min-w-0">
+                            <p class="text-[10px] uppercase tracking-wider text-slate-500">Laba</p>
+                            <p class="text-sm font-bold mt-0.5 truncate {{ $c->total_profit < 0 ? 'text-red-300' : 'text-emerald-300' }}">{{ ($c->total_profit < 0 ? '-' : '') . $rupiah(abs($c->total_profit)) }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-white/5">
+                        <p class="text-[11px] text-slate-500 min-w-0 truncate">
+                            Terakhir beli {{ $c->last_time?->format('d M Y') ?? '-' }}@if($c->last_time) &middot; {{ $c->last_time->diffForHumans() }}@endif
+                        </p>
+                        <a href="{{ route('super-admin.customers.show', $c->buyer_phone) }}" class="shrink-0 px-3 py-1.5 rounded-lg bg-electric/10 border border-electric/20 text-xs font-semibold text-electric">Detail</a>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        {{-- Tabel (layar lebar) --}}
+        <div class="hidden md:block glass-panel rounded-2xl border border-white/5 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[820px] text-sm">
                     <thead>

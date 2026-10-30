@@ -2,7 +2,8 @@
 <html lang="id" class="scroll-smooth">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
     <title>@yield('title') - {{ auth()->user()?->isSuperAdmin() ? 'EHANZ' : 'Admin Posting' }}</title>
     @include('layouts.partials.favicon')
     @include('layouts.partials.csrf-refresh')
@@ -41,6 +42,31 @@
         ::-webkit-scrollbar-track { background: #020617; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+    </style>
+    <style>
+        /* ===== Penyempurnaan tampilan HP ===== */
+        html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+        a, button, label, select, summary, [role="button"] { touch-action: manipulation; }
+        .overflow-x-auto { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+
+        @media (max-width: 1023.98px) {
+            html { scroll-padding-top: 5.5rem; scroll-padding-bottom: 6.5rem; }
+            /* Area sentuh menu lebih lega */
+            .sidebar-link { padding-top: .8rem; padding-bottom: .8rem; }
+            /* Tombol "Pasang Aplikasi" jangan menutupi bottom bar */
+            #pwaInstallBtn { bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)) !important; }
+            /* Saat mengetik, sembunyikan bottom bar supaya tidak menutupi form / loncat saat keyboard muncul */
+            body:has(input:focus, textarea:focus, select:focus) #bottomNav { display: none; }
+        }
+
+        /* iOS otomatis zoom saat fokus ke kolom dengan font < 16px; cegah dengan ukuran 16px di HP */
+        @media (max-width: 639.98px) {
+            input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]),
+            select, textarea { font-size: 16px; }
+        }
+
+        #drawerSheet { transition: transform .22s ease-out; }
+        #drawerBackdrop { transition: opacity .22s ease-out; }
     </style>
 </head>
 <body class="antialiased min-h-screen selection:bg-electric selection:text-white">
@@ -131,6 +157,13 @@
         }
 
         $flatNav = collect($sections)->flatten(1);
+
+        // Menu bawah (HP): 4 pintasan utama + tombol Menu untuk sisanya
+        $bottomLabels = ['Dashboard', 'Kelola Akun', 'Booking DP', 'Titip Jual'];
+        $shortLabels  = ['Kelola Akun' => 'Akun', 'Booking DP' => 'Booking', 'Titip Jual' => 'Titip'];
+        $bottomNav    = $flatNav->filter(fn ($i) => in_array($i['label'], $bottomLabels, true))->values();
+        $menuHasBadge = $flatNav->filter(fn ($i) => ! in_array($i['label'], $bottomLabels, true))
+                                ->contains(fn ($i) => ! empty($i['badge']));
     @endphp
 
     <!-- Sidebar (desktop) : fixed di kiri -->
@@ -193,30 +226,21 @@
 
     <!-- Konten: diberi padding kiri selebar sidebar di desktop -->
     <main class="min-w-0 w-full lg:pl-72 relative">
-        <div class="p-4 sm:p-6 lg:px-10 lg:py-8">
-            <!-- Header mobile -->
-            <div class="lg:hidden mb-6 sticky top-3 z-30">
-                <div class="flex justify-between items-center glass-strong p-4 rounded-2xl">
-                    <span class="font-display font-bold text-white">{{ $brand }}</span>
-                    <span class="ml-auto mr-3 font-mono text-xs text-electric" data-live-clock="time">{{ now()->timezone('Asia/Jakarta')->format('H:i:s') }}</span>
-                    <button onclick="document.getElementById('mobileMenu').classList.toggle('hidden')" class="text-white" aria-label="Menu">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                    </button>
+        <div class="p-4 pb-28 sm:p-6 sm:pb-28 lg:px-10 lg:py-8">
+            <!-- Header mobile: menempel di atas, aman dari notch / status bar -->
+            <header class="lg:hidden sticky top-0 z-30 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 mb-5 px-4 sm:px-6 pb-3 bg-midnight/85 backdrop-blur-xl border-b border-white/5"
+                    style="padding-top: calc(env(safe-area-inset-top, 0px) + .75rem)">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 shrink-0 flex items-center justify-center bg-white rounded-lg overflow-hidden">
+                        <img src="{{ asset('images/logo.png') }}" class="w-8 h-8 object-contain" alt="" onerror="this.style.display='none'">
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[10px] uppercase tracking-widest text-slate-500 leading-none">{{ $brand }}</p>
+                        <p class="font-display font-bold text-white truncate leading-tight mt-1">@yield('title', $brand)</p>
+                    </div>
+                    <span class="shrink-0 font-mono text-xs text-electric" data-live-clock="time">{{ now()->timezone('Asia/Jakarta')->format('H:i:s') }}</span>
                 </div>
-                <div id="mobileMenu" class="hidden glass-strong mt-2 p-3 rounded-2xl space-y-1 max-h-[70vh] overflow-y-auto">
-                    @foreach($flatNav as $item)
-                        <a href="{{ $item['href'] }}" class="sidebar-link {{ $item['active'] ? 'active' : '' }}">
-                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/></svg>
-                            {{ $item['label'] }}
-                            @if(!empty($item['badge']))
-                                <span class="ml-auto min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500/90 text-[10px] font-bold text-slate-900 flex items-center justify-center">{{ $item['badge'] }}</span>
-                            @endif
-                        </a>
-                    @endforeach
-                    <a href="{{ route('home') }}" target="_blank" rel="noopener" class="sidebar-link">Lihat Website</a>
-                    <button onclick="openLogout()" class="w-full text-left px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10">Keluar Sistem</button>
-                </div>
-            </div>
+            </header>
 
             @if(session('success'))
                 <div class="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-300 text-sm flex items-center gap-3">
@@ -236,9 +260,89 @@
         </div>
     </main>
 
+    <!-- Bottom bar (HP) -->
+    <nav id="bottomNav" class="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-midnight/90 backdrop-blur-xl border-t border-white/10"
+         style="padding-bottom: env(safe-area-inset-bottom, 0px)" aria-label="Navigasi utama">
+        <div class="grid grid-cols-5">
+            @foreach($bottomNav as $item)
+                <a href="{{ $item['href'] }}"
+                   class="relative flex flex-col items-center justify-center gap-1 py-2.5 text-[10.5px] font-medium transition-colors {{ $item['active'] ? 'text-electric' : 'text-slate-400 active:text-white' }}"
+                   @if($item['active']) aria-current="page" @endif>
+                    @if($item['active'])<span class="absolute top-0 h-0.5 w-8 rounded-full bg-electric"></span>@endif
+                    <span class="relative">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ $item['active'] ? 2.2 : 1.8 }}" d="{{ $item['icon'] }}"/></svg>
+                        @if(!empty($item['badge']))
+                            <span class="absolute -top-1.5 -right-2.5 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-amber-500 text-[9px] font-bold text-slate-900 flex items-center justify-center">{{ $item['badge'] > 99 ? '99+' : $item['badge'] }}</span>
+                        @endif
+                    </span>
+                    {{ $shortLabels[$item['label']] ?? $item['label'] }}
+                </a>
+            @endforeach
+            <button type="button" onclick="openDrawer()" class="relative flex flex-col items-center justify-center gap-1 py-2.5 text-[10.5px] font-medium text-slate-400 active:text-white" aria-haspopup="dialog" aria-controls="drawer">
+                <span class="relative">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    @if($menuHasBadge)<span class="absolute -top-0.5 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-midnight"></span>@endif
+                </span>
+                Menu
+            </button>
+        </div>
+    </nav>
+
+    <!-- Menu lengkap (HP): panel geser dari bawah -->
+    <div id="drawer" class="lg:hidden hidden fixed inset-0 z-[60]" aria-hidden="true">
+        <div id="drawerBackdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm opacity-0" onclick="closeDrawer()"></div>
+        <div id="drawerSheet" class="absolute inset-x-0 bottom-0 max-h-[88vh] flex flex-col glass-strong rounded-t-3xl border-t border-white/10 shadow-2xl translate-y-full"
+             role="dialog" aria-modal="true" aria-label="Menu">
+            <div class="pt-3 flex justify-center shrink-0"><span class="w-10 h-1 rounded-full bg-white/20"></span></div>
+
+            <div class="flex items-center gap-3 px-5 pt-3 pb-4 shrink-0 border-b border-white/5">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-royal to-electric flex items-center justify-center text-white font-bold shrink-0">
+                    {{ strtoupper(mb_substr($user->name, 0, 1)) }}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-white truncate">{{ $user->name }}</p>
+                    <p class="text-[11px] text-slate-500">{{ $brand }}</p>
+                </div>
+                <button type="button" onclick="closeDrawer()" class="w-10 h-10 -mr-2 flex items-center justify-center rounded-xl text-slate-400 active:bg-white/10" aria-label="Tutup menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <nav class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 custom-scrollbar">
+                @foreach($sections as $title => $items)
+                    <p class="px-3 {{ $loop->first ? 'mt-1' : 'mt-4' }} mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-600">{{ $title }}</p>
+                    <div class="space-y-1">
+                        @foreach($items as $item)
+                            <a href="{{ $item['href'] }}" class="sidebar-link {{ $item['active'] ? 'active' : '' }}">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/></svg>
+                                {{ $item['label'] }}
+                                @if(!empty($item['badge']))
+                                    <span class="ml-auto min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-500/90 text-[10px] font-bold text-slate-900 flex items-center justify-center">{{ $item['badge'] }}</span>
+                                @endif
+                            </a>
+                        @endforeach
+                    </div>
+                @endforeach
+
+                <p class="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-600">Lainnya</p>
+                <a href="{{ route('home') }}" target="_blank" rel="noopener" class="sidebar-link">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    Lihat Website
+                </a>
+            </nav>
+
+            <div class="px-3 pt-2 pb-3 shrink-0 border-t border-white/5" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + .75rem)">
+                <button type="button" onclick="closeDrawer(); openLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 active:bg-red-500/10 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Keluar Sistem
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal keluar -->
     <div id="logoutModal" class="hidden fixed inset-0 z-[100] items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="glass-strong w-full max-w-md rounded-3xl p-8 border border-white/10 shadow-2xl">
+        <div class="glass-strong w-full max-w-md rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
             <div class="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mb-4 text-red-400">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
             </div>
@@ -255,7 +359,35 @@
         function openLogout()  { var m = document.getElementById('logoutModal'); m.classList.remove('hidden'); m.classList.add('flex'); }
         function closeLogout() { var m = document.getElementById('logoutModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
         document.getElementById('logoutModal').addEventListener('click', function (e) { if (e.target === this) closeLogout(); });
-        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLogout(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeLogout(); closeDrawer(); } });
+
+        // ----- Menu geser (HP) -----
+        var drawerEl = document.getElementById('drawer');
+        var drawerSheet = document.getElementById('drawerSheet');
+        var drawerBackdrop = document.getElementById('drawerBackdrop');
+        var drawerTimer = null;
+        function openDrawer() {
+            clearTimeout(drawerTimer);
+            drawerEl.classList.remove('hidden');
+            drawerEl.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(function () { requestAnimationFrame(function () {
+                drawerSheet.classList.remove('translate-y-full');
+                drawerBackdrop.classList.remove('opacity-0');
+            }); });
+        }
+        function closeDrawer() {
+            if (drawerEl.classList.contains('hidden')) { return; }
+            drawerSheet.classList.add('translate-y-full');
+            drawerBackdrop.classList.add('opacity-0');
+            drawerEl.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            drawerTimer = setTimeout(function () { drawerEl.classList.add('hidden'); }, 230);
+        }
+        // Tautan di dalam menu: tutup panel (berguna untuk tautan yang membuka tab baru)
+        drawerEl.addEventListener('click', function (e) { if (e.target.closest('a')) { closeDrawer(); } });
+        // Layar diputar / melebar ke desktop: pastikan panel tertutup
+        window.addEventListener('resize', function () { if (window.innerWidth >= 1024) { closeDrawer(); } });
     </script>
 
     @stack('outside-forms')
