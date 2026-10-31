@@ -137,9 +137,14 @@
             {{ $account->name }}
         </h3>
 
-        <p class="text-[10px] sm:text-xs font-semibold tracking-wide text-slate-500 mt-1 truncate">
-            {{ $account->account_code }}
-        </p>
+        <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p class="text-[10px] sm:text-xs font-semibold tracking-wide text-slate-500 truncate">
+                {{ $account->account_code }}
+            </p>
+            @if(! $isSold && $account->isVerifiedConsignment())
+                <x-consignment-verified-badge />
+            @endif
+        </div>
 
         <!-- Level Hero -->
         @if(count($heroes))

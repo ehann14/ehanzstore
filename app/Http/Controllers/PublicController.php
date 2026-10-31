@@ -126,6 +126,11 @@ class PublicController extends Controller
             $query->where('sale_status', 'available')->hotDeal();
         }
 
+        // Titipan Terverifikasi saja: akun titipan yang lolos syarat email (otomatis tidak memuat clan)
+        if ($request->boolean('titipan') && $type !== 'clan') {
+            $query->where('sale_status', 'available')->verifiedConsignment();
+        }
+
         // Filter Town Hall (tidak berlaku untuk clan)
         if ($request->filled('th') && $type !== 'clan') {
             $query->where('town_hall', (int) $request->input('th'));

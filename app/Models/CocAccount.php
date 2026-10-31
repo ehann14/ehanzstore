@@ -133,6 +133,45 @@ class CocAccount extends Model
     }
 
     /**
+     * Titipan Terverifikasi: akun titipan yang lolos syarat email
+     * (admin sudah mengonfirmasi email bisa diganti ke Gmail pembeli).
+     * Aturannya sama dengan validasi saat simpan (AccountController::consignmentEmailErrors),
+     * dicek ulang di sini supaya data lama atau hasil edit manual di database tidak lolos begitu saja:
+     *  - akun titipan, sudah dikonfirmasi admin, bukan clan (clan tidak punya email)
+     *  - status email "Bisa Ganti"
+     *  - sisa hari tunggu tidak melebihi config('store.consign_max_email_wait_days')
+     */
+    public function isVerifiedConsignment(): bool
+    {
+        if (! $this->isConsignment() || ! $this->consignor_email_ok || $this->isClan()) {
+            return false;
+        }
+
+        if ($this->email_change_status !== 'Changeable') {
+            return false;
+        }
+
+        $maxWait = max(0, (int) config('store.consign_max_email_wait_days', 0));
+
+        return ($this->emailChangeDaysLeft() ?? 0) <= $maxWait;
+    }
+
+    /** Versi query dari isVerifiedConsignment() (dipakai filter katalog). */
+    public function scopeVerifiedConsignment($query)
+    {
+        $maxWait = max(0, (int) config('store.consign_max_email_wait_days', 0));
+
+        return $query->where('is_consignment', true)
+            ->where('consignor_email_ok', true)
+            ->where('listing_type', 'account')
+            ->where('email_change_status', 'Changeable')
+            ->where(function ($q) use ($maxWait) {
+                $q->whereNull('email_change_available_at')
+                  ->orWhere('email_change_available_at', '<=', now()->addDays($maxWait));
+            });
+    }
+
+    /**
      * Hitung ulang modal (= bagian pemilik) semua akun titipan yang belum terjual langsung di database.
      * Dipakai setelah harga berubah lewat query massal (mis. promo berakhir). Satu query.
      */

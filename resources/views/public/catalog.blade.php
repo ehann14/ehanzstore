@@ -108,10 +108,11 @@
     <!-- Filter Lanjutan -->
     @php
         $isClanTab = $type === 'clan';
-        $advKeys   = ['price_min', 'price_max', 'hero', 'hero_min', 'email', 'protected', 'hot', 'clan_level_min', 'capital_min', 'members_min', 'league_min'];
+        $advKeys   = ['price_min', 'price_max', 'hero', 'hero_min', 'email', 'protected', 'hot', 'titipan', 'clan_level_min', 'capital_min', 'members_min', 'league_min'];
         $advCount  = collect([
             request()->filled('price_min') || request()->filled('price_max'),
             request()->boolean('hot'),
+            !$isClanTab && request()->boolean('titipan'),
             !$isClanTab && request()->filled('hero') && request()->filled('hero_min'),
             !$isClanTab && request()->boolean('email'),
             !$isClanTab && request()->boolean('protected'),
@@ -212,6 +213,13 @@
                 </label>
                 @unless($isClanTab)
                 <label class="cursor-pointer select-none">
+                    <input type="checkbox" name="titipan" value="1" class="peer sr-only" @checked(request()->boolean('titipan'))>
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-slate-300 transition peer-checked:border-emerald-400/50 peer-checked:bg-emerald-500/15 peer-checked:text-emerald-300 peer-focus-visible:ring-2 peer-focus-visible:ring-electric">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        Titipan Terverifikasi
+                    </span>
+                </label>
+                <label class="cursor-pointer select-none">
                     <input type="checkbox" name="email" value="1" class="peer sr-only" @checked(request()->boolean('email'))>
                     <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-slate-300 transition peer-checked:border-emerald-400/50 peer-checked:bg-emerald-500/15 peer-checked:text-emerald-300 peer-focus-visible:ring-2 peer-focus-visible:ring-electric">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
@@ -242,7 +250,7 @@
     <div class="max-w-7xl mx-auto px-4 pb-20">
         <div class="flex justify-between items-center mb-8 px-2">
             <p class="text-sm text-slate-500">Ditemukan <span class="text-electric font-bold">{{ $accounts->total() }}</span> {{ $type === 'clan' ? 'clan' : ($type === 'account' ? 'akun' : 'akun & clan') }} siap kirim</p>
-            @if(request()->anyFilled(['search','th','sort','price_min','price_max','hero_min','clan_level_min','capital_min','members_min','league_min']) || request()->boolean('email') || request()->boolean('protected') || request()->boolean('hot'))
+            @if(request()->anyFilled(['search','th','sort','price_min','price_max','hero_min','clan_level_min','capital_min','members_min','league_min']) || request()->boolean('email') || request()->boolean('protected') || request()->boolean('hot') || request()->boolean('titipan'))
                 <a href="{{ route('catalog') }}" class="text-xs text-red-400 hover:text-red-300 font-medium flex items-center gap-1 transition">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Reset Filter
                 </a>
