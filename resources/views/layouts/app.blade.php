@@ -80,9 +80,15 @@
             70%  { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
             100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
         }
+
+        /* Menu bawah pembeli (HP): sembunyikan saat mengetik, dan geser tombol melayang supaya tidak tertutup */
+        body:has(input:focus, textarea:focus, select:focus) #buyerBottomNav { display: none; }
+        @media (max-width: 767px) {
+            #pwaInstallBtn { bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important; }
+        }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col selection:bg-electric selection:text-white">
+<body class="antialiased min-h-screen flex flex-col pb-[calc(3.75rem+env(safe-area-inset-bottom,0px))] md:pb-0 selection:bg-electric selection:text-white">
 
     @include('layouts.partials.navbar')
 
@@ -92,8 +98,10 @@
 
     @include('layouts.partials.footer')
 
+    @include('layouts.partials.bottom-nav')
+
     <!-- Tombol WhatsApp melayang + status jam operasional (WIB) -->
-    <div class="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
+    <div class="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-5 right-5 z-40 flex flex-col items-end gap-2">
         <x-store-hours-badge :compact="true" class="shadow-lg shadow-black/40" />
         <a href="{{ $storeWaUrl }}" target="_blank" rel="noopener" aria-label="Chat WhatsApp"
            class="w-14 h-14 rounded-full bg-green-500 hover:bg-green-400 text-white flex items-center justify-center shadow-xl shadow-green-900/40 transition hover:scale-105">
@@ -105,7 +113,7 @@
     {{-- Penanda untuk admin yang sedang login saat mode maintenance menyala (pengunjung umum melihat halaman maintenance) --}}
     @if(auth()->check() && \App\Support\Maintenance::isActive())
         <a href="{{ route('maintenance.exit') }}"
-           class="fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-amber-500 text-slate-900 text-xs font-bold shadow-xl shadow-black/40 hover:bg-amber-400 transition">
+           class="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-5 left-5 z-40 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-amber-500 text-slate-900 text-xs font-bold shadow-xl shadow-black/40 hover:bg-amber-400 transition">
             <span class="w-2 h-2 rounded-full bg-slate-900 animate-pulse"></span>
             Mode admin: maintenance AKTIF. Klik untuk kembali ke halaman maintenance
         </a>

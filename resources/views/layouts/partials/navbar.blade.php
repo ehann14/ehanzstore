@@ -49,6 +49,9 @@
                 @endforeach
             </div>
 
+            <!-- Status jam operasional (layar lebar; di layar lebih kecil ada di tombol WA melayang & menu mobile) -->
+            <x-store-hours-badge class="hidden xl:inline-flex" />
+
             <!-- CTA -->
             <a href="{{ $storeWaUrl }}" target="_blank" rel="noopener"
                class="hidden sm:inline-flex items-center gap-2 bg-electric hover:bg-blue-500 text-white px-5 py-2.5 rounded-full text-sm font-bold transition shadow-lg shadow-electric/20 hover:-translate-y-0.5">
@@ -62,7 +65,7 @@
             </button>
 
             <!-- Tombol menu mobile -->
-            <button @click="open = !open; search = false" class="md:hidden w-10 h-10 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 flex items-center justify-center" aria-label="Menu">
+            <button @click="open = !open; search = false" class="hidden w-10 h-10 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 flex items-center justify-center" aria-label="Menu">
                 <svg x-show="!open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 <svg x-show="open" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>

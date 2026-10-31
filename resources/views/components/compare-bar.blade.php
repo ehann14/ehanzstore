@@ -4,7 +4,7 @@
     Tombol pemilih ada di kartu akun & halaman detail: atribut [data-compare-btn].
 --}}
 <div id="compareBar" data-compare-url="{{ route('compare') }}"
-     class="hidden fixed z-40 bottom-3 left-3 right-24 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[min(40rem,calc(100vw-11rem))]"
+     class="hidden fixed z-40 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:bottom-3 left-3 right-24 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[min(40rem,calc(100vw-11rem))]"
      role="region" aria-label="Bandingkan akun">
     <div class="glass-strong rounded-2xl border border-white/10 shadow-2xl shadow-black/60 p-2.5 sm:p-3">
         <p id="compareNotice" class="hidden text-[11px] text-amber-300 mb-2 px-1" role="status"></p>
