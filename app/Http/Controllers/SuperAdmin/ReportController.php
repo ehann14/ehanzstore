@@ -24,9 +24,25 @@ public function monthly(Request $request)
 {
     $request->validate([
         'month' => ['nullable', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+        'tab'   => ['nullable', 'in:penjualan,titipan'],
     ]);
 
-    $report = SalesReport::monthly($request->query('month'));
+    $tab   = $request->query('tab') === 'titipan' ? 'titipan' : 'penjualan';
+    $month = SalesReport::normalizeMonth($request->query('month'));
+
+    // Tab Titipan: laporan komisi titip jual (komisi, setoran belum dibayar, pemilik teraktif).
+    if ($tab === 'titipan') {
+        return view('super-admin.report', [
+            'tab'     => 'titipan',
+            'month'   => $month,
+            'consign' => SalesReport::consignment($month),
+            'report'  => [],
+            'stats'   => [],
+            'sales'   => collect(),
+        ]);
+    }
+
+    $report = SalesReport::monthly($month);
 
     $summary = $report['summary'] ?? [];
 
@@ -60,6 +76,8 @@ public function monthly(Request $request)
     }
 
     return view('super-admin.report', [
+        'tab'    => 'penjualan',
+        'month'  => $month,
         'report' => $report,
         'stats'  => $stats,
         'sales'  => $sales,
@@ -93,6 +111,36 @@ public function monthly(Request $request)
         return $this->download(
             $content,
             'laporan-bulanan-' . $report['month'],
+            $format
+        );
+    }
+
+    /**
+     * Ekspor laporan komisi titipan bulanan ke Excel atau PDF.
+     */
+    public function exportConsignment(Request $request)
+    {
+        $request->validate([
+            'month' => [
+                'nullable',
+                'regex:/^\d{4}-(0[1-9]|1[0-2])$/',
+            ],
+            'format' => [
+                'required',
+                'in:xlsx,pdf',
+            ],
+        ]);
+
+        $report = SalesReport::consignment($request->query('month'));
+        $format = $request->query('format');
+
+        $content = $format === 'pdf'
+            ? SalesExporter::consignmentPdf($report)
+            : SalesExporter::consignmentXlsx($report);
+
+        return $this->download(
+            $content,
+            'laporan-titipan-' . $report['month'],
             $format
         );
     }

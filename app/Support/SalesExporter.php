@@ -249,6 +249,189 @@ class SalesExporter
         return $pdf->output();
     }
 
+    // ==================================================================
+    // LAPORAN KOMISI TITIPAN BULANAN
+    // ==================================================================
+
+    public static function consignmentXlsx(array $report): string
+    {
+        $s     = $report['summary'];
+        $p     = $report['prev'];
+        $label = $report['range']['label'];
+        $all   = $report['unpaidAll'];
+        $top   = $report['topOwners'] ? implode(', ', $report['topOwners']) : '-';
+
+        $summarySheet = [
+            [['Laporan Komisi Titipan - EHANZSTORE.ID', 'title']],
+            [['Periode: ' . $label, 'bold']],
+            [['Dibuat: ' . self::stamp() . '  |  Komisi = bagian toko dari harga jual akhir (transaksi titipan selesai)', 'default']],
+            [],
+            self::headerRow(['Ringkasan', $label, $report['prevLabel']]),
+            [['Akun titipan terjual', 'text'], [$s['sold'], 'int'], [$p['sold'], 'int']],
+            [['Total harga jual', 'text'], [$s['revenue'], 'money'], [$p['revenue'], 'money']],
+            [['TOTAL KOMISI TOKO', 'textBold'], [$s['commission'], 'moneyBold'], [$p['commission'], 'moneyBold']],
+            [['Bagian pemilik akun', 'text'], [$s['payout'], 'money'], [$p['payout'], 'money']],
+            [['   Sudah disetor', 'text'], [$s['paid_total'], 'money'], [$p['paid_total'], 'money']],
+            [['SETORAN BELUM DIBAYAR', 'textBold'], [$s['unpaid_total'], 'moneyBold'], [$p['unpaid_total'], 'moneyBold']],
+            [['   Jumlah transaksi belum disetor', 'text'], [$s['unpaid_count'], 'int'], [$p['unpaid_count'], 'int']],
+            [],
+            [['Setoran belum dibayar dari SEMUA bulan', 'bold']],
+            [['Jumlah transaksi', 'text'], [$all['count'], 'int']],
+            [['Total belum disetor', 'textBold'], [$all['total'], 'moneyBold']],
+            [['Paling lama menunggu sejak', 'text'], [$all['oldest'] ?? '-', 'text']],
+            [],
+            [['Pemilik teraktif (akun terjual terbanyak): ' . $top, 'bold']],
+        ];
+
+        $owners = [
+            [['Pemilik Akun Titipan - ' . $label, 'title']],
+            [['Urut dari yang paling aktif: jumlah akun terjual, lalu komisi.', 'default']],
+            [],
+            self::headerRow(['Peringkat', 'Nama Pemilik', 'No. WhatsApp', 'Jumlah Terjual', 'Total Harga Jual', 'Komisi Toko', 'Bagian Pemilik', 'Belum Disetor']),
+        ];
+
+        if ($report['owners']->isEmpty()) {
+            $owners[] = [['Belum ada akun titipan terjual pada bulan ini.', 'text']];
+        }
+
+        foreach ($report['owners'] as $i => $o) {
+            $owners[] = [
+                [$i + 1, 'int'], [$o->name, 'text'], [$o->phone ?? '-', 'text'], [$o->sold, 'int'],
+                [$o->revenue, 'money'], [$o->commission, 'money'], [$o->payout, 'money'], [$o->unpaid, 'money'],
+            ];
+        }
+
+        if ($report['owners']->isNotEmpty()) {
+            $owners[] = [
+                ['', 'textBold'], ['TOTAL', 'textBold'], ['', 'textBold'], [$s['sold'], 'intBold'],
+                [$s['revenue'], 'moneyBold'], [$s['commission'], 'moneyBold'], [$s['payout'], 'moneyBold'], [$s['unpaid_total'], 'moneyBold'],
+            ];
+        }
+
+        $tx = [
+            [['Transaksi Titipan Selesai - ' . $label, 'title']],
+            [],
+            self::headerRow(['No', 'Tanggal (WIB)', 'Kode Transaksi', 'Kode Akun', 'Nama Akun/Clan', 'Pemilik', 'No. WhatsApp', 'Harga Jual', 'Komisi Toko', 'Bagian Pemilik', 'Setoran']),
+        ];
+
+        foreach ($report['rows'] as $i => $r) {
+            $tx[] = [
+                [$i + 1, 'int'], [$r['time'], 'text'], [$r['code'], 'text'], [$r['acc_code'], 'text'],
+                [$r['name'], 'text'], [$r['owner'], 'text'], [$r['phone'], 'text'],
+                [$r['price'], 'money'], [$r['commission'], 'money'], [$r['payout'], 'money'], [$r['paid_label'], 'text'],
+            ];
+        }
+
+        $tx[] = [
+            ['', 'textBold'], ['', 'textBold'], ['', 'textBold'], ['', 'textBold'],
+            ['TOTAL', 'textBold'], ['', 'textBold'], ['', 'textBold'],
+            [$s['revenue'], 'moneyBold'], [$s['commission'], 'moneyBold'], [$s['payout'], 'moneyBold'], ['', 'textBold'],
+        ];
+
+        return (new XlsxWriter())
+            ->addSheet('Ringkasan', $summarySheet, [40, 22, 22], ['A1:C1'])
+            ->addSheet('Pemilik', $owners, [10, 26, 16, 15, 18, 16, 16, 16], ['A1:H1'], 4)
+            ->addSheet('Transaksi', $tx, [5, 18, 16, 12, 28, 22, 16, 16, 16, 16, 18], ['A1:K1'], 3)
+            ->output();
+    }
+
+    public static function consignmentPdf(array $report): string
+    {
+        $s     = $report['summary'];
+        $p     = $report['prev'];
+        $label = $report['range']['label'];
+        $all   = $report['unpaidAll'];
+
+        $pdf = new PdfWriter(true);
+        $pdf->setFooter('EHANZSTORE.ID - Laporan Komisi Titipan ' . $label . ' - dibuat ' . self::stamp());
+        $pdf->addPage();
+        $pdf->title('Laporan Komisi Titipan ' . $label);
+        $pdf->line('EHANZSTORE.ID   |   Dibuat: ' . self::stamp(), 8.5);
+        $pdf->line('Komisi = bagian toko dari harga jual akhir, dihitung dari transaksi titipan selesai.', 8.5);
+
+        $pdf->heading('Ringkasan');
+        $pdf->table([
+            ['title' => 'Keterangan', 'w' => 40],
+            ['title' => $label, 'w' => 30, 'align' => 'R'],
+            ['title' => $report['prevLabel'], 'w' => 30, 'align' => 'R'],
+        ], [
+            ['Akun titipan terjual', (string) $s['sold'], (string) $p['sold']],
+            ['Total harga jual', self::rp($s['revenue']), self::rp($p['revenue'])],
+            ['cells' => ['TOTAL KOMISI TOKO', self::rp($s['commission']), self::rp($p['commission'])], 'bold' => true],
+            ['Bagian pemilik akun', self::rp($s['payout']), self::rp($p['payout'])],
+            ['   Sudah disetor', self::rp($s['paid_total']), self::rp($p['paid_total'])],
+            ['cells' => ['SETORAN BELUM DIBAYAR', self::rp($s['unpaid_total']), self::rp($p['unpaid_total'])], 'bold' => true],
+        ], 9, 18);
+
+        $pdf->line(
+            'Setoran belum dibayar dari semua bulan: ' . self::rp($all['total']) . ' (' . $all['count'] . ' transaksi'
+            . ($all['oldest'] ? ', paling lama sejak ' . $all['oldest'] : '') . ')',
+            9,
+            true
+        );
+
+        $top = $report['topOwners'] ? implode(', ', $report['topOwners']) : '-';
+        $pdf->heading('Pemilik Teraktif: ' . $top);
+
+        if ($report['owners']->isEmpty()) {
+            $pdf->line('Belum ada akun titipan terjual pada bulan ini.', 9);
+        } else {
+            $table = [];
+            foreach ($report['owners'] as $i => $o) {
+                $table[] = [
+                    (string) ($i + 1), $o->name, $o->phone ?? '-', (string) $o->sold,
+                    self::rp($o->revenue), self::rp($o->commission), self::rp($o->payout), self::rp($o->unpaid),
+                ];
+            }
+            $table[] = [
+                'cells' => ['', 'TOTAL', '', (string) $s['sold'], self::rp($s['revenue']), self::rp($s['commission']), self::rp($s['payout']), self::rp($s['unpaid_total'])],
+                'bold'  => true,
+            ];
+
+            $pdf->table([
+                ['title' => 'No', 'w' => 5],
+                ['title' => 'Pemilik', 'w' => 22],
+                ['title' => 'No. WhatsApp', 'w' => 14],
+                ['title' => 'Terjual', 'w' => 8, 'align' => 'R'],
+                ['title' => 'Total Harga Jual', 'w' => 15, 'align' => 'R'],
+                ['title' => 'Komisi Toko', 'w' => 13, 'align' => 'R'],
+                ['title' => 'Bagian Pemilik', 'w' => 14, 'align' => 'R'],
+                ['title' => 'Belum Disetor', 'w' => 14, 'align' => 'R'],
+            ], $table, 8, 17);
+        }
+
+        $pdf->heading('Daftar Transaksi Titipan (' . count($report['rows']) . ')');
+
+        if (! $report['rows']) {
+            $pdf->line('Tidak ada transaksi titipan selesai pada bulan ini.', 9);
+        } else {
+            $table = [];
+            foreach ($report['rows'] as $r) {
+                $table[] = [
+                    $r['time'], $r['code'], $r['acc_code'] . ' ' . $r['name'], $r['owner'],
+                    self::rp($r['price']), self::rp($r['commission']), self::rp($r['payout']), $r['paid_label'],
+                ];
+            }
+            $table[] = [
+                'cells' => ['TOTAL', '', '', '', self::rp($s['revenue']), self::rp($s['commission']), self::rp($s['payout']), ''],
+                'bold'  => true,
+            ];
+
+            $pdf->table([
+                ['title' => 'Tanggal', 'w' => 12],
+                ['title' => 'Kode', 'w' => 12],
+                ['title' => 'Akun / Clan', 'w' => 22],
+                ['title' => 'Pemilik', 'w' => 14],
+                ['title' => 'Harga Jual', 'w' => 12, 'align' => 'R'],
+                ['title' => 'Komisi', 'w' => 11, 'align' => 'R'],
+                ['title' => 'Bagian Pemilik', 'w' => 12, 'align' => 'R'],
+                ['title' => 'Setoran', 'w' => 12],
+            ], $table, 7);
+        }
+
+        return $pdf->output();
+    }
+
     // ------------------------------------------------------------------
 
     private static function headerRow(array $titles): array

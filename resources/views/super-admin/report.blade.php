@@ -20,6 +20,47 @@
 
 <div class="max-w-7xl mx-auto pb-16">
 
+    {{-- Laporan bulanan: pilih bulan, tab Penjualan / Titipan, dan ekspor Excel / PDF --}}
+    @php
+        $tab         = $tab ?? 'penjualan';
+        $month       = $month ?? \App\Support\SalesReport::normalizeMonth(null);
+        $monthLabel  = \App\Support\SalesReport::monthRange($month)['label'];
+        $exportRoute = $tab === 'titipan' ? 'super-admin.reports.consignment.export' : 'super-admin.reports.monthly.export';
+        $tabCls      = fn ($on) => 'px-4 sm:px-5 py-2 rounded-xl text-sm font-semibold transition ' . ($on ? 'bg-electric text-white shadow-lg shadow-electric/25' : 'text-slate-400 hover:text-white');
+    @endphp
+    <div class="glass-panel rounded-2xl p-5 mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-display font-bold text-white">Laporan Bulanan</h1>
+                <p class="text-sm text-slate-400 mt-1">{{ $monthLabel }}</p>
+                <div class="inline-flex p-1 rounded-2xl bg-white/5 border border-white/10 mt-4">
+                    <a href="{{ route('super-admin.reports.monthly', ['month' => $month]) }}" class="{{ $tabCls($tab !== 'titipan') }}">Penjualan</a>
+                    <a href="{{ route('super-admin.reports.monthly', ['month' => $month, 'tab' => 'titipan']) }}" class="{{ $tabCls($tab === 'titipan') }}">Titipan</a>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+                <form method="GET" action="{{ route('super-admin.reports.monthly') }}" class="flex items-end gap-2">
+                    @if($tab === 'titipan') <input type="hidden" name="tab" value="titipan"> @endif
+                    <div>
+                        <label for="reportMonth" class="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase">Bulan</label>
+                        <input id="reportMonth" type="month" name="month" value="{{ $month }}" class="{{ $inputCls }}">
+                    </div>
+                    <button type="submit" class="px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-semibold transition">Tampilkan</button>
+                </form>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route($exportRoute, ['month' => $month, 'format' => 'xlsx']) }}" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition">Excel</a>
+                    <a href="{{ route($exportRoute, ['month' => $month, 'format' => 'pdf']) }}" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition">PDF</a>
+                </div>
+            </div>
+        </div>
+        @error('month') <p class="text-red-400 text-xs mt-3">{{ $message }}</p> @enderror
+    </div>
+
+    @if($tab === 'titipan')
+        @include('super-admin._consignment-report', ['consign' => $consign])
+    @else
+
     <div class="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
             <h1 class="text-2xl sm:text-3xl font-display font-bold text-white">Transaksi Penjualan</h1>
@@ -228,6 +269,7 @@
         @if(method_exists($sales, 'links'))
             <div class="mt-8">{{ $sales->links() }}</div>
         @endif
+    @endif
     @endif
 </div>
 @endsection

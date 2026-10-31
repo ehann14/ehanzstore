@@ -229,6 +229,10 @@ Route::middleware(['auth', 'role:super_admin', 'two-factor'])
         Route::get('/reports/monthly/export', [ReportController::class, 'exportMonthly'])
             ->name('reports.monthly.export');
 
+        // Laporan komisi titipan bulanan (tab Titipan): ekspor Excel/PDF
+        Route::get('/reports/consignment/export', [ReportController::class, 'exportConsignment'])
+            ->name('reports.consignment.export');
+
         Route::get('/admins', [SuperAdminDashboard::class, 'manageAdmins'])
             ->name('admins');
 
