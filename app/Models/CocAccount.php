@@ -20,7 +20,7 @@ class CocAccount extends Model
         'listing_type', 'clan_level', 'capital_hall_level', 'clan_members', 'clan_league',
         'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'original_price', 'is_hot_deal', 'hot_deal_ends_at', 'cost_price', 'description',
         'publication_status', 'publish_at', 'sale_status', 'created_by',
-        'is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok',
+        'is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok', 'consignor_phone_ok',
     ];
 
     protected $casts = [
@@ -33,6 +33,7 @@ class CocAccount extends Model
         'email_change_available_at' => 'datetime',
         'is_consignment' => 'boolean',
         'consignor_email_ok' => 'boolean',
+        'consignor_phone_ok' => 'boolean',
         'commission_value' => 'decimal:2',
     ];
 
@@ -133,13 +134,15 @@ class CocAccount extends Model
     }
 
     /**
-     * Titipan Terverifikasi: akun titipan yang lolos syarat email
-     * (admin sudah mengonfirmasi email bisa diganti ke Gmail pembeli).
-     * Aturannya sama dengan validasi saat simpan (AccountController::consignmentEmailErrors),
-     * dicek ulang di sini supaya data lama atau hasil edit manual di database tidak lolos begitu saja:
-     *  - akun titipan, sudah dikonfirmasi admin, bukan clan (clan tidak punya email)
-     *  - status email "Bisa Ganti"
-     *  - sisa hari tunggu tidak melebihi config('store.consign_max_email_wait_days')
+     * Titipan Terverifikasi: akun titipan yang lolos dua syarat utama titip akun.
+     * Aturannya sama dengan validasi saat simpan (AccountController::consignmentEmailErrors
+     * dan consignmentPhoneErrors), dicek ulang di sini supaya data lama atau hasil edit manual
+     * di database tidak lolos begitu saja:
+     *  1. Email bisa diganti ke Gmail pembeli: admin sudah mengonfirmasi, bukan clan (clan tidak
+     *     punya email), status email "Bisa Ganti", dan sisa hari tunggu tidak melebihi
+     *     config('store.consign_max_email_wait_days').
+     *  2. Bila proteksi ON, nomor HP proteksi bisa diganti ke nomor pembeli (konfirmasi admin).
+     *     Bila proteksi OFF, syarat ini tidak berlaku.
      */
     public function isVerifiedConsignment(): bool
     {
@@ -148,6 +151,11 @@ class CocAccount extends Model
         }
 
         if ($this->email_change_status !== 'Changeable') {
+            return false;
+        }
+
+        // Proteksi ON: nomor proteksi wajib bisa diganti ke nomor pembeli
+        if ($this->protection_status === 'Protected' && ! $this->consignor_phone_ok) {
             return false;
         }
 
@@ -165,6 +173,10 @@ class CocAccount extends Model
             ->where('consignor_email_ok', true)
             ->where('listing_type', 'account')
             ->where('email_change_status', 'Changeable')
+            ->where(function ($q) {
+                $q->where('protection_status', '!=', 'Protected')
+                  ->orWhere('consignor_phone_ok', true);
+            })
             ->where(function ($q) use ($maxWait) {
                 $q->whereNull('email_change_available_at')
                   ->orWhere('email_change_available_at', '<=', now()->addDays($maxWait));

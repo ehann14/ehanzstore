@@ -19,6 +19,7 @@
     $valueRaw  = old('commission_value', ($account && $account->is_consignment) ? (float) $account->commission_value : '');
     $valueVal  = ($valueRaw === '' || $valueRaw === null) ? '' : rtrim(rtrim(number_format((float) $valueRaw, 2, '.', ''), '0'), '.');
     $emailOk   = session()->hasOldInput() ? (bool) old('consignor_email_ok') : (bool) ($account?->consignor_email_ok);
+    $phoneOk   = session()->hasOldInput() ? (bool) old('consignor_phone_ok') : (bool) ($account?->consignor_phone_ok);
     $maxWait   = max(0, (int) config('store.consign_max_email_wait_days', 0));
 @endphp
 
@@ -114,6 +115,26 @@
                 </p>
             </div>
 
+            {{-- SYARAT WAJIB bagian 2: bila proteksi ON, nomor HP proteksi harus bisa diganti ke nomor pembeli (hanya akun pemain) --}}
+            <div data-consign-phone-box class="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 @error('consignor_phone_ok') border-red-500/60 @enderror">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" name="consignor_phone_ok" value="1" data-consign-phone-ok @checked($phoneOk)
+                           class="mt-1 w-4 h-4 rounded border-white/20 bg-brand-950/50 text-electric focus:ring-electric">
+                    <span>
+                        <span class="block text-sm font-bold text-amber-200">Syarat wajib bila proteksi ON: nomor proteksi bisa diganti ke nomor pembeli <span data-consign-phone-star class="text-red-400 hidden">*</span></span>
+                        <span class="block text-xs text-slate-400 mt-0.5">
+                            Saya sudah memastikan nomor HP yang terpasang sebagai proteksi akun ini bisa diganti ke nomor milik pembeli.
+                            Akun berproteksi yang nomornya tidak bisa diganti tidak boleh dititip.
+                            Kalau proteksi OFF atau untuk clan, syarat ini tidak berlaku.
+                        </span>
+                    </span>
+                </label>
+                @error('consignor_phone_ok') <p class="text-red-400 text-xs mt-2">{{ $message }}</p> @enderror
+                <p class="text-[11px] text-slate-500 mt-2">
+                    Syarat ini wajib dicentang kalau Status Proteksi di form ini diatur <span class="text-slate-300">ON</span>.
+                </p>
+            </div>
+
             <div class="rounded-xl bg-brand-950/50 border border-white/5 p-3 text-sm grid sm:grid-cols-2 gap-2">
                 <p class="text-slate-400">Komisi toko: <span data-consign-commission class="font-bold text-emerald-400">-</span></p>
                 <p class="text-slate-400">Setor ke pemilik: <span data-consign-payout class="font-bold text-white">-</span></p>
@@ -144,6 +165,8 @@
             const cost    = form.querySelector('input[name="cost_price"]');
             const name    = box.querySelector('input[name="consignor_name"]');
             const emailOk = box.querySelector('[data-consign-email-ok]');
+            const phoneOk = box.querySelector('[data-consign-phone-ok]');
+            const phoneStar = box.querySelector('[data-consign-phone-star]');
             const rp      = n => 'Rp ' + Math.max(0, Math.round(n)).toLocaleString('id-ID');
 
             // Modal manual dipulihkan kalau mode titip jual dimatikan lagi.
@@ -154,6 +177,12 @@
                 if (box.dataset.listingType) return box.dataset.listingType === 'clan';
                 const lt = form.querySelector('input[name="listing_type"]:checked');
                 return !!lt && lt.value === 'clan';
+            };
+
+            // Syarat nomor proteksi hanya wajib untuk akun pemain dengan Status Proteksi ON.
+            const isProtected = () => {
+                const p = form.querySelector('input[name="protection_status"]:checked');
+                return !!p && p.value === 'Protected';
             };
 
             const currentType = () => {
@@ -174,6 +203,11 @@
                 name.required = on;
                 value.required = on;
                 if (emailOk) emailOk.required = on && !isClanForm();
+                if (phoneOk) {
+                    const need = on && !isClanForm() && isProtected();
+                    phoneOk.required = need;
+                    if (phoneStar) phoneStar.classList.toggle('hidden', !need);
+                }
                 unit.textContent = currentType() === 'fixed' ? '(Rp)' : '(%)';
                 value.max = currentType() === 'fixed' ? '' : '{{ \App\Models\CocAccount::COMMISSION_MAX_PERCENT }}';
 
@@ -202,6 +236,7 @@
             value.addEventListener('input', render);
             types.forEach(t => t.addEventListener('change', render));
             form.querySelectorAll('input[name="listing_type"]').forEach(r => r.addEventListener('change', render));
+            form.querySelectorAll('input[name="protection_status"]').forEach(r => r.addEventListener('change', render));
             price.addEventListener('input', render);
             price.addEventListener('change', render);
             render();

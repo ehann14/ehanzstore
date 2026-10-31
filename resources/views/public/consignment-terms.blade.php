@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Syarat Titip Akun untuk Dijual - EHANZSTORE.ID')
-@section('description', 'Titip akun Clash of Clans kamu untuk dijual di EHANZSTORE.ID. Syarat wajib: email akun bisa diganti ke Gmail pembeli. Baca komisi, serah terima, dan setoran di sini.')
+@section('description', 'Titip akun Clash of Clans kamu untuk dijual di EHANZSTORE.ID. Syarat wajib: email akun bisa diganti ke Gmail pembeli, dan nomor proteksi bisa diganti ke nomor pembeli bila proteksi ON. Baca komisi, serah terima, dan setoran di sini.')
 
 @section('content')
 @php
@@ -11,7 +11,7 @@
     $listingDays  = (int) config('store.consign_listing_days', 30);
     $maxWait      = max(0, (int) config('store.consign_max_email_wait_days', 0));
     $warranty     = \App\Models\Sale::warrantyRange();
-    $waTitip      = $storeWaUrl . '?text=' . rawurlencode("Halo Admin EHANZSTORE, saya mau titip akun untuk dijual.\n\nTH: \nHarga yang diinginkan: \nEmail akun bisa diganti ke Gmail pembeli: ya");
+    $waTitip      = $storeWaUrl . '?text=' . rawurlencode("Halo Admin EHANZSTORE, saya mau titip akun untuk dijual.\n\nTH: \nHarga yang diinginkan: \nEmail akun bisa diganti ke Gmail pembeli: ya\nProteksi akun (ON/OFF): \nKalau proteksi ON, nomor proteksi bisa diganti ke nomor pembeli: ya");
     $waAsk        = $storeWaUrl . '?text=' . rawurlencode('Halo Admin EHANZSTORE, saya mau tanya soal titip akun.');
 
     $sections = [
@@ -22,6 +22,7 @@
                 'Akun bisa dibuka normal, tidak terkena banned, tidak terkunci, dan tidak dalam proses recovery.',
                 'Data akun yang kamu sampaikan (Town Hall, level hero, gems, dan lainnya) harus sesuai kenyataan. Admin mengecek lagi sebelum akun ditayangkan.',
                 'Nomor WhatsApp pemilik harus aktif karena dipakai untuk kabar penawaran, serah terima, dan setoran.',
+                'Dua syarat utama wajib terpenuhi: email akun bisa diganti ke Gmail pembeli, dan bila proteksi akun ON, nomor proteksi juga bisa diganti ke nomor pembeli (lihat kotak Syarat wajib di bawah).',
             ],
         ],
         [
@@ -47,9 +48,10 @@
             't' => 'Serah terima ke pembeli',
             'items' => [
                 "Setelah pembeli bayar, pemilik wajib mengganti email akun ke Gmail milik pembeli paling lambat {$handoverHrs} jam, dengan didampingi admin lewat WhatsApp.",
+                "Untuk akun berproteksi ON, nomor HP proteksi juga wajib diganti ke nomor pembeli dalam batas {$handoverHrs} jam yang sama.",
                 'Admin akan menyampaikan alamat Gmail pembeli yang resmi. Jangan memakai alamat dari pihak lain di luar yang diberikan admin.',
-                'Pemilik tidak boleh login, memulihkan, atau mengubah akun lagi setelah serah terima selesai, dan tidak boleh menautkan ulang akun ke email atau perangkat miliknya.',
-                'Serah terima dianggap selesai setelah email berhasil diganti dan pembeli dapat masuk ke akun.',
+                'Pemilik tidak boleh login, memulihkan, atau mengubah akun lagi setelah serah terima selesai, dan tidak boleh menautkan ulang akun ke email, nomor HP, atau perangkat miliknya.',
+                'Serah terima dianggap selesai setelah email (dan nomor proteksi, bila proteksi ON) berhasil diganti dan pembeli dapat masuk ke akun.',
             ],
         ],
         [
@@ -100,14 +102,21 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             </span>
             <div>
-                <p class="text-[11px] font-bold tracking-widest text-amber-300 uppercase mb-1">Syarat wajib</p>
-                <h2 class="font-display font-extrabold text-2xl text-white mb-3">Email akun harus bisa diganti ke Gmail pembeli</h2>
+                <p class="text-[11px] font-bold tracking-widest text-amber-300 uppercase mb-1">Dua syarat wajib</p>
+                <h2 class="font-display font-extrabold text-2xl text-white mb-3">1. Email akun harus bisa diganti ke Gmail pembeli</h2>
                 <ul class="space-y-2.5 text-sm text-slate-300 leading-relaxed">
                     <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Email/Supercell ID akun harus
                         @if($maxWait === 0) <strong class="text-white">sudah bisa diganti sekarang</strong>@else <strong class="text-white">bisa diganti (maksimal menunggu {{ $maxWait }} hari)</strong>@endif
                         ke alamat Gmail milik pembeli.</span></li>
                     <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Akun yang emailnya tidak bisa diganti <strong class="text-white">tidak bisa dititip</strong>, apa pun alasannya, karena pembeli tidak bisa memegang akun sepenuhnya.</span></li>
                     <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Admin mengonfirmasi syarat ini sebelum akun ditayangkan. Berlaku untuk akun pemain; clan tidak punya email sehingga tidak terkena syarat ini.</span></li>
+                </ul>
+
+                <h2 class="font-display font-extrabold text-2xl text-white mt-6 mb-3">2. Proteksi ON: nomor proteksi harus bisa diganti ke nomor pembeli</h2>
+                <ul class="space-y-2.5 text-sm text-slate-300 leading-relaxed">
+                    <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Kalau akun memakai proteksi (nomor HP terpasang sebagai proteksi), nomor itu <strong class="text-white">harus bisa diganti ke nomor milik pembeli</strong>.</span></li>
+                    <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Akun berproteksi yang nomornya tidak bisa diganti <strong class="text-white">tidak bisa dititip</strong>, karena nomor lama masih bisa dipakai untuk mengambil akun kembali.</span></li>
+                    <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Kalau proteksi OFF, syarat ini tidak berlaku. Admin tetap mengonfirmasinya sebelum akun ditayangkan.</span></li>
                 </ul>
             </div>
         </div>
@@ -148,7 +157,7 @@
 </section>
 
 <div class="max-w-4xl mx-auto px-4 pb-24 text-center">
-    <p class="text-slate-400 mb-5">Email akunmu bisa diganti? Chat admin sekarang, gratis tanpa biaya di depan.</p>
+    <p class="text-slate-400 mb-5">Email akunmu (dan nomor proteksinya, kalau proteksi ON) bisa diganti? Chat admin sekarang, gratis tanpa biaya di depan.</p>
     <div class="flex flex-col sm:flex-row gap-3 justify-center">
         <a href="{{ $waTitip }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center bg-electric hover:bg-blue-500 text-white font-bold px-8 py-3.5 rounded-full transition shadow-lg shadow-electric/20">Titip Akun via WhatsApp</a>
         <a href="{{ $waAsk }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-8 py-3.5 rounded-full transition">Tanya Admin Dulu</a>

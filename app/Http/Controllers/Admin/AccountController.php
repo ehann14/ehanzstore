@@ -83,7 +83,10 @@ class AccountController extends Controller
         $validated = $request->validate($rules, $this->messages());
         unset($validated['images']);
 
-        if ($errors = $this->consignmentEmailErrors($request, $type)) {
+        if ($errors = array_merge(
+            $this->consignmentEmailErrors($request, $type),
+            $this->consignmentPhoneErrors($request, $type)
+        )) {
             return back()->withInput()->withErrors($errors);
         }
 
@@ -149,7 +152,10 @@ class AccountController extends Controller
         $validated = $request->validate($rules, $this->messages());
         unset($validated['images']);
 
-        if ($errors = $this->consignmentEmailErrors($request, $account->listing_type ?? 'account', $account)) {
+        if ($errors = array_merge(
+            $this->consignmentEmailErrors($request, $account->listing_type ?? 'account', $account),
+            $this->consignmentPhoneErrors($request, $account->listing_type ?? 'account', $account)
+        )) {
             return back()->withInput()->withErrors($errors);
         }
 
@@ -521,6 +527,8 @@ class AccountController extends Controller
             ],
             // syarat wajib titip akun: konfirmasi email bisa diganti ke Gmail pembeli (dicek di consignmentEmailErrors)
             'consignor_email_ok'   => 'nullable|boolean',
+            // syarat wajib titip akun (bagian 2): proteksi ON -> nomor proteksi bisa diganti ke pembeli (dicek di consignmentPhoneErrors)
+            'consignor_phone_ok'   => 'nullable|boolean',
             // jadwal tayang otomatis (WIB). Kosong = tidak dijadwalkan. Hanya dipakai bila status Draft.
             'publish_date'         => ['nullable', 'required_with:publish_hour', 'date_format:Y-m-d'],
             'publish_hour'         => ['nullable', 'required_with:publish_date', 'integer', 'between:0,23'],
@@ -728,7 +736,7 @@ class AccountController extends Controller
      */
     private function applyConsignment(array &$validated, Request $request, ?CocAccount $account = null): void
     {
-        $keys = ['is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok'];
+        $keys = ['is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok', 'consignor_phone_ok'];
 
         if ($account && $account->sale_status === 'sold') {
             foreach ($keys as $key) {
@@ -745,6 +753,7 @@ class AccountController extends Controller
             $validated['commission_type']  = 'percent';
             $validated['commission_value'] = 0;
             $validated['consignor_email_ok'] = false;
+            $validated['consignor_phone_ok'] = false;
 
             return;
         }
@@ -755,6 +764,7 @@ class AccountController extends Controller
         $validated['commission_type']  = $validated['commission_type'] === 'fixed' ? 'fixed' : 'percent';
         $validated['commission_value'] = $validated['commission_value'] ?? 0;
         $validated['consignor_email_ok'] = $request->boolean('consignor_email_ok');
+        $validated['consignor_phone_ok'] = $request->boolean('consignor_phone_ok');
     }
 
     /**
@@ -791,6 +801,37 @@ class AccountController extends Controller
             return ['consignor_email_ok' => $max === 0
                 ? 'Akun titipan harus sudah bisa ganti email sekarang (kosongkan atau isi 0 hari).'
                 : "Akun titipan maksimal menunggu {$max} hari sampai email bisa diganti."];
+        }
+
+        return [];
+    }
+
+    /**
+     * Syarat WAJIB titip akun bagian 2: bila proteksi akun ON, nomor HP proteksi harus bisa
+     * diganti ke nomor pembeli. Admin wajib mengonfirmasinya. Bila proteksi OFF syarat ini tidak berlaku.
+     * - Clan tidak punya proteksi, akun yang sudah terjual tidak diperiksa lagi (sudah dikunci).
+     * - Saat edit tanpa input proteksi, dipakai status proteksi yang tersimpan.
+     *
+     * @return array<string, string> pesan error (ditampilkan di kotak titip jual), kosong bila lolos
+     */
+    private function consignmentPhoneErrors(Request $request, string $type, ?CocAccount $account = null): array
+    {
+        if ($type === 'clan' || ! $request->boolean('is_consignment')) {
+            return [];
+        }
+
+        if ($account && $account->sale_status === 'sold') {
+            return [];
+        }
+
+        $protection = $request->input('protection_status', $account?->protection_status ?? 'Unprotected');
+
+        if ($protection !== 'Protected') {
+            return [];
+        }
+
+        if (! $request->boolean('consignor_phone_ok')) {
+            return ['consignor_phone_ok' => 'Syarat wajib titip akun: karena proteksi ON, centang konfirmasi bahwa nomor HP proteksi bisa diganti ke nomor pembeli. Kalau nomor tidak bisa diganti, akun tidak bisa dititip.'];
         }
 
         return [];
