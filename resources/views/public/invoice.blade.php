@@ -217,7 +217,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td data-l="Durasi">{{ $days }} hari</td>
+                        <td data-l="Durasi">{{ $days }} hari ({{ $sale->warrantyTierShort() }})</td>
                         <td data-l="Mulai">{{ $sale->handoverLabel() ?? '-' }}</td>
                         <td data-l="Berakhir">{{ $sale->warrantyUntilLabel() ?? '-' }}</td>
                         <td data-l="Status">{{ $warrantyStatus }}</td>

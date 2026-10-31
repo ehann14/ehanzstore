@@ -17,6 +17,10 @@
     $typeVal   = old('commission_type', $account?->commission_type ?: 'percent');
     $typeVal   = $typeVal === 'fixed' ? 'fixed' : 'percent';
     $valueRaw  = old('commission_value', ($account && $account->is_consignment) ? (float) $account->commission_value : '');
+    // Komisi bawaan untuk titipan baru (persen); admin tetap bisa mengubah per akun.
+    if (($valueRaw === '' || $valueRaw === null) && $typeVal === 'percent') {
+        $valueRaw = (int) config('store.consign_commission_percent', 15);
+    }
     $valueVal  = ($valueRaw === '' || $valueRaw === null) ? '' : rtrim(rtrim(number_format((float) $valueRaw, 2, '.', ''), '0'), '.');
     $emailOk   = session()->hasOldInput() ? (bool) old('consignor_email_ok') : (bool) ($account?->consignor_email_ok);
     $phoneOk   = session()->hasOldInput() ? (bool) old('consignor_phone_ok') : (bool) ($account?->consignor_phone_ok);
@@ -87,7 +91,7 @@
                 </div>
                 <div>
                     <label for="commission_value" class="{{ $labelCls }}">Besar Komisi <span data-consign-unit class="text-slate-500 font-normal">(%)</span> <span class="text-red-400">*</span></label>
-                    <input id="commission_value" type="number" name="commission_value" min="0" step="0.01" value="{{ $valueVal }}" placeholder="10"
+                    <input id="commission_value" type="number" name="commission_value" min="0" step="0.01" value="{{ $valueVal }}" placeholder="15"
                            class="{{ $inputCls }} @error('commission_value') border-red-500 @enderror">
                     @error('commission_value') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>

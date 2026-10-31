@@ -34,7 +34,8 @@
         $faqs = [
             ['q' => 'Kapan garansi mulai dihitung?', 'a' => 'Garansi dihitung sejak admin dan pembeli sama-sama mengonfirmasi bahwa serah terima akun sudah selesai di chat WhatsApp, bukan sejak tanggal pembayaran.'],
             ['q' => 'Apa bedanya akun pengganti dan refund?', 'a' => 'Akun pengganti adalah akun dengan spesifikasi dan nilai setara akun yang dibeli. Jika belum ada akun yang setara, kamu bisa memilih refund sesuai nominal yang sudah dibayarkan.'],
-            ['q' => 'Berapa lama masa garansi akun saya?', 'a' => 'Durasi garansi ditentukan saat transaksi: ' . \App\Models\Sale::warrantyOptionsText() . '. Kamu bisa melihat sisa garansi kapan saja di halaman Cek Garansi dengan memasukkan kode transaksi.'],
+            ['q' => 'Berapa lama masa garansi akun saya?', 'a' => 'Garansi 7 hari jika email akun sudah diganti ke Gmail pembeli, 14 hari jika email belum diganti ke Gmail pembeli, dan 21 hari untuk Garansi Plus dengan biaya tambahan Rp ' . number_format(\App\Models\Sale::warrantyFeeFor(\App\Models\Sale::WARRANTY_PLUS_DAYS), 0, ',', '.') . '. Kamu bisa melihat sisa garansi kapan saja di halaman Cek Garansi dengan memasukkan kode transaksi.'],
+            ['q' => 'Apa itu Garansi Plus 21 hari?', 'a' => 'Garansi Plus adalah pilihan berbayar untuk pembeli yang ingin masa perlindungan paling panjang. Biayanya sudah termasuk di harga akhir yang disepakati dengan admin, dan masa 21 hari berlaku apa pun kondisi emailnya.'],
             ['q' => 'Apakah garansi bisa diperpanjang?', 'a' => 'Garansi tidak otomatis diperpanjang setelah durasinya habis. Jika klaim sedang diproses saat masa garansi berakhir, klaim tetap kami selesaikan selama sudah diajukan sebelum batas waktu.'],
             ['q' => 'Bagaimana jika akun bermasalah karena kesalahan saya?', 'a' => 'Garansi tidak berlaku untuk masalah akibat kelalaian pembeli. Kami tetap bisa membantu mengarahkan langkah pemulihan, tetapi tanpa jaminan penggantian.'],
             ['q' => 'Apakah akun pengganti juga bergaransi?', 'a' => 'Ya. Akun pengganti mendapat sisa masa garansi dari akun sebelumnya.'],
@@ -62,7 +63,7 @@
     <div class="max-w-5xl mx-auto px-4 -mt-10 relative z-20 mb-20">
         <div class="glass-strong rounded-3xl p-6 md:p-8 border border-white/5 shadow-2xl shadow-black/50 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
             <div>
-                <p class="font-display text-4xl font-bold text-white">7 <span class="text-electric text-2xl">Hari</span></p>
+                <p class="font-display text-4xl font-bold text-white">{{ \App\Models\Sale::warrantyRange() }} <span class="text-electric text-2xl">Hari</span></p>
                 <p class="text-xs text-slate-400 mt-1">Masa garansi sejak serah terima selesai</p>
             </div>
             <div class="sm:border-x border-white/10">
@@ -75,6 +76,28 @@
             </div>
         </div>
     </div>
+
+    <!-- Pilihan masa garansi -->
+    <section class="max-w-5xl mx-auto px-4 mb-20">
+        <div class="text-center mb-8">
+            <h2 class="font-display text-2xl md:text-3xl font-bold text-white">Masa Garansi Sesuai Kondisi Akun</h2>
+            <p class="text-slate-400 text-sm mt-2 max-w-2xl mx-auto">Lama garansi ditentukan saat serah terima, tergantung apakah email akun sudah diganti ke Gmail pembeli atau belum.</p>
+        </div>
+
+        <div class="grid sm:grid-cols-3 gap-4">
+            @foreach(\App\Models\Sale::warrantyTiers() as $days => $tier)
+                @php($plus = $days === \App\Models\Sale::WARRANTY_PLUS_DAYS)
+                <div class="relative rounded-3xl p-6 border {{ $plus ? 'border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-transparent' : 'border-white/10 bg-white/[0.03]' }}">
+                    @if($plus)
+                        <span class="absolute -top-3 left-6 px-3 py-0.5 rounded-full bg-amber-400 text-slate-900 text-[11px] font-bold">Garansi Plus</span>
+                    @endif
+                    <p class="font-display text-4xl font-bold text-white">{{ $days }} <span class="{{ $plus ? 'text-amber-300' : 'text-electric' }} text-2xl">Hari</span></p>
+                    <p class="text-sm font-semibold text-white mt-3">{{ $tier['label'] }}</p>
+                    <p class="text-sm text-slate-400 leading-relaxed mt-1.5">{{ $tier['desc'] }}</p>
+                </div>
+            @endforeach
+        </div>
+    </section>
 
     <!-- Cakupan & Pengecualian -->
     <section class="max-w-6xl mx-auto px-4 mb-24">

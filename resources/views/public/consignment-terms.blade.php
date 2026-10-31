@@ -5,7 +5,7 @@
 
 @section('content')
 @php
-    $commission   = (int) config('store.consign_commission_percent', 10);
+    $commission   = (int) config('store.consign_commission_percent', 15);
     $handoverHrs  = (int) config('store.consign_handover_hours', 24);
     $payoutHrs    = (int) config('store.consign_payout_hours', 24);
     $listingDays  = (int) config('store.consign_listing_days', 30);

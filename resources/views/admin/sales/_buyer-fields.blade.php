@@ -18,7 +18,8 @@
     $costVal      = old('cost_price', $savedCost);
     $methodVal    = old('payment_method', $sale?->payment_method);
     $warrantyOptions = \App\Models\Sale::WARRANTY_OPTIONS;
-    $warrantyHints   = [7 => 'Standar', 14 => '2 minggu', 21 => '3 minggu'];
+    $warrantyTiers   = \App\Models\Sale::warrantyTiers();
+    $savedFee        = $sale ? (int) $sale->warranty_fee : 0;
     $warrantyDays    = (int) old('warranty_days', $sale ? $sale->warrantyDays() : \App\Models\Sale::WARRANTY_DAYS);
     if (! in_array($warrantyDays, $warrantyOptions, true)) {
         $warrantyDays = \App\Models\Sale::WARRANTY_DAYS;
@@ -67,7 +68,7 @@
                 <p class="text-slate-400">Komisi toko: <span id="{{ $idPrefix }}_commission" class="font-bold text-emerald-400">-</span></p>
                 <p class="text-slate-400">Setor ke pemilik: <span id="{{ $idPrefix }}_payout" class="font-bold text-white">-</span></p>
             </div>
-            <p class="text-[11px] text-slate-500 mt-2">Komisi dihitung dari harga jual akhir (kalau ada nego, bagian pemilik ikut menyesuaikan). Status setoran dicatat di menu Titip Jual.</p>
+            <p class="text-[11px] text-slate-500 mt-2">Komisi dihitung dari harga jual akhir di luar biaya Garansi Plus (kalau ada nego, bagian pemilik ikut menyesuaikan). Status setoran dicatat di menu Titip Jual.</p>
             @if($consignPaid)
                 <p class="text-[11px] text-amber-300 mt-2">Setoran ke pemilik sudah ditandai lunas, jadi harga jual dikunci. Batalkan tanda lunas di menu Titip Jual bila perlu mengubahnya.</p>
             @endif
@@ -118,21 +119,25 @@
         <!-- Pilihan durasi garansi -->
         <div class="mt-4">
             <span class="{{ $labelCls }}">Durasi Garansi <span class="text-red-400">*</span></span>
-            <div class="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Durasi garansi">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Durasi garansi">
                 @foreach($warrantyOptions as $opt)
+                    @php($tier = $warrantyTiers[$opt] ?? ['short' => '', 'label' => ''])
                     <label class="cursor-pointer">
                         <input type="radio" name="warranty_days" value="{{ $opt }}" required
+                               data-fee="{{ \App\Models\Sale::warrantyFeeFor($opt) }}"
                                class="peer sr-only" @checked($warrantyDays === $opt)>
-                        <span class="block text-center rounded-xl border border-white/10 bg-brand-950/50 px-3 py-3 transition
+                        <span class="block h-full text-center rounded-xl border border-white/10 bg-brand-950/50 px-3 py-3 transition
                                      hover:bg-white/5 text-slate-300
                                      peer-checked:border-emerald-500/60 peer-checked:bg-emerald-500/15 peer-checked:text-emerald-300
+                                     peer-disabled:opacity-40 peer-disabled:cursor-not-allowed
                                      peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500">
                             <span class="block text-base font-bold">{{ $opt }} hari</span>
-                            <span class="block text-[11px] opacity-70">{{ $warrantyHints[$opt] ?? '' }}</span>
+                            <span class="block text-[11px] opacity-80 leading-snug mt-0.5">{{ $tier['label'] }}</span>
                         </span>
                     </label>
                 @endforeach
             </div>
+            <p class="text-[11px] text-slate-500 mt-2">Pilih sesuai kondisi email saat serah terima. Garansi Plus 21 hari menambah harga jual otomatis sebesar biayanya.</p>
             @error('warranty_days') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -141,6 +146,7 @@
             <svg class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             <div class="text-sm">
                 <p class="text-emerald-300 font-semibold">Garansi <span id="{{ $idPrefix }}_warranty_days_label">{{ $warrantyDays }}</span> hari dihitung dari waktu serah terima</p>
+                <p id="{{ $idPrefix }}_warranty_tier" class="text-slate-400 text-xs mt-0.5">{{ $warrantyTiers[$warrantyDays]['desc'] ?? '' }}</p>
                 <p class="text-slate-400 text-xs mt-0.5">Garansi berakhir: <span id="{{ $idPrefix }}_warranty_end" class="text-white font-medium">-</span></p>
             </div>
         </div>
@@ -158,6 +164,8 @@
 <script>
     (function () {
         const DEFAULT_DAYS = {{ $warrantyDays }};
+        const TIER_DESC = @json(collect($warrantyTiers)->map(fn ($t) => $t['desc'])->all());
+        const tierOut = document.getElementById('{{ $idPrefix }}_warranty_tier');
         const scope  = document.querySelector('[data-buyer-fields="{{ $idPrefix }}"]');
         const input  = document.getElementById('{{ $idPrefix }}_handover');
         const output = document.getElementById('{{ $idPrefix }}_warranty_end');
@@ -176,6 +184,7 @@
         function render() {
             const days = selectedDays();
             if (label) label.textContent = days;
+            if (tierOut && TIER_DESC[days]) tierOut.textContent = TIER_DESC[days];
 
             // Nilai datetime-local sudah dalam WIB (tanpa zona), jadi cukup tambah N hari secara kalender.
             const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(input.value);
@@ -200,13 +209,37 @@
 
         const rp = n => (n < 0 ? '-Rp ' : 'Rp ') + Math.abs(Math.round(n)).toLocaleString('id-ID');
 
+        // Biaya Garansi Plus (21 hari): otomatis ditambahkan ke harga jual, dan dikurangi lagi bila durasi diganti.
+        const scopeEl   = document.querySelector('[data-buyer-fields="{{ $idPrefix }}"]');
+        const radios    = scopeEl ? scopeEl.querySelectorAll('input[name="warranty_days"]') : [];
+        const currentFee = () => {
+            const c = scopeEl ? scopeEl.querySelector('input[name="warranty_days"]:checked') : null;
+            return c ? (parseInt(c.dataset.fee, 10) || 0) : 0;
+        };
+        let appliedFee = {{ $savedFee }};
+
+        if (price.readOnly) {
+            // Harga dikunci (setoran pemilik sudah lunas): durasi dengan biaya berbeda tidak boleh dipilih.
+            radios.forEach(r => { if ((parseInt(r.dataset.fee, 10) || 0) !== appliedFee) r.disabled = true; });
+        }
+
+        function syncWarrantyFee() {
+            const want = currentFee();
+            if (want === appliedFee) return;
+            if (!price.readOnly) {
+                price.value = Math.max(0, (parseFloat(price.value) || 0) + want - appliedFee);
+            }
+            appliedFee = want;
+        }
+        radios.forEach(r => r.addEventListener('change', () => { syncWarrantyFee(); render(); }));
+
         const info    = document.querySelector('[data-buyer-fields="{{ $idPrefix }}"] [data-consign-info]');
         const outCom  = document.getElementById('{{ $idPrefix }}_commission');
         const outPay  = document.getElementById('{{ $idPrefix }}_payout');
 
         function syncConsignment() {
             if (!info) return;
-            const p = parseFloat(price.value) || 0;
+            const p = Math.max(0, (parseFloat(price.value) || 0) - currentFee());
             const v = parseFloat(info.dataset.value) || 0;
             const c = info.dataset.type === 'fixed' ? Math.min(v, p) : Math.round(p * v / 100);
             const payout = Math.max(0, p - c);

@@ -30,7 +30,7 @@ class Sale extends Model
         'transaction_code', 'coc_account_id', 'account_code_snapshot',
         'buyer_name', 'buyer_phone',
         'sale_price', 'cost_price', 'transaction_status', 'payment_status', 'payment_method',
-        'processed_by', 'sold_at', 'handover_at', 'warranty_days', 'warranty_expires_at', 'notes', 'review_token', 'invoice_token',
+        'processed_by', 'sold_at', 'handover_at', 'warranty_days', 'warranty_fee', 'warranty_expires_at', 'notes', 'review_token', 'invoice_token',
         'is_consignment', 'consignor_name', 'consignor_phone', 'commission_amount', 'consignor_payout', 'consignor_paid_at',
     ];
 
@@ -40,6 +40,7 @@ class Sale extends Model
         'sold_at'             => 'datetime',
         'handover_at'         => 'datetime',
         'warranty_days'       => 'integer',
+        'warranty_fee'        => 'integer',
         'warranty_expires_at' => 'datetime',
         'is_consignment'      => 'boolean',
         'commission_amount'   => 'decimal:2',
@@ -89,18 +90,20 @@ class Sale extends Model
 
     /**
      * Snapshot titip jual untuk transaksi baru / diubah. Komisi dihitung dari HARGA JUAL AKHIR
-     * (bukan harga listing), jadi kalau ada nego, bagian pemilik dan komisi ikut menyesuaikan.
+     * di luar biaya Garansi Plus (bukan harga listing), jadi kalau ada nego, bagian pemilik dan komisi ikut menyesuaikan.
      * cost_price diisi bagian pemilik supaya laba transaksi = komisi dan laporan lama tetap benar.
      * Kosong bila akun bukan titipan.
      */
-    public static function consignmentPayload(CocAccount $account, float $salePrice): array
+    public static function consignmentPayload(CocAccount $account, float $salePrice, int $warrantyFee = 0): array
     {
         if (! $account->isConsignment()) {
             return [];
         }
 
-        $commission = $account->commissionFor($salePrice);
-        $payout     = max(0.0, $salePrice - $commission);
+        // Biaya Garansi Plus 100% milik toko: komisi & bagian pemilik dihitung dari harga di luar biaya itu.
+        $base       = max(0.0, $salePrice - $warrantyFee);
+        $commission = $account->commissionFor($base);
+        $payout     = max(0.0, $base - $commission);
 
         return [
             'is_consignment'    => true,
@@ -251,6 +254,36 @@ class Sale extends Model
     public function hasBuyerData(): bool
     {
         return filled($this->buyer_name);
+    }
+
+    /** Garansi Plus: durasi (hari) yang dikenai biaya tambahan. */
+    public const WARRANTY_PLUS_DAYS = 21;
+
+    /** Biaya tambahan Garansi Plus (Rp), diatur di config/store.php (WARRANTY_PLUS_FEE). */
+    public static function warrantyFeeFor(int $days): int
+    {
+        return $days === self::WARRANTY_PLUS_DAYS ? max(0, (int) config('store.warranty_plus_fee', 5000)) : 0;
+    }
+
+    /** Syarat tiap durasi garansi: label panjang, label singkat, dan penjelasan. */
+    public static function warrantyTiers(): array
+    {
+        $fee = number_format(self::warrantyFeeFor(self::WARRANTY_PLUS_DAYS), 0, ',', '.');
+
+        return [
+            7  => ['short' => 'Email sudah diganti', 'label' => 'Email sudah diganti ke Gmail pembeli',
+                   'desc'  => 'Akun sudah sepenuhnya di tangan pembeli: email sudah diganti ke Gmail pembeli.'],
+            14 => ['short' => 'Email belum diganti', 'label' => 'Email belum diganti ke Gmail pembeli',
+                   'desc'  => 'Email akun belum diganti ke Gmail pembeli saat serah terima, jadi masa garansi diperpanjang.'],
+            21 => ['short' => 'Garansi Plus',        'label' => 'Garansi Plus (bayar tambahan Rp ' . $fee . ')',
+                   'desc'  => 'Perlindungan terpanjang untuk pembeli yang membayar biaya tambahan Rp ' . $fee . ', apa pun kondisi emailnya.'],
+        ];
+    }
+
+    /** Label singkat syarat garansi transaksi ini, mis. "Email sudah diganti". */
+    public function warrantyTierShort(): string
+    {
+        return self::warrantyTiers()[$this->warrantyDays()]['short'] ?? '';
     }
 
     /**
@@ -424,7 +457,17 @@ class Sale extends Model
                     }
                 },
             ],
-            'price' => ['required', 'numeric', 'min:0', 'max:999999999'],
+            'price' => [
+                'required', 'numeric', 'min:0', 'max:999999999',
+                // Garansi Plus (21 hari) wajib membayar lebih: harga jual harus sudah termasuk biayanya.
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $fee = self::warrantyFeeFor((int) request()->input('warranty_days'));
+
+                    if ($fee > 0 && (float) $value < $fee) {
+                        $fail('Garansi Plus ' . self::WARRANTY_PLUS_DAYS . ' hari berbayar tambahan Rp ' . number_format($fee, 0, ',', '.') . '. Harga jual harus sudah termasuk biaya itu.');
+                    }
+                },
+            ],
             'cost_price' => ['nullable', 'numeric', 'min:0', 'max:999999999'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
@@ -476,6 +519,7 @@ class Sale extends Model
             'sale_price'          => $validated['price'],
             'handover_at'         => $handover,
             'warranty_days'       => $days,
+            'warranty_fee'        => self::warrantyFeeFor($days),
             'warranty_expires_at' => $handover->clone()->addDays($days),
             'notes'               => $validated['notes'] ?? null,
         ];
@@ -510,7 +554,7 @@ class Sale extends Model
                 return null;
             }
 
-            $sale = static::create(array_merge(['cost_price' => $account->cost_price], static::buyerPayload($validated), static::consignmentPayload($account, (float) $validated['price']), [
+            $sale = static::create(array_merge(['cost_price' => $account->cost_price], static::buyerPayload($validated), static::consignmentPayload($account, (float) $validated['price'], static::warrantyFeeFor((int) ($validated['warranty_days'] ?? 0))), [
                 'transaction_code'      => static::generateCode(),
                 'coc_account_id'        => $account->id,
                 'account_code_snapshot' => $account->account_code,
@@ -537,7 +581,7 @@ class Sale extends Model
 
         // Akun titipan: komisi & bagian pemilik dihitung ulang dari harga jual yang baru.
         if ($sale->is_consignment && $sale->account) {
-            $payload = array_merge($payload, static::consignmentPayload($sale->account, (float) $payload['sale_price']));
+            $payload = array_merge($payload, static::consignmentPayload($sale->account, (float) $payload['sale_price'], (int) $payload['warranty_fee']));
         }
 
         $sale->update($payload);

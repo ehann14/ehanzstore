@@ -132,7 +132,7 @@
                                 <p class="font-display text-4xl sm:text-5xl font-bold text-white mt-4">
                                     {{ ucfirst($sale->warrantyRemainingText()) }}
                                 </p>
-                                <p class="text-xs text-slate-500 mt-1">dari total {{ $sale->warrantyDays() }} hari garansi</p>
+                                <p class="text-xs text-slate-500 mt-1">dari total {{ $sale->warrantyDays() }} hari garansi &middot; {{ $sale->warrantyTierShort() }}</p>
 
                                 <div class="mt-5 h-2.5 rounded-full bg-white/10 overflow-hidden" role="progressbar"
                                      aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $progress['remaining'] }}">

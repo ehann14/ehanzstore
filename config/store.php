@@ -39,12 +39,20 @@ return [
     'booking_max_per_phone' => (int) env('BOOKING_MAX_PER_PHONE', 2),
 
     // ------------------------------------------------------------------
+    // Garansi bertingkat
+    //   7 hari  = email akun SUDAH diganti ke Gmail pembeli
+    //  14 hari  = email akun BELUM diganti ke Gmail pembeli
+    //  21 hari  = Garansi Plus, pembeli membayar biaya tambahan di bawah ini
+    // ------------------------------------------------------------------
+    'warranty_plus_fee' => (int) env('WARRANTY_PLUS_FEE', 5000),
+
+    // ------------------------------------------------------------------
     // Titip akun (konsinyasi): angka yang tampil di halaman syarat & dipakai validasi admin
     // ------------------------------------------------------------------
 
     // Komisi toko bawaan yang ditampilkan di halaman syarat (persen dari harga jual). Besar komisi
     // per akun tetap diisi admin di form akun dan disepakati lewat WhatsApp sebelum listing.
-    'consign_commission_percent' => (int) env('CONSIGN_COMMISSION_PERCENT', 10),
+    'consign_commission_percent' => (int) env('CONSIGN_COMMISSION_PERCENT', 15),
 
     // Syarat WAJIB: email akun harus bisa diganti ke Gmail pembeli. Nilai ini = batas maksimal hari
     // tunggu sebelum email bisa diganti. 0 = email harus SUDAH bisa diganti sekarang.
