@@ -28,7 +28,7 @@
            class="rounded-2xl border p-4 transition {{ $tab === 'sold' ? 'bg-red-500/10 border-red-500/40' : 'glass-panel border-white/5 hover:border-red-500/30' }}">
             <p class="text-[11px] uppercase tracking-wider {{ $tab === 'sold' ? 'text-red-300' : 'text-slate-500' }}">Akun Terjual</p>
             <p class="text-2xl font-bold text-white mt-1">{{ $soldCount }}</p>
-            <p class="text-[11px] text-slate-500 mt-0.5 truncate">Sudah laku &middot; ada garansi &amp; invoice</p>
+            <p class="text-[11px] text-slate-500 mt-0.5 truncate">Sudah laku &middot; {{ min($soldCount, (int) config('store.sold_showcase_limit', 15)) }} terbaru tampil di katalog</p>
         </a>
     </div>
 
@@ -67,6 +67,10 @@
 
             // Booking (DP) yang sedang menahan akun-akun di halaman ini
             $holds = \App\Models\Booking::holdingMap($accounts->pluck('id')->all());
+
+            // Etalase akun terjual: yang tampil di katalog publik (maks. N terbaru)
+            $showcaseIds   = \App\Models\CocAccount::soldShowcaseIds();
+            $showcaseLimit = (int) config('store.sold_showcase_limit', 15);
         @endphp
 
         @if($tab === 'ready')
@@ -193,6 +197,16 @@
                                     </span>
                                 @endif
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $saleBadge[1] }}">{{ $saleBadge[0] }}</span>
+
+                                @if($account->sale_status === 'sold' && $published)
+                                    @if(in_array((int) $account->id, $showcaseIds, true))
+                                        <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                              title="Terlihat pembeli di katalog & beranda">Tampil di katalog</span>
+                                    @else
+                                        <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-slate-500/15 text-slate-300 border-slate-500/30"
+                                              title="Melebihi batas {{ $showcaseLimit }} akun terjual terbaru, jadi disembunyikan otomatis">Tersembunyi otomatis</span>
+                                    @endif
+                                @endif
 
                                 @if($hold)
                                     <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-amber-500/15 text-amber-300 border-amber-500/30">

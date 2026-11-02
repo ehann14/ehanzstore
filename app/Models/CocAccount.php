@@ -505,11 +505,48 @@ class CocAccount extends Model
             ->ofMany(['id' => 'max'], fn ($q) => $q->where('transaction_status', 'completed'));
     }
 
+    /** Cache per-request: id akun terjual yang masuk etalase. */
+    protected static ?array $soldShowcaseIds = null;
+
+    /**
+     * Id akun terjual yang tampil di etalase publik: akun terbit yang sudah terjual (punya transaksi
+     * selesai), diambil N terbaru menurut waktu terjual (config store.sold_showcase_limit, bawaan 15).
+     * Masa garansi tidak berpengaruh. Akun draft (disembunyikan manual) tidak dihitung, jadi
+     * menyembunyikan satu akun membuat akun terjual berikutnya yang lebih lama bisa tampil lagi.
+     * Satu query per request.
+     */
+    public static function soldShowcaseIds(): array
+    {
+        if (static::$soldShowcaseIds === null) {
+            $limit = max(0, (int) config('store.sold_showcase_limit', 15));
+
+            static::$soldShowcaseIds = DB::table('coc_accounts as a')
+                ->join('sales as s', function ($join) {
+                    $join->on('s.coc_account_id', '=', 'a.id')
+                         ->where('s.transaction_status', 'completed');
+                })
+                ->where('a.publication_status', 'published')
+                ->where('a.sale_status', 'sold')
+                ->whereNull('a.deleted_at')
+                ->groupBy('a.id')
+                ->orderByRaw('MAX(COALESCE(s.sold_at, s.created_at)) DESC')
+                ->orderByDesc('a.id')
+                ->limit($limit)
+                ->select('a.id')
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        return static::$soldShowcaseIds;
+    }
+
     /**
      * Akun yang tampil di katalog publik:
      *  - terbit dan masih tersedia, ATAU
-     *  - terbit, sudah terjual, dan masa garansi transaksinya belum berakhir.
-     * Setelah garansi berakhir akun otomatis hilang dari katalog (tanpa perlu cron).
+     *  - terbit, sudah terjual, dan termasuk N akun terjual terbaru (lihat soldShowcaseIds()).
+     * Akun terjual tidak lagi hilang saat garansi habis; admin bisa menyembunyikannya manual
+     * (status draft), dan yang melebihi batas disembunyikan otomatis mulai dari yang terlama.
      */
     public function scopeListed($query)
     {
@@ -518,10 +555,7 @@ class CocAccount extends Model
                 $q->where('sale_status', 'available')
                   ->orWhere(function ($sold) {
                       $sold->where('sale_status', 'sold')
-                           ->whereHas('sales', function ($s) {
-                               $s->where('transaction_status', 'completed')
-                                 ->where('warranty_expires_at', '>', now());
-                           });
+                           ->whereIn('coc_accounts.id', static::soldShowcaseIds());
                   });
             });
     }

@@ -83,7 +83,7 @@ class PublicController extends Controller
             ->get();
     }
 
-    /** Listing yang sudah terjual tapi garansinya masih aktif (masih tampil di katalog), per jenis. */
+    /** Listing terjual yang masuk etalase (maks. N terbaru, bukan hanya yang garansinya aktif), per jenis. */
     private function homeSold(string $type, int $limit = 4)
     {
         return CocAccount::listed()
@@ -100,7 +100,7 @@ class PublicController extends Controller
      */
     public function catalog(Request $request)
     {
-        // Akun tersedia + akun terjual yang garansinya masih aktif (tersedia diurutkan lebih dulu)
+        // Akun tersedia + akun terjual dalam etalase (tersedia diurutkan lebih dulu)
         $query = CocAccount::listed()
             ->with(['primaryImage', 'latestCompletedSale.approvedReview'])
             ->orderByRaw("sale_status = 'available' desc");

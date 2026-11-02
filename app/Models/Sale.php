@@ -564,8 +564,8 @@ class Sale extends Model
                 'sold_at'               => now(),
             ]));
 
-            // Status terbit tidak diubah: akun tetap tampil (berlabel Terjual)
-            // sampai garansinya berakhir, lalu disembunyikan oleh CocAccount::scopeListed().
+            // Status terbit tidak diubah: akun tetap tampil (berlabel Terjual) sebagai bukti sosial,
+            // selama masuk etalase N terjual terbaru (CocAccount::soldShowcaseIds()) atau belum disembunyikan manual.
             $account->update(['sale_status' => 'sold']);
 
             return $sale;

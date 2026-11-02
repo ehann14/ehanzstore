@@ -16,6 +16,12 @@ return [
     // Jam ramai (WIB, format HH:MM): jadi tombol cepat di pemilih jam jadwal tayang akun
     'peak_hours' => ['12:00', '19:00', '20:00', '21:00'],
 
+    // Etalase akun terjual: akun terjual yang sudah terbit tetap tampil di katalog & beranda
+    // (sebagai bukti sosial) walau garansinya sudah habis. Yang tampil hanya N terjual terbaru;
+    // bila lebih dari itu, yang terlama otomatis disembunyikan. Sembunyikan manual: tombol
+    // "Sembunyikan" di tab Akun Terjual (akun draft tidak dihitung).
+    'sold_showcase_limit' => (int) env('SOLD_SHOWCASE_LIMIT', 15),
+
     // Jumlah akun serupa di bawah halaman detail
     'similar_limit' => 4,
 
