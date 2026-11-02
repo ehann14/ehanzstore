@@ -24,9 +24,9 @@
         @error('protection_status') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
     </div>
 
-    <!-- Status Email/Gmail: Bisa Ganti / Tidak Bisa Ganti -->
+    <!-- Status Gmail: Bisa Ganti / Tidak Bisa Ganti -->
     <div>
-        <label class="block text-xs font-semibold text-slate-400 mb-2">Status Email/Gmail</label>
+        <label class="block text-xs font-semibold text-slate-400 mb-2">Status Gmail</label>
         <div class="grid grid-cols-2 gap-2">
             <label class="cursor-pointer">
                 <input type="radio" name="email_change_status" value="Changeable" class="peer sr-only" {{ $emailStatus === 'Changeable' ? 'checked' : '' }}>
@@ -48,7 +48,7 @@
             <input type="number" name="email_change_days" min="0" max="365" inputmode="numeric" placeholder="0"
                    value="{{ old('email_change_days', optional($account ?? null)->emailChangeDaysLeft()) }}"
                    class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition @error('email_change_days') border-red-500 @enderror">
-            <p class="text-[11px] text-slate-500 mt-1">Untuk stok baru. Isi jumlah hari sampai email bisa diganti; kosong atau 0 = sudah bisa diganti sekarang. Mengisi hari lebih dari 0 otomatis memilih Bisa Ganti.</p>
+            <p class="text-[11px] text-slate-500 mt-1">Untuk stok baru. Isi jumlah hari sampai Gmail bisa diganti; kosong atau 0 = sudah bisa diganti sekarang. Mengisi hari lebih dari 0 otomatis memilih Bisa Ganti.</p>
             @error('email_change_days') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
     </div>

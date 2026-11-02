@@ -55,7 +55,7 @@
 
                 <ul class="text-xs text-slate-400 space-y-1.5 mb-5 list-disc pl-5">
                     <li>DP dibayar maksimal <b class="text-slate-200">{{ $payHours }} jam</b> setelah booking, lewat itu booking batal otomatis.</li>
-                    <li>Setelah DP diterima admin, akun <b class="text-slate-200">sudah bisa langsung dimainkan</b>, tapi data akun (email, nomor proteksi, dll.) baru bisa diganti setelah lunas. Batas pelunasan <b class="text-slate-200">{{ $holdDays }} hari</b>.</li>
+                    <li>Setelah DP diterima admin, akun <b class="text-slate-200">sudah bisa langsung dimainkan</b>, tapi data akun (Gmail, nomor proteksi, dll.) baru bisa diganti setelah lunas. Batas pelunasan <b class="text-slate-200">{{ $holdDays }} hari</b>.</li>
                     <li>DP <b class="text-slate-200">tidak dikembalikan</b> bila pembeli membatalkan atau tidak melunasi tepat waktu.</li>
                 </ul>
 

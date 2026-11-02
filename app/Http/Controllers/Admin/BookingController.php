@@ -61,6 +61,12 @@ class BookingController extends Controller
                 ->with('error', 'Hanya akun yang masih tersedia yang bisa dibooking.');
         }
 
+        // Akun titipan tidak punya sistem DP: pembayaran harus lunas
+        if ($account->isConsignment()) {
+            return redirect()->route('admin.accounts.index')
+                ->with('error', 'Akun titipan tidak bisa dibooking dengan DP. Pembayaran harus lunas (gunakan tombol Terjual).');
+        }
+
         if ($held = Booking::holdingFor($account->id)) {
             return redirect()
                 ->route('admin.bookings.index', ['status' => 'open', 'q' => $held->booking_code])

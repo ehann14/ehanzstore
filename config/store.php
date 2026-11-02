@@ -35,7 +35,7 @@ return [
     // Batas waktu pembeli membayar DP setelah booking dibuat (jam). Lewat dari ini booking batal otomatis.
     'booking_pay_hours' => (int) env('BOOKING_PAY_HOURS', 24),
 
-    // Batas pelunasan bawaan setelah DP diterima admin (hari). Selama masa ini akun sudah bisa dimainkan pembeli, tapi data akun (email, nomor proteksi) belum diganti sampai lunas.
+    // Batas pelunasan bawaan setelah DP diterima admin (hari). Selama masa ini akun sudah bisa dimainkan pembeli, tapi data akun (Gmail, nomor proteksi) belum diganti sampai lunas.
     'booking_hold_days' => (int) env('BOOKING_HOLD_DAYS', 7),
 
     // Pilihan batas pelunasan yang bisa dipilih admin (hari). Lewat batas = akun ditarik kembali, DP hangus.
@@ -46,11 +46,16 @@ return [
 
     // ------------------------------------------------------------------
     // Garansi bertingkat
-    //   7 hari  = email akun SUDAH diganti ke Gmail pembeli
-    //  14 hari  = email akun BELUM diganti ke Gmail pembeli
+    //   7 hari  = Gmail akun SUDAH diganti ke Gmail pembeli
+    //  14 hari  = Gmail akun BELUM diganti ke Gmail pembeli
     //  21 hari  = Garansi Plus, pembeli membayar biaya tambahan di bawah ini
     // ------------------------------------------------------------------
     'warranty_plus_fee' => (int) env('WARRANTY_PLUS_FEE', 5000),
+
+    // Garansi AKUN TITIPAN (biaya dibayar pembeli ke admin EHANZSTORE, 100% milik toko, tidak mengurangi bagian pemilik):
+    //   7 hari = gratis, 14 hari = biaya di bawah ini, 21 hari = biaya di bawah ini
+    'warranty_consign_14_fee' => (int) env('WARRANTY_CONSIGN_14_FEE', 3000),
+    'warranty_consign_21_fee' => (int) env('WARRANTY_CONSIGN_21_FEE', 5000),
 
     // ------------------------------------------------------------------
     // Titip akun (konsinyasi): angka yang tampil di halaman syarat & dipakai validasi admin
@@ -60,11 +65,11 @@ return [
     // per akun tetap diisi admin di form akun dan disepakati lewat WhatsApp sebelum listing.
     'consign_commission_percent' => (int) env('CONSIGN_COMMISSION_PERCENT', 15),
 
-    // Syarat WAJIB: email akun harus bisa diganti ke Gmail pembeli. Nilai ini = batas maksimal hari
-    // tunggu sebelum email bisa diganti. 0 = email harus SUDAH bisa diganti sekarang.
+    // Syarat WAJIB: Gmail akun harus bisa diganti ke Gmail pembeli. Nilai ini = batas maksimal hari
+    // tunggu sebelum Gmail bisa diganti. 0 = Gmail harus SUDAH bisa diganti sekarang.
     'consign_max_email_wait_days' => (int) env('CONSIGN_MAX_EMAIL_WAIT_DAYS', 0),
 
-    // Pemilik wajib mengganti email ke Gmail pembeli paling lambat sekian jam setelah akun laku.
+    // Pemilik wajib mengganti Gmail akun ke Gmail pembeli paling lambat sekian jam setelah akun laku.
     'consign_handover_hours' => (int) env('CONSIGN_HANDOVER_HOURS', 24),
 
     // Setoran bagian pemilik dikirim paling lambat sekian jam setelah serah terima selesai.

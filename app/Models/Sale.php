@@ -259,31 +259,82 @@ class Sale extends Model
     /** Garansi Plus: durasi (hari) yang dikenai biaya tambahan. */
     public const WARRANTY_PLUS_DAYS = 21;
 
-    /** Biaya tambahan Garansi Plus (Rp), diatur di config/store.php (WARRANTY_PLUS_FEE). */
-    public static function warrantyFeeFor(int $days): int
+    /**
+     * Biaya garansi (Rp) yang dibayar pembeli ke admin EHANZSTORE.
+     *  - Akun biasa : 21 hari = Garansi Plus (config WARRANTY_PLUS_FEE), 7 / 14 hari gratis.
+     *  - Akun titipan: 14 hari = Rp 3.000, 21 hari = Rp 5.000 (config WARRANTY_CONSIGN_14_FEE / _21_FEE), 7 hari gratis.
+     */
+    public static function warrantyFeeFor(int $days, bool $consignment = false): int
     {
+        if ($consignment) {
+            return match ($days) {
+                14      => max(0, (int) config('store.warranty_consign_14_fee', 3000)),
+                21      => max(0, (int) config('store.warranty_consign_21_fee', 5000)),
+                default => 0,
+            };
+        }
+
         return $days === self::WARRANTY_PLUS_DAYS ? max(0, (int) config('store.warranty_plus_fee', 5000)) : 0;
     }
 
-    /** Syarat tiap durasi garansi: label panjang, label singkat, dan penjelasan. */
-    public static function warrantyTiers(): array
+    /** Apakah transaksi yang sedang divalidasi untuk akun titipan? Dibaca dari rute (akun / transaksi) atau input account_id. */
+    protected static function requestIsConsignment(): bool
     {
-        $fee = number_format(self::warrantyFeeFor(self::WARRANTY_PLUS_DAYS), 0, ',', '.');
+        $req     = request();
+        $account = $req->route('account');
+
+        if ($account instanceof CocAccount) {
+            return $account->isConsignment();
+        }
+
+        $sale = $req->route('sale');
+
+        if ($sale instanceof self) {
+            return (bool) $sale->is_consignment;
+        }
+
+        if ($id = $req->input('account_id')) {
+            return (bool) CocAccount::whereKey($id)->value('is_consignment');
+        }
+
+        return false;
+    }
+
+    /** Syarat tiap durasi garansi: label panjang, label singkat, dan penjelasan. */
+    public static function warrantyTiers(bool $consignment = false): array
+    {
+        $rp = fn (int $n) => number_format($n, 0, ',', '.');
+
+        if ($consignment) {
+            $fee14 = $rp(self::warrantyFeeFor(14, true));
+            $fee21 = $rp(self::warrantyFeeFor(21, true));
+
+            return [
+                7  => ['short' => 'Garansi standar', 'label' => 'Garansi standar (gratis)',
+                       'desc'  => 'Garansi standar akun titipan tanpa biaya tambahan. Gmail akun diganti ke Gmail pembeli saat serah terima.'],
+                14 => ['short' => 'Garansi 14 hari', 'label' => 'Garansi 14 hari (bayar Rp ' . $fee14 . ')',
+                       'desc'  => 'Masa garansi lebih panjang untuk akun titipan. Pembeli membayar biaya tambahan Rp ' . $fee14 . ' ke admin EHANZSTORE.'],
+                21 => ['short' => 'Garansi Plus',     'label' => 'Garansi Plus (bayar Rp ' . $fee21 . ')',
+                       'desc'  => 'Perlindungan terpanjang untuk akun titipan. Pembeli membayar biaya tambahan Rp ' . $fee21 . ' ke admin EHANZSTORE.'],
+            ];
+        }
+
+        $fee = $rp(self::warrantyFeeFor(self::WARRANTY_PLUS_DAYS));
 
         return [
-            7  => ['short' => 'Email sudah diganti', 'label' => 'Email sudah diganti ke Gmail pembeli',
-                   'desc'  => 'Akun sudah sepenuhnya di tangan pembeli: email sudah diganti ke Gmail pembeli.'],
-            14 => ['short' => 'Email belum diganti', 'label' => 'Email belum diganti ke Gmail pembeli',
-                   'desc'  => 'Email akun belum diganti ke Gmail pembeli saat serah terima, jadi masa garansi diperpanjang.'],
+            7  => ['short' => 'Gmail sudah diganti', 'label' => 'Gmail akun sudah diganti ke Gmail pembeli',
+                   'desc'  => 'Akun sudah sepenuhnya di tangan pembeli: Gmail akun sudah diganti ke Gmail pembeli.'],
+            14 => ['short' => 'Gmail belum diganti', 'label' => 'Gmail akun belum diganti ke Gmail pembeli',
+                   'desc'  => 'Gmail akun belum diganti ke Gmail pembeli saat serah terima, jadi masa garansi diperpanjang.'],
             21 => ['short' => 'Garansi Plus',        'label' => 'Garansi Plus (bayar tambahan Rp ' . $fee . ')',
-                   'desc'  => 'Perlindungan terpanjang untuk pembeli yang membayar biaya tambahan Rp ' . $fee . ', apa pun kondisi emailnya.'],
+                   'desc'  => 'Perlindungan terpanjang untuk pembeli yang membayar biaya tambahan Rp ' . $fee . ', apa pun kondisi Gmail-nya.'],
         ];
     }
 
-    /** Label singkat syarat garansi transaksi ini, mis. "Email sudah diganti". */
+    /** Label singkat syarat garansi transaksi ini, mis. "Gmail sudah diganti". */
     public function warrantyTierShort(): string
     {
-        return self::warrantyTiers()[$this->warrantyDays()]['short'] ?? '';
+        return self::warrantyTiers((bool) $this->is_consignment)[$this->warrantyDays()]['short'] ?? '';
     }
 
     /**
@@ -459,12 +510,13 @@ class Sale extends Model
             ],
             'price' => [
                 'required', 'numeric', 'min:0', 'max:999999999',
-                // Garansi Plus (21 hari) wajib membayar lebih: harga jual harus sudah termasuk biayanya.
+                // Garansi berbayar (Plus 21 hari; akun titipan 14 & 21 hari): harga jual harus sudah termasuk biayanya.
                 function (string $attribute, mixed $value, \Closure $fail) {
-                    $fee = self::warrantyFeeFor((int) request()->input('warranty_days'));
+                    $days = (int) request()->input('warranty_days');
+                    $fee  = self::warrantyFeeFor($days, self::requestIsConsignment());
 
                     if ($fee > 0 && (float) $value < $fee) {
-                        $fail('Garansi Plus ' . self::WARRANTY_PLUS_DAYS . ' hari berbayar tambahan Rp ' . number_format($fee, 0, ',', '.') . '. Harga jual harus sudah termasuk biaya itu.');
+                        $fail('Garansi ' . $days . ' hari berbayar tambahan Rp ' . number_format($fee, 0, ',', '.') . ' (dibayar ke admin EHANZSTORE). Harga jual harus sudah termasuk biaya itu.');
                     }
                 },
             ],
@@ -501,7 +553,7 @@ class Sale extends Model
      * handover_at dibaca sebagai WIB lalu disimpan sebagai UTC.
      * Garansi berakhir = handover_at + warranty_days (7 / 14 / 21 hari).
      */
-    public static function buyerPayload(array $validated): array
+    public static function buyerPayload(array $validated, bool $consignment = false): array
     {
         $handover = Carbon::parse($validated['handover_at'], self::DISPLAY_TZ)
             ->setTimezone(config('app.timezone'));
@@ -519,7 +571,7 @@ class Sale extends Model
             'sale_price'          => $validated['price'],
             'handover_at'         => $handover,
             'warranty_days'       => $days,
-            'warranty_fee'        => self::warrantyFeeFor($days),
+            'warranty_fee'        => self::warrantyFeeFor($days, $consignment),
             'warranty_expires_at' => $handover->clone()->addDays($days),
             'notes'               => $validated['notes'] ?? null,
         ];
@@ -554,7 +606,7 @@ class Sale extends Model
                 return null;
             }
 
-            $sale = static::create(array_merge(['cost_price' => $account->cost_price], static::buyerPayload($validated), static::consignmentPayload($account, (float) $validated['price'], static::warrantyFeeFor((int) ($validated['warranty_days'] ?? 0))), [
+            $sale = static::create(array_merge(['cost_price' => $account->cost_price], static::buyerPayload($validated, $account->isConsignment()), static::consignmentPayload($account, (float) $validated['price'], static::warrantyFeeFor((int) ($validated['warranty_days'] ?? 0), $account->isConsignment())), [
                 'transaction_code'      => static::generateCode(),
                 'coc_account_id'        => $account->id,
                 'account_code_snapshot' => $account->account_code,
@@ -577,7 +629,7 @@ class Sale extends Model
      */
     public static function updateBuyer(self $sale, array $validated): self
     {
-        $payload = static::buyerPayload($validated);
+        $payload = static::buyerPayload($validated, (bool) $sale->is_consignment);
 
         // Akun titipan: komisi & bagian pemilik dihitung ulang dari harga jual yang baru.
         if ($sale->is_consignment && $sale->account) {

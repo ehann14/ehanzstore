@@ -62,7 +62,7 @@
             fn ($a) => $a->protection_status === 'Protected' ? 1 : 0,
             fn ($a) => $a->protection_status === 'Protected' ? 'ON' : 'OFF');
 
-        $add('Status Email/Gmail',
+        $add('Status Gmail',
             fn ($a) => $a->email_change_status === 'Changeable' ? ($a->emailChangeDaysLeft() ? 1 : 2) : 0,
             fn ($a) => $a->emailStatusLabel());
 

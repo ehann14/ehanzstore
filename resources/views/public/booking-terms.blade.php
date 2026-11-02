@@ -42,7 +42,7 @@
             't' => 'Akses akun & pelunasan',
             'items' => [
                 "Setelah DP dikonfirmasi, akun sudah bisa langsung kamu mainkan selama masa pelunasan {$holdDays} hari.",
-                'Selama belum lunas, data akun (email, nomor proteksi, dan data lain) belum bisa diganti ke milikmu. Penggantian data dilakukan setelah pelunasan.',
+                'Selama belum lunas, data akun (Gmail, nomor proteksi, dan data lain) belum bisa diganti ke milikmu. Penggantian data dilakukan setelah pelunasan.',
                 "Sisa pembayaran ({$rest}% dari harga) wajib dilunasi dalam masa pelunasan tersebut.",
                 'Perpanjangan masa pelunasan hanya berlaku bila disetujui admin sebelum batas waktu habis.',
                 'DP adalah bagian dari harga: sisa pelunasan = harga yang dikunci dikurangi DP.',
@@ -67,6 +67,7 @@
         [
             't' => 'Ketentuan lain',
             'items' => [
+                'Akun titipan tidak bisa dibooking dengan DP. Akun titipan hanya dijual dengan pembayaran lunas.',
                 'Satu akun hanya bisa memiliki satu booking aktif pada satu waktu.',
                 "Satu nomor WhatsApp maksimal {$maxPhone} booking aktif sekaligus.",
                 'Data yang diisi harus benar dan nomor WhatsApp harus aktif karena dipakai untuk konfirmasi dan serah terima.',

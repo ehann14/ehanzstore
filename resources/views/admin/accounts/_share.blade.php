@@ -33,7 +33,7 @@
             . " | RC Lv. " . ($account->royal_champion_level ?? 0)
             . " | DD Lv. " . ($account->dragon_duke_level ?? 0) . "\n"
             . "🔒 Proteksi: " . ($account->protection_status === 'Protected' ? 'ON' : 'OFF') . "\n"
-            . "📧 Email: " . $account->emailStatusLabel() . "\n"
+            . "📧 Gmail: " . $account->emailStatusLabel() . "\n"
             . "\n"
             . "💰 Harga: {$rupiahShare}\n"
             . "🛒 Detail & foto: {$shareUrl}\n"

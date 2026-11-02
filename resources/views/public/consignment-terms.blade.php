@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Syarat Titip Akun untuk Dijual - EHANZSTORE.ID')
-@section('description', 'Titip akun Clash of Clans kamu untuk dijual di EHANZSTORE.ID. Syarat wajib: email akun bisa diganti ke Gmail pembeli, dan nomor proteksi bisa diganti ke nomor pembeli bila proteksi ON. Baca komisi, serah terima, dan setoran di sini.')
+@section('description', 'Titip akun Clash of Clans kamu untuk dijual di EHANZSTORE.ID. Syarat wajib: Gmail akun bisa diganti ke Gmail pembeli, dan nomor proteksi bisa diganti ke nomor pembeli bila proteksi ON. Baca komisi, serah terima, dan setoran di sini.')
 
 @section('content')
 @php
@@ -22,7 +22,7 @@
                 'Akun bisa dibuka normal, tidak terkena banned, tidak terkunci, dan tidak dalam proses recovery.',
                 'Data akun yang kamu sampaikan (Town Hall, level hero, gems, dan lainnya) harus sesuai kenyataan. Admin mengecek lagi sebelum akun ditayangkan.',
                 'Nomor WhatsApp pemilik harus aktif karena dipakai untuk kabar penawaran, serah terima, dan setoran.',
-                'Dua syarat utama wajib terpenuhi: email akun bisa diganti ke Gmail pembeli, dan bila proteksi akun ON, nomor proteksi juga bisa diganti ke nomor pembeli (lihat kotak Syarat wajib di bawah).',
+                'Dua syarat utama wajib terpenuhi: Gmail akun bisa diganti ke Gmail pembeli, dan bila proteksi akun ON, nomor proteksi juga bisa diganti ke nomor pembeli (lihat kotak Syarat wajib di bawah).',
             ],
         ],
         [
@@ -40,18 +40,19 @@
                 'Chat admin, kirim data dan screenshot akun. Admin mengecek, lalu menyepakati harga dan komisi.',
                 'Akun ditayangkan di katalog EHANZSTORE. Data pribadi pemilik tidak pernah ditampilkan ke publik.',
                 'Selama akun belum laku, akun tetap milik dan dalam kendali pemilik. Kamu tidak perlu menyerahkan password ke pihak lain untuk sekadar menitip.',
-                "Masa titip {$listingDays} hari. Setelah itu pemilik boleh memperpanjang atau menarik akunnya kapan saja, selama tidak ada booking/DP aktif atas akun tersebut.",
+                "Masa titip {$listingDays} hari. Setelah itu pemilik boleh memperpanjang atau menarik akunnya kapan saja, selama belum ada pembeli yang membayar akun tersebut.",
+                'Akun titipan dijual dengan pembayaran lunas, tanpa sistem DP / booking.',
                 'Selama dititip, akun tidak boleh dijual di tempat lain. Kalau akun terjual di tempat lain, wajib kabari admin segera supaya listing diturunkan.',
             ],
         ],
         [
             't' => 'Serah terima ke pembeli',
             'items' => [
-                "Setelah pembeli bayar, pemilik wajib mengganti email akun ke Gmail milik pembeli paling lambat {$handoverHrs} jam, dengan didampingi admin lewat WhatsApp.",
+                "Setelah pembeli bayar, pemilik wajib mengganti Gmail akun ke Gmail milik pembeli paling lambat {$handoverHrs} jam, dengan didampingi admin lewat WhatsApp.",
                 "Untuk akun berproteksi ON, nomor HP proteksi juga wajib diganti ke nomor pembeli dalam batas {$handoverHrs} jam yang sama.",
                 'Admin akan menyampaikan alamat Gmail pembeli yang resmi. Jangan memakai alamat dari pihak lain di luar yang diberikan admin.',
-                'Pemilik tidak boleh login, memulihkan, atau mengubah akun lagi setelah serah terima selesai, dan tidak boleh menautkan ulang akun ke email, nomor HP, atau perangkat miliknya.',
-                'Serah terima dianggap selesai setelah email (dan nomor proteksi, bila proteksi ON) berhasil diganti dan pembeli dapat masuk ke akun.',
+                'Pemilik tidak boleh login, memulihkan, atau mengubah akun lagi setelah serah terima selesai, dan tidak boleh menautkan ulang akun ke Gmail, nomor HP, atau perangkat miliknya.',
+                'Serah terima dianggap selesai setelah Gmail (dan nomor proteksi, bila proteksi ON) berhasil diganti dan pembeli dapat masuk ke akun.',
             ],
         ],
         [
@@ -66,6 +67,7 @@
             't' => 'Garansi & tanggung jawab pemilik',
             'items' => [
                 "Akun yang sudah terjual mengikuti Ketentuan Garansi EHANZSTORE ({$warranty} hari sejak serah terima).",
+                "Garansi akun titipan: 7 hari gratis, 14 hari pembeli bayar Rp " . number_format(\App\Models\Sale::warrantyFeeFor(14, true), 0, ',', '.') . ", 21 hari pembeli bayar Rp " . number_format(\App\Models\Sale::warrantyFeeFor(21, true), 0, ',', '.') . " ke admin EHANZSTORE. Biaya garansi 100% milik toko dan tidak mengurangi bagian pemilik.",
                 'Jika setelah serah terima akun diambil kembali oleh pemilik, dipulihkan lewat recovery, atau bermasalah karena tindakan pemilik, pemilik wajib mengembalikan bagian yang sudah diterima dan dapat dikenai ganti rugi kepada pembeli.',
                 'Jika terbukti ada data yang dipalsukan atau akun bukan milik sendiri, titipan dibatalkan dan pemilik dapat dimasukkan ke daftar hitam toko.',
             ],
@@ -103,13 +105,13 @@
             </span>
             <div>
                 <p class="text-[11px] font-bold tracking-widest text-amber-300 uppercase mb-1">Dua syarat wajib</p>
-                <h2 class="font-display font-extrabold text-2xl text-white mb-3">1. Email akun harus bisa diganti ke Gmail pembeli</h2>
+                <h2 class="font-display font-extrabold text-2xl text-white mb-3">1. Gmail akun harus bisa diganti ke Gmail pembeli</h2>
                 <ul class="space-y-2.5 text-sm text-slate-300 leading-relaxed">
                     <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Email/Supercell ID akun harus
                         @if($maxWait === 0) <strong class="text-white">sudah bisa diganti sekarang</strong>@else <strong class="text-white">bisa diganti (maksimal menunggu {{ $maxWait }} hari)</strong>@endif
                         ke alamat Gmail milik pembeli.</span></li>
-                    <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Akun yang emailnya tidak bisa diganti <strong class="text-white">tidak bisa dititip</strong>, apa pun alasannya, karena pembeli tidak bisa memegang akun sepenuhnya.</span></li>
-                    <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Admin mengonfirmasi syarat ini sebelum akun ditayangkan. Berlaku untuk akun pemain; clan tidak punya email sehingga tidak terkena syarat ini.</span></li>
+                    <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Akun yang Gmailnya tidak bisa diganti <strong class="text-white">tidak bisa dititip</strong>, apa pun alasannya, karena pembeli tidak bisa memegang akun sepenuhnya.</span></li>
+                    <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Admin mengonfirmasi syarat ini sebelum akun ditayangkan. Berlaku untuk akun pemain; clan tidak punya Gmail sehingga tidak terkena syarat ini.</span></li>
                 </ul>
 
                 <h2 class="font-display font-extrabold text-2xl text-white mt-6 mb-3">2. Proteksi ON: nomor proteksi harus bisa diganti ke nomor pembeli</h2>

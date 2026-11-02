@@ -229,7 +229,7 @@
         <div class="section">
             <h2>Catatan</h2>
             <ol class="notes">
-                <li>Segera ganti email dan password akun setelah diterima.</li>
+                <li>Segera ganti Gmail dan password akun setelah diterima.</li>
                 <li>Periksa isi akun (hero, gems, bangunan) sesuai deskripsi saat serah terima.</li>
                 <li>Untuk klaim garansi, kirim kode <span class="mono">{{ $sale->transaction_code }}</span> dan bukti masalah ke admin lewat WhatsApp sebelum garansi berakhir.</li>
                 <li>Sisa garansi bisa dicek di {{ route('warranty.check') }}</li>

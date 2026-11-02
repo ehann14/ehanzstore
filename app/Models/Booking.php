@@ -329,6 +329,11 @@ class Booking extends Model
                     return [null, 'Maaf, akun ini sudah tidak tersedia untuk dibooking.'];
                 }
 
+                // Akun titipan tidak punya sistem DP: pembayaran harus lunas.
+                if ($account->isConsignment()) {
+                    return [null, 'Akun titipan tidak bisa dibooking dengan DP. Silakan beli lunas lewat WhatsApp.'];
+                }
+
                 if (static::holding()->where('coc_account_id', $account->id)->exists()) {
                     return [null, 'Akun ini sedang dibooking pembeli lain. Coba lagi nanti atau pilih akun lain.'];
                 }
@@ -389,6 +394,11 @@ class Booking extends Model
 
                 if (! $locked || $locked->sale_status !== 'available') {
                     return [null, 'Akun ini sudah tidak tersedia.'];
+                }
+
+                // Akun titipan tidak punya sistem DP: pembayaran harus lunas.
+                if ($locked->isConsignment()) {
+                    return [null, 'Akun titipan tidak bisa dibooking dengan DP. Pembayaran harus lunas.'];
                 }
 
                 if (static::holding()->where('coc_account_id', $locked->id)->exists()) {

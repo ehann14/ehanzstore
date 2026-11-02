@@ -219,8 +219,14 @@
                     Anda akan diarahkan ke chat admin dengan pesan otomatis.
                 </p>
 
-                {{-- Booking dengan DP --}}
-                <x-booking-box :account="$account" />
+                {{-- Booking dengan DP (tidak tersedia untuk akun titipan: wajib bayar lunas) --}}
+                @if($account->isConsignment())
+                    <p class="text-[11px] text-amber-200/80 text-center rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+                        Akun titipan dibeli <b class="text-amber-200">lunas</b>, tanpa sistem DP / booking.
+                    </p>
+                @else
+                    <x-booking-box :account="$account" />
+                @endif
 
                 {{-- Bandingkan dengan akun lain (2 sampai 3 akun) --}}
                 <button type="button" data-compare-btn
@@ -393,7 +399,7 @@
 
                     <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                         <span class="text-sm text-slate-400">
-                            Status Email/Gmail
+                            Status Gmail
                         </span>
 
                         <span class="text-sm font-bold {{ $account->email_change_status === 'Changeable' ? ($account->emailChangeDaysLeft() ? 'text-amber-400' : 'text-green-400') : 'text-yellow-400' }}">

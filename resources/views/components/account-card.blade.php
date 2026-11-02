@@ -122,11 +122,11 @@
             </button>
         @endunless
 
-        <!-- Badge Email Bisa Ganti -->
+        <!-- Badge Gmail Bisa Ganti -->
         @if(!$isClan && $account->email_change_status === 'Changeable')
             @php $emailDays = $account->emailChangeDaysLeft(); @endphp
             <span class="hidden sm:block absolute top-3 right-3 px-2.5 py-1 {{ $emailDays ? 'bg-amber-500/90' : 'bg-emerald-500/90' }} text-white text-[10px] font-bold rounded-full z-10">
-                {{ $emailDays ? "Email bisa ganti {$emailDays} hari lagi" : 'Email Bisa Ganti' }}
+                {{ $emailDays ? "Gmail bisa ganti {$emailDays} hari lagi" : 'Gmail Bisa Ganti' }}
             </span>
         @endif
     </div>

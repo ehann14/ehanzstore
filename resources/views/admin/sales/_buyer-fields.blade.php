@@ -17,16 +17,17 @@
     $savedCost    = $sale ? ((float) $sale->cost_price > 0 ? (int) $sale->cost_price : (int) ($sale->account?->cost_price ?? 0)) : (int) ($defaultCost ?? 0);
     $costVal      = old('cost_price', $savedCost);
     $methodVal    = old('payment_method', $sale?->payment_method);
+    // Titip jual: akun titipan (CocAccount) yang sedang dijual / transaksinya diubah. Null = akun biasa.
+    $consign      = $consignAccount ?? null;
+    $isConsign    = $consign !== null || ($sale && $sale->is_consignment);
     $warrantyOptions = \App\Models\Sale::WARRANTY_OPTIONS;
-    $warrantyTiers   = \App\Models\Sale::warrantyTiers();
+    $warrantyTiers   = \App\Models\Sale::warrantyTiers($isConsign);
     $savedFee        = $sale ? (int) $sale->warranty_fee : 0;
     $warrantyDays    = (int) old('warranty_days', $sale ? $sale->warrantyDays() : \App\Models\Sale::WARRANTY_DAYS);
     if (! in_array($warrantyDays, $warrantyOptions, true)) {
         $warrantyDays = \App\Models\Sale::WARRANTY_DAYS;
     }
 
-    // Titip jual: akun titipan (CocAccount) yang sedang dijual / transaksinya diubah. Null = akun biasa.
-    $consign      = $consignAccount ?? null;
     $consignPaid  = $sale && $sale->is_consignment && $sale->consignorIsPaid();
 @endphp
 
@@ -124,7 +125,7 @@
                     @php($tier = $warrantyTiers[$opt] ?? ['short' => '', 'label' => ''])
                     <label class="cursor-pointer">
                         <input type="radio" name="warranty_days" value="{{ $opt }}" required
-                               data-fee="{{ \App\Models\Sale::warrantyFeeFor($opt) }}"
+                               data-fee="{{ \App\Models\Sale::warrantyFeeFor($opt, $isConsign) }}"
                                class="peer sr-only" @checked($warrantyDays === $opt)>
                         <span class="block h-full text-center rounded-xl border border-white/10 bg-brand-950/50 px-3 py-3 transition
                                      hover:bg-white/5 text-slate-300
@@ -137,7 +138,11 @@
                     </label>
                 @endforeach
             </div>
-            <p class="text-[11px] text-slate-500 mt-2">Pilih sesuai kondisi email saat serah terima. Garansi Plus 21 hari menambah harga jual otomatis sebesar biayanya.</p>
+            @if($isConsign)
+                <p class="text-[11px] text-slate-500 mt-2">Akun titipan: garansi 14 hari (Rp {{ number_format(\App\Models\Sale::warrantyFeeFor(14, true), 0, ',', '.') }}) dan 21 hari (Rp {{ number_format(\App\Models\Sale::warrantyFeeFor(21, true), 0, ',', '.') }}) dibayar pembeli ke admin EHANZSTORE. Biaya otomatis menambah harga jual, 100% milik toko, tidak mengurangi bagian pemilik.</p>
+            @else
+                <p class="text-[11px] text-slate-500 mt-2">Pilih sesuai kondisi Gmail saat serah terima. Garansi Plus 21 hari menambah harga jual otomatis sebesar biayanya.</p>
+            @endif
             @error('warranty_days') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 

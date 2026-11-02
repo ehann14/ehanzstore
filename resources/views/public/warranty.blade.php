@@ -34,8 +34,8 @@
         $faqs = [
             ['q' => 'Kapan garansi mulai dihitung?', 'a' => 'Garansi dihitung sejak admin dan pembeli sama-sama mengonfirmasi bahwa serah terima akun sudah selesai di chat WhatsApp, bukan sejak tanggal pembayaran.'],
             ['q' => 'Apa bedanya akun pengganti dan refund?', 'a' => 'Akun pengganti adalah akun dengan spesifikasi dan nilai setara akun yang dibeli. Jika belum ada akun yang setara, kamu bisa memilih refund sesuai nominal yang sudah dibayarkan.'],
-            ['q' => 'Berapa lama masa garansi akun saya?', 'a' => 'Garansi 7 hari jika email akun sudah diganti ke Gmail pembeli, 14 hari jika email belum diganti ke Gmail pembeli, dan 21 hari untuk Garansi Plus dengan biaya tambahan Rp ' . number_format(\App\Models\Sale::warrantyFeeFor(\App\Models\Sale::WARRANTY_PLUS_DAYS), 0, ',', '.') . '. Kamu bisa melihat sisa garansi kapan saja di halaman Cek Garansi dengan memasukkan kode transaksi.'],
-            ['q' => 'Apa itu Garansi Plus 21 hari?', 'a' => 'Garansi Plus adalah pilihan berbayar untuk pembeli yang ingin masa perlindungan paling panjang. Biayanya sudah termasuk di harga akhir yang disepakati dengan admin, dan masa 21 hari berlaku apa pun kondisi emailnya.'],
+            ['q' => 'Berapa lama masa garansi akun saya?', 'a' => 'Akun biasa: 7 hari jika Gmail akun sudah diganti ke Gmail pembeli, 14 hari jika Gmail belum diganti, dan 21 hari untuk Garansi Plus dengan biaya tambahan Rp ' . number_format(\App\Models\Sale::warrantyFeeFor(\App\Models\Sale::WARRANTY_PLUS_DAYS), 0, ',', '.') . '. Akun titipan: 7 hari gratis, 14 hari bayar Rp ' . number_format(\App\Models\Sale::warrantyFeeFor(14, true), 0, ',', '.') . ', dan 21 hari bayar Rp ' . number_format(\App\Models\Sale::warrantyFeeFor(21, true), 0, ',', '.') . ' ke admin EHANZSTORE. Kamu bisa melihat sisa garansi kapan saja di halaman Cek Garansi dengan memasukkan kode transaksi.'],
+            ['q' => 'Apa itu Garansi Plus 21 hari?', 'a' => 'Garansi Plus adalah pilihan berbayar untuk pembeli yang ingin masa perlindungan paling panjang. Biayanya sudah termasuk di harga akhir yang disepakati dengan admin, dan masa 21 hari berlaku apa pun kondisi Gmail-nya.'],
             ['q' => 'Apakah garansi bisa diperpanjang?', 'a' => 'Garansi tidak otomatis diperpanjang setelah durasinya habis. Jika klaim sedang diproses saat masa garansi berakhir, klaim tetap kami selesaikan selama sudah diajukan sebelum batas waktu.'],
             ['q' => 'Bagaimana jika akun bermasalah karena kesalahan saya?', 'a' => 'Garansi tidak berlaku untuk masalah akibat kelalaian pembeli. Kami tetap bisa membantu mengarahkan langkah pemulihan, tetapi tanpa jaminan penggantian.'],
             ['q' => 'Apakah akun pengganti juga bergaransi?', 'a' => 'Ya. Akun pengganti mendapat sisa masa garansi dari akun sebelumnya.'],
@@ -81,7 +81,7 @@
     <section class="max-w-5xl mx-auto px-4 mb-20">
         <div class="text-center mb-8">
             <h2 class="font-display text-2xl md:text-3xl font-bold text-white">Masa Garansi Sesuai Kondisi Akun</h2>
-            <p class="text-slate-400 text-sm mt-2 max-w-2xl mx-auto">Lama garansi ditentukan saat serah terima, tergantung apakah email akun sudah diganti ke Gmail pembeli atau belum.</p>
+            <p class="text-slate-400 text-sm mt-2 max-w-2xl mx-auto">Lama garansi ditentukan saat serah terima, tergantung apakah Gmail akun sudah diganti ke Gmail pembeli atau belum.</p>
         </div>
 
         <div class="grid sm:grid-cols-3 gap-4">
@@ -96,6 +96,21 @@
                     <p class="text-sm text-slate-400 leading-relaxed mt-1.5">{{ $tier['desc'] }}</p>
                 </div>
             @endforeach
+        </div>
+
+        {{-- Garansi akun titipan: 7 hari gratis, 14 & 21 hari berbayar ke admin --}}
+        <div class="mt-8 rounded-3xl border border-amber-500/30 bg-amber-500/5 p-6">
+            <p class="font-display text-lg font-bold text-amber-200">Garansi Akun Titipan</p>
+            <p class="text-sm text-slate-400 mt-1">Untuk akun yang berlabel Titipan, pilihan garansi dan biayanya berbeda. Biaya dibayar ke admin EHANZSTORE dan sudah termasuk di harga akhir.</p>
+            <div class="grid sm:grid-cols-3 gap-3 mt-4">
+                @foreach(\App\Models\Sale::warrantyTiers(true) as $days => $tier)
+                    @php($fee = \App\Models\Sale::warrantyFeeFor($days, true))
+                    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <p class="font-display text-2xl font-bold text-white">{{ $days }} <span class="text-amber-300 text-lg">Hari</span></p>
+                        <p class="text-sm font-semibold {{ $fee > 0 ? 'text-amber-300' : 'text-emerald-300' }} mt-1">{{ $fee > 0 ? 'Bayar Rp ' . number_format($fee, 0, ',', '.') : 'Gratis' }}</p>
+                    </div>
+                @endforeach
+            </div>
         </div>
     </section>
 

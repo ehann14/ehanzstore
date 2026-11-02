@@ -928,7 +928,7 @@ class AccountController extends Controller
     }
 
     /**
-     * Syarat WAJIB titip akun: email akun harus bisa diganti ke Gmail pembeli.
+     * Syarat WAJIB titip akun: Gmail akun harus bisa diganti ke Gmail pembeli.
      * - Status email harus "Bisa Ganti" (atau hari tunggu diisi), bukan "Tidak Bisa Ganti".
      * - Hari tunggu tidak boleh melebihi batas di config('store.consign_max_email_wait_days') (bawaan 0 = harus sudah bisa diganti sekarang).
      * - Clan tidak punya email, akun yang sudah terjual tidak diperiksa lagi (sudah dikunci).
@@ -946,7 +946,7 @@ class AccountController extends Controller
         }
 
         if (! $request->boolean('consignor_email_ok')) {
-            return ['consignor_email_ok' => 'Syarat wajib titip akun: centang konfirmasi bahwa email akun bisa diganti ke Gmail pembeli.'];
+            return ['consignor_email_ok' => 'Syarat wajib titip akun: centang konfirmasi bahwa Gmail akun bisa diganti ke Gmail pembeli.'];
         }
 
         $days   = (int) $request->input('email_change_days', 0);
@@ -954,13 +954,13 @@ class AccountController extends Controller
         $status = $request->input('email_change_status');
 
         if ($status !== 'Changeable' && $days <= 0) {
-            return ['consignor_email_ok' => 'Akun titipan wajib berstatus email "Bisa Ganti" ke Gmail pembeli. Jika email tidak bisa diganti, akun tidak bisa dititip.'];
+            return ['consignor_email_ok' => 'Akun titipan wajib berstatus Gmail "Bisa Ganti" ke Gmail pembeli. Jika Gmail tidak bisa diganti, akun tidak bisa dititip.'];
         }
 
         if ($days > $max) {
             return ['consignor_email_ok' => $max === 0
-                ? 'Akun titipan harus sudah bisa ganti email sekarang (kosongkan atau isi 0 hari).'
-                : "Akun titipan maksimal menunggu {$max} hari sampai email bisa diganti."];
+                ? 'Akun titipan harus sudah bisa ganti Gmail sekarang (kosongkan atau isi 0 hari).'
+                : "Akun titipan maksimal menunggu {$max} hari sampai Gmail bisa diganti."];
         }
 
         return [];

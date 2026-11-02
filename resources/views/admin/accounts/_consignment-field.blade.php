@@ -97,24 +97,24 @@
                 </div>
             </div>
 
-            {{-- SYARAT WAJIB: email akun harus bisa diganti ke Gmail pembeli (hanya berlaku untuk akun pemain, clan tidak punya email) --}}
+            {{-- SYARAT WAJIB: Gmail akun harus bisa diganti ke Gmail pembeli (hanya berlaku untuk akun pemain, clan tidak punya Gmail) --}}
             <div class="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 @error('consignor_email_ok') border-red-500/60 @enderror">
                 <label class="flex items-start gap-3 cursor-pointer">
                     <input type="checkbox" name="consignor_email_ok" value="1" data-consign-email-ok @checked($emailOk)
                            class="mt-1 w-4 h-4 rounded border-white/20 bg-brand-950/50 text-electric focus:ring-electric">
                     <span>
-                        <span class="block text-sm font-bold text-amber-200">Syarat wajib: email akun bisa diganti ke Gmail pembeli <span class="text-red-400">*</span></span>
+                        <span class="block text-sm font-bold text-amber-200">Syarat wajib: Gmail akun bisa diganti ke Gmail pembeli <span class="text-red-400">*</span></span>
                         <span class="block text-xs text-slate-400 mt-0.5">
-                            Saya sudah memastikan email/Supercell ID akun ini
+                            Saya sudah memastikan Gmail/Supercell ID akun ini
                             {{ $maxWait === 0 ? 'SUDAH bisa diganti sekarang' : 'bisa diganti (maksimal menunggu ' . $maxWait . ' hari)' }}
-                            ke Gmail milik pembeli. Akun yang emailnya tidak bisa diganti tidak boleh dititip.
+                            ke Gmail milik pembeli. Akun yang Gmailnya tidak bisa diganti tidak boleh dititip.
                             Untuk clan, syarat ini tidak berlaku.
                         </span>
                     </span>
                 </label>
                 @error('consignor_email_ok') <p class="text-red-400 text-xs mt-2">{{ $message }}</p> @enderror
                 <p class="text-[11px] text-slate-500 mt-2">
-                    Pastikan juga status email di form ini diatur <span class="text-slate-300">Bisa Ganti</span>.
+                    Pastikan juga status Gmail di form ini diatur <span class="text-slate-300">Bisa Ganti</span>.
                     Aturan lengkap untuk pemilik ada di <a href="{{ route('consignment.terms') }}" target="_blank" rel="noopener" class="text-electric hover:underline">halaman Syarat Titip Akun</a>.
                 </p>
             </div>
@@ -176,7 +176,7 @@
             // Modal manual dipulihkan kalau mode titip jual dimatikan lagi.
             let manualCost = toggle.checked ? null : (cost ? cost.value : null);
 
-            // Form clan tidak punya email akun, jadi syarat email tidak diwajibkan di browser.
+            // Form clan tidak punya Gmail akun, jadi syarat Gmail tidak diwajibkan di browser.
             const isClanForm = () => {
                 if (box.dataset.listingType) return box.dataset.listingType === 'clan';
                 const lt = form.querySelector('input[name="listing_type"]:checked');

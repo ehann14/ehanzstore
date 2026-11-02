@@ -300,8 +300,11 @@
                             <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                                 <a href="{{ route('admin.accounts.sell', $account) }}"
                                    class="{{ $btn }} border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">Terjual (Lunas)</a>
-                                <a href="{{ route('admin.accounts.booking', $account) }}"
-                                   class="{{ $btn }} border-amber-500/30 text-amber-300 hover:bg-amber-500/10">Booking / DP</a>
+                                @unless($account->isConsignment())
+                                    {{-- Akun titipan tidak punya sistem DP: wajib lunas --}}
+                                    <a href="{{ route('admin.accounts.booking', $account) }}"
+                                       class="{{ $btn }} border-amber-500/30 text-amber-300 hover:bg-amber-500/10">Booking / DP</a>
+                                @endunless
                             </div>
                         @endif
 

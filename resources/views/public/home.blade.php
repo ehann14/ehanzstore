@@ -83,7 +83,7 @@
                     $perks = [
                         ['t' => 'Garansi ' . \App\Models\Sale::warrantyRange() . ' Hari', 'd' => 'Perlindungan setelah beli'],
                         ['t' => 'Akun Dicek Dulu',    'd' => 'Data sesuai sebelum listing'],
-                        ['t' => 'Email Bisa Ganti',   'd' => 'Serah terima aman'],
+                        ['t' => 'Gmail Bisa Ganti',   'd' => 'Serah terima aman'],
                         ['t' => 'Respon Cepat',       'd' => 'Admin aktif via WhatsApp'],
                     ];
                 @endphp
@@ -279,7 +279,7 @@
                         Mau jual akun COC? <span class="text-electric">Titip aja di EHANZSTORE!</span>
                     </p>
                     <p class="text-xs sm:text-[13px] text-slate-400 mt-0.5 leading-snug">
-                        Tanpa biaya di depan, komisi hanya saat laku. <span class="text-white font-semibold">Syarat wajib:</span> email akun bisa diganti ke Gmail pembeli.
+                        Tanpa biaya di depan, komisi hanya saat laku. <span class="text-white font-semibold">Syarat wajib:</span> Gmail akun bisa diganti ke Gmail pembeli.
                     </p>
                 </div>
 

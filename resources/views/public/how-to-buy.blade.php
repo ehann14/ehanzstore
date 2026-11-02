@@ -104,7 +104,7 @@
                 </h3>
 
                 <p class="text-slate-300 text-sm leading-relaxed">
-                    Jika akun terkena recall, hacked, atau tidak sesuai deskripsi selama masa garansi (7 hari bila email sudah diganti ke Gmail pembeli, 14 hari bila belum, 21 hari untuk Garansi Plus) setelah serah terima, kami akan mengganti dengan akun setara atau refund penuh.
+                    Jika akun terkena recall, hacked, atau tidak sesuai deskripsi selama masa garansi (7 hari bila Gmail akun sudah diganti ke Gmail pembeli, 14 hari bila belum, 21 hari untuk Garansi Plus) setelah serah terima, kami akan mengganti dengan akun setara atau refund penuh.
                     <a
                         href="{{ route('warranty') }}"
                         class="text-green-400 underline hover:text-green-300 transition"
@@ -170,7 +170,7 @@
         <div class="mt-14 rounded-3xl border border-electric/30 bg-electric/10 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
             <div class="flex-1">
                 <p class="font-display font-extrabold text-xl text-white">Belum bisa bayar penuh? Booking dulu dengan DP {{ \App\Models\Booking::dpPercent() }}%</p>
-                <p class="text-sm text-slate-300 mt-1">Setelah DP diterima, akun langsung bisa kamu mainkan selama {{ implode(' atau ', \App\Models\Booking::holdOptions()) }} hari, sisanya dilunasi saat siap. Data akun (email, nomor proteksi) diganti setelah lunas. Klik tombol Booking di halaman detail akun.</p>
+                <p class="text-sm text-slate-300 mt-1">Setelah DP diterima, akun langsung bisa kamu mainkan selama {{ implode(' atau ', \App\Models\Booking::holdOptions()) }} hari, sisanya dilunasi saat siap. Data akun (Gmail, nomor proteksi) diganti setelah lunas. Klik tombol Booking di halaman detail akun. Akun titipan tidak bisa dibooking dengan DP, hanya bayar lunas.</p>
             </div>
             <a href="{{ route('booking.terms') }}" class="shrink-0 inline-flex items-center justify-center bg-electric hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-full transition">Baca Syarat DP</a>
         </div>
