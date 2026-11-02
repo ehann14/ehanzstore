@@ -24,7 +24,7 @@
         <h1 class="text-2xl sm:text-3xl font-display font-bold text-white">Booking Akun</h1>
         <p class="text-sm text-slate-400 mt-1">
             Booking dibuat pembeli lewat website (DP {{ \App\Models\Booking::dpPercent() }}%) atau dicatat admin lewat tombol <b class="text-slate-200">Booking / DP</b> di Kelola Akun.
-            Setelah DP diterima, akun ditahan {{ implode(' atau ', \App\Models\Booking::holdOptions()) }} hari untuk pelunasan. Setelah lunas, lanjutkan lewat tombol <b class="text-slate-200">Proses Penjualan</b>.
+            Setelah DP diterima, pembeli sudah bisa memainkan akun tapi data akun belum diganti sampai lunas (batas pelunasan {{ implode(' atau ', \App\Models\Booking::holdOptions()) }} hari). Setelah lunas, lanjutkan lewat tombol <b class="text-slate-200">Proses Penjualan</b>.
         </p>
         <p class="text-sm text-amber-300/90 mt-2">
             Tidak lunas sampai batas waktu: akun otomatis ditarik kembali (tersedia lagi) dan DP hangus.

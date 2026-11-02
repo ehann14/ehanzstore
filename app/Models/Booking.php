@@ -12,7 +12,7 @@ use Throwable;
  *
  * Alur status:
  *   pending   -> booking dibuat, menunggu DP dibayar (batas: store.booking_pay_hours)
- *   active    -> DP diterima admin, akun ditahan (batas pelunasan: store.booking_hold_days)
+ *   active    -> DP diterima admin, akun sudah bisa dimainkan pembeli tapi data belum diganti (batas pelunasan: store.booking_hold_days)
  *   completed -> pelunasan selesai, akun terjual (DP dihitung sebagai bagian pembayaran)
  *   cancelled -> dibatalkan (pembeli / toko)
  *   expired   -> lewat batas waktu. DP belum dibayar: booking hangus tanpa dampak uang.
@@ -108,7 +108,7 @@ class Booking extends Model
 
     public static function dpPercent(): int
     {
-        return max(1, min(90, (int) config('store.booking_dp_percent', 20)));
+        return max(1, min(90, (int) config('store.booking_dp_percent', 30)));
     }
 
     /** DP = persen dari harga, dibulatkan ke atas ke kelipatan Rp 1.000, tidak melebihi harga. */

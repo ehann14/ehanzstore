@@ -96,7 +96,7 @@
             <ol class="mt-4 space-y-2 text-sm text-slate-200 list-decimal pl-5">
                 <li>Klik <b>Minta Info Pembayaran</b> untuk chat admin (kode booking terisi otomatis).</li>
                 <li>Transfer DP <b>{{ $rp($booking->dp_amount) }}</b> ke rekening/e-wallet resmi yang diberikan admin.</li>
-                <li>Kirim bukti transfer. Setelah admin mengonfirmasi, akun ditahan untukmu selama {{ $holdDays }} hari.</li>
+                <li>Kirim bukti transfer. Setelah admin mengonfirmasi, akun sudah bisa langsung kamu mainkan selama masa pelunasan {{ $holdDays }} hari (data akun diganti setelah lunas).</li>
             </ol>
 
             <div class="mt-5 flex flex-col sm:flex-row gap-3">
@@ -107,9 +107,9 @@
 
     @elseif($status === 'active' && $holding)
         <div class="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 p-5 sm:p-6 mb-6">
-            <p class="text-xs font-bold uppercase tracking-wider text-emerald-300">DP diterima &middot; akun ditahan untukmu</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-emerald-300">DP diterima &middot; akun sudah bisa dimainkan</p>
             <p class="font-display font-extrabold text-2xl text-white mt-1" {!! $booking->countdownAttrs('Lunasi dalam ', 'Waktu habis') !!}>{{ $booking->deadlineLabel() }}</p>
-            <p class="text-xs text-emerald-100/70 mt-1">Lunasi sisa {{ $rp($booking->remaining()) }} sebelum {{ $booking->deadlineLabel() }}. Perlu waktu tambahan? Hubungi admin sebelum batas waktu habis.</p>
+            <p class="text-xs text-emerald-100/70 mt-1">Data akun (email, nomor proteksi, dll.) baru bisa diganti ke milikmu setelah lunas. Lunasi sisa {{ $rp($booking->remaining()) }} sebelum {{ $booking->deadlineLabel() }}. Perlu waktu tambahan? Hubungi admin sebelum batas waktu habis.</p>
             <div class="mt-5">
                 <a href="{{ $waPelunasan }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-3 rounded-full transition">Lunasi via WhatsApp</a>
             </div>

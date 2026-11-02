@@ -72,7 +72,7 @@ class BookingController extends Controller
         return view('admin.accounts.booking', compact('account'));
     }
 
-    /** Simpan booking DP: akun langsung ditahan sampai batas pelunasan. */
+    /** Simpan booking DP: akun langsung bisa dimainkan pembeli sampai batas pelunasan. */
     public function storeForAccount(Request $request, CocAccount $account)
     {
         $this->authorizeAccount($account);
@@ -120,7 +120,7 @@ class BookingController extends Controller
 
         return redirect()->route('admin.accounts.index')->with(
             'success',
-            "Booking {$booking->booking_code} dicatat. Akun {$account->account_code} ditahan untuk {$booking->buyer_name}, "
+            "Booking {$booking->booking_code} dicatat. Akun {$account->account_code} sudah bisa dimainkan {$booking->buyer_name} (data akun belum diganti), "
             . "harus lunas (sisa Rp " . number_format($booking->remaining(), 0, ',', '.') . ") sebelum {$booking->deadlineLabel()}. "
             . 'Lewat batas itu akun otomatis ditarik kembali dan DP hangus.'
         );
@@ -143,7 +143,7 @@ class BookingController extends Controller
             'days'  => $days,
         ]);
 
-        return back()->with('success', "DP booking {$booking->booking_code} dikonfirmasi. Akun ditahan sampai {$booking->deadlineLabel()}.");
+        return back()->with('success', "DP booking {$booking->booking_code} dikonfirmasi. Akun sudah bisa dimainkan pembeli, data akun diganti setelah lunas (batas {$booking->deadlineLabel()}).");
     }
 
     public function extend(Request $request, Booking $booking)

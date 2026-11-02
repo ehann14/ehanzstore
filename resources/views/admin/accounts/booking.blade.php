@@ -23,7 +23,7 @@
         </a>
         <div>
             <h1 class="text-2xl font-bold text-white">Booking / DP</h1>
-            <p class="text-sm text-slate-400">Untuk pembeli yang bayar DP dulu. Akun ditahan sampai batas pelunasan; kalau lunas, lanjutkan lewat <b class="text-slate-200">Terjual</b>.</p>
+            <p class="text-sm text-slate-400">Untuk pembeli yang bayar DP dulu. Setelah DP masuk, pembeli sudah bisa memainkan akun tapi data akun (email/nomor) belum boleh diganti sampai batas pelunasan; kalau lunas, lanjutkan lewat <b class="text-slate-200">Terjual</b>.</p>
         </div>
     </div>
 

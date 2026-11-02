@@ -24,12 +24,12 @@ return [
     // ------------------------------------------------------------------
 
     // Persen DP dari harga akun saat booking
-    'booking_dp_percent' => (int) env('BOOKING_DP_PERCENT', 20),
+    'booking_dp_percent' => (int) env('BOOKING_DP_PERCENT', 30),
 
     // Batas waktu pembeli membayar DP setelah booking dibuat (jam). Lewat dari ini booking batal otomatis.
     'booking_pay_hours' => (int) env('BOOKING_PAY_HOURS', 24),
 
-    // Batas pelunasan bawaan setelah DP diterima admin (hari). Selama masa ini akun ditahan untuk pembeli.
+    // Batas pelunasan bawaan setelah DP diterima admin (hari). Selama masa ini akun sudah bisa dimainkan pembeli, tapi data akun (email, nomor proteksi) belum diganti sampai lunas.
     'booking_hold_days' => (int) env('BOOKING_HOLD_DAYS', 7),
 
     // Pilihan batas pelunasan yang bisa dipilih admin (hari). Lewat batas = akun ditarik kembali, DP hangus.

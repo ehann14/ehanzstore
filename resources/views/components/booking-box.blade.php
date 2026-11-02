@@ -23,7 +23,7 @@
         Booking dulu, DP {{ $percent }}% ({{ $rp($dp) }})
     </button>
     <p class="text-[10px] text-slate-500 text-center mt-2">
-        Tahan akun ini untukmu. Sisanya dilunasi saat serah terima.
+        Amankan akun ini untukmu, langsung bisa dimainkan setelah DP diterima. Sisanya dilunasi sebelum data akun diganti.
         <a href="{{ route('booking.terms') }}" class="text-electric hover:text-white underline-offset-2 hover:underline">Syarat &amp; ketentuan DP</a>
     </p>
 
@@ -55,7 +55,7 @@
 
                 <ul class="text-xs text-slate-400 space-y-1.5 mb-5 list-disc pl-5">
                     <li>DP dibayar maksimal <b class="text-slate-200">{{ $payHours }} jam</b> setelah booking, lewat itu booking batal otomatis.</li>
-                    <li>Setelah DP diterima admin, akun ditahan <b class="text-slate-200">{{ $holdDays }} hari</b> untuk pelunasan.</li>
+                    <li>Setelah DP diterima admin, akun <b class="text-slate-200">sudah bisa langsung dimainkan</b>, tapi data akun (email, nomor proteksi, dll.) baru bisa diganti setelah lunas. Batas pelunasan <b class="text-slate-200">{{ $holdDays }} hari</b>.</li>
                     <li>DP <b class="text-slate-200">tidak dikembalikan</b> bila pembeli membatalkan atau tidak melunasi tepat waktu.</li>
                 </ul>
 

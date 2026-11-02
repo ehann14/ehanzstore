@@ -16,7 +16,7 @@
         [
             't' => 'Pengertian booking & DP',
             'items' => [
-                "Booking adalah cara menahan satu akun/clan supaya tidak dibeli orang lain dengan membayar uang muka (DP) sebesar {$percent}% dari harga.",
+                "Booking adalah cara mengamankan satu akun/clan supaya tidak dibeli orang lain dengan membayar uang muka (DP) sebesar {$percent}% dari harga.",
                 'DP dibulatkan ke atas ke kelipatan Rp 1.000 dan tidak pernah melebihi harga akun.',
                 'Harga akun dikunci sesuai harga saat booking dibuat, walaupun setelahnya ada perubahan harga atau promo.',
             ],
@@ -26,7 +26,7 @@
             'items' => [
                 'Pilih akun yang masih tersedia, klik tombol Booking di halaman detail, isi nama dan nomor WhatsApp aktif, lalu setujui syarat ini.',
                 'Setelah booking dibuat, kamu mendapat kode booking dan halaman pribadi untuk memantau statusnya. Simpan link halaman tersebut.',
-                'Booking baru sah (akun ditahan) setelah admin mengonfirmasi bahwa DP sudah diterima.',
+                'Booking baru sah setelah admin mengonfirmasi bahwa DP sudah diterima. Sejak saat itu akun sudah bisa langsung kamu mainkan.',
                 'Pembayaran hanya melalui rekening/e-wallet resmi yang diberikan admin lewat WhatsApp. Website ini tidak memproses pembayaran. Waspada pihak yang mengatasnamakan EHANZSTORE.',
             ],
         ],
@@ -39,10 +39,11 @@
             ],
         ],
         [
-            't' => 'Masa penahanan & pelunasan',
+            't' => 'Akses akun & pelunasan',
             'items' => [
-                "Setelah DP dikonfirmasi, akun ditahan untukmu selama {$holdDays} hari.",
-                "Sisa pembayaran ({$rest}% dari harga) wajib dilunasi dalam masa penahanan tersebut.",
+                "Setelah DP dikonfirmasi, akun sudah bisa langsung kamu mainkan selama masa pelunasan {$holdDays} hari.",
+                'Selama belum lunas, data akun (email, nomor proteksi, dan data lain) belum bisa diganti ke milikmu. Penggantian data dilakukan setelah pelunasan.',
+                "Sisa pembayaran ({$rest}% dari harga) wajib dilunasi dalam masa pelunasan tersebut.",
                 'Perpanjangan masa pelunasan hanya berlaku bila disetujui admin sebelum batas waktu habis.',
                 'DP adalah bagian dari harga: sisa pelunasan = harga yang dikunci dikurangi DP.',
             ],
@@ -51,7 +52,7 @@
             't' => 'Jika pembeli membatalkan',
             'items' => [
                 'Pembatalan sebelum DP dibayar tidak dikenakan biaya.',
-                'Pembatalan setelah DP diterima: DP hangus dan tidak dapat dikembalikan, karena akun sudah ditahan dan tidak ditawarkan ke pembeli lain.',
+                'Pembatalan setelah DP diterima: DP hangus dan tidak dapat dikembalikan, karena akun sudah bisa kamu mainkan dan tidak ditawarkan ke pembeli lain.',
                 'Tidak melunasi sampai batas waktu berakhir dianggap pembatalan oleh pembeli: booking berakhir, akun dibuka kembali untuk umum, dan DP hangus, kecuali admin menyetujui lain secara tertulis di WhatsApp.',
             ],
         ],
@@ -85,7 +86,7 @@
         <h1 class="font-display font-extrabold text-4xl md:text-5xl text-white mb-5">
             Syarat &amp; Ketentuan <span class="text-electric glow-text">DP {{ $percent }}%</span>
         </h1>
-        <p class="text-slate-400 max-w-2xl mx-auto text-lg">Tahan akun incaranmu lebih dulu dengan uang muka, lalu lunasi saat siap. Baca aturan mainnya di bawah ini.</p>
+        <p class="text-slate-400 max-w-2xl mx-auto text-lg">Amankan akun incaranmu lebih dulu dengan uang muka, lalu lunasi saat siap. Baca aturan mainnya di bawah ini.</p>
     </div>
 </section>
 
