@@ -11,7 +11,7 @@
     $listingDays  = (int) config('store.consign_listing_days', 30);
     $maxWait      = max(0, (int) config('store.consign_max_email_wait_days', 0));
     $warranty     = \App\Models\Sale::warrantyRange();
-    $waTitip      = $storeWaUrl . '?text=' . rawurlencode("Halo Admin EHANZSTORE, saya mau titip akun untuk dijual.\n\nTH: \nHarga yang diinginkan: \nEmail akun bisa diganti ke Gmail pembeli: ya\nProteksi akun (ON/OFF): \nKalau proteksi ON, nomor proteksi bisa diganti ke nomor pembeli: ya");
+    $waTitip      = $storeWaUrl . '?text=' . rawurlencode("Halo Admin EHANZSTORE, saya mau titip akun untuk dijual.\n\nTH: \nHarga yang diinginkan: \nGmail akun bisa diganti ke Gmail pembeli: ya\nProteksi akun (ON/OFF): \nKalau proteksi ON, nomor proteksi bisa diganti ke nomor pembeli: ya");
     $waAsk        = $storeWaUrl . '?text=' . rawurlencode('Halo Admin EHANZSTORE, saya mau tanya soal titip akun.');
 
     $sections = [
@@ -107,7 +107,7 @@
                 <p class="text-[11px] font-bold tracking-widest text-amber-300 uppercase mb-1">Dua syarat wajib</p>
                 <h2 class="font-display font-extrabold text-2xl text-white mb-3">1. Gmail akun harus bisa diganti ke Gmail pembeli</h2>
                 <ul class="space-y-2.5 text-sm text-slate-300 leading-relaxed">
-                    <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Email/Supercell ID akun harus
+                    <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Gmail/Supercell ID akun harus
                         @if($maxWait === 0) <strong class="text-white">sudah bisa diganti sekarang</strong>@else <strong class="text-white">bisa diganti (maksimal menunggu {{ $maxWait }} hari)</strong>@endif
                         ke alamat Gmail milik pembeli.</span></li>
                     <li class="flex gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span><span>Akun yang Gmailnya tidak bisa diganti <strong class="text-white">tidak bisa dititip</strong>, apa pun alasannya, karena pembeli tidak bisa memegang akun sepenuhnya.</span></li>
@@ -159,7 +159,7 @@
 </section>
 
 <div class="max-w-4xl mx-auto px-4 pb-24 text-center">
-    <p class="text-slate-400 mb-5">Email akunmu (dan nomor proteksinya, kalau proteksi ON) bisa diganti? Chat admin sekarang, gratis tanpa biaya di depan.</p>
+    <p class="text-slate-400 mb-5">Gmail akunmu (dan nomor proteksinya, kalau proteksi ON) bisa diganti? Chat admin sekarang, gratis tanpa biaya di depan.</p>
     <div class="flex flex-col sm:flex-row gap-3 justify-center">
         <a href="{{ $waTitip }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center bg-electric hover:bg-blue-500 text-white font-bold px-8 py-3.5 rounded-full transition shadow-lg shadow-electric/20">Titip Akun via WhatsApp</a>
         <a href="{{ $waAsk }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-8 py-3.5 rounded-full transition">Tanya Admin Dulu</a>

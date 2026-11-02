@@ -22,6 +22,9 @@ return [
     // "Sembunyikan" di tab Akun Terjual (akun draft tidak dihitung).
     'sold_showcase_limit' => (int) env('SOLD_SHOWCASE_LIMIT', 15),
 
+    // Link titip untuk penjual (tanpa login): masa berlaku sebelum kedaluwarsa (hari) bila belum diisi.
+    'seller_link_days' => (int) env('SELLER_LINK_DAYS', 7),
+
     // Jumlah akun serupa di bawah halaman detail
     'similar_limit' => 4,
 

@@ -9,11 +9,17 @@
             <h1 class="text-2xl font-bold text-white">Kelola Akun COC</h1>
             <p class="text-sm text-slate-400 mt-1">Akun berstatus draft tidak tampil di katalog.</p>
         </div>
+        <div class="flex flex-wrap items-center gap-2">
+        <a href="{{ route('admin.seller-links.index') }}"
+           class="inline-flex items-center justify-center gap-2 border border-amber-500/30 text-amber-300 hover:bg-amber-500/10 px-4 py-2.5 rounded-xl text-sm font-semibold transition">
+            Link Titip Penjual
+        </a>
         <a href="{{ route('admin.accounts.create') }}"
            class="inline-flex items-center justify-center gap-2 bg-electric hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-lg shadow-electric/20">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Tambah Akun
         </a>
+        </div>
     </div>
 
     {{-- ===== Dua bagian: Akun Ready & Akun Terjual ===== --}}
@@ -197,6 +203,11 @@
                                     </span>
                                 @endif
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $saleBadge[1] }}">{{ $saleBadge[0] }}</span>
+
+                                @if($account->submission_status === 'submitted' && ! $published)
+                                    <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                          title="Penjual sudah mengisi data lewat link titip. Tinjau lalu terbitkan.">Dari penjual &middot; tinjau</span>
+                                @endif
 
                                 @if($account->sale_status === 'sold' && $published)
                                     @if(in_array((int) $account->id, $showcaseIds, true))

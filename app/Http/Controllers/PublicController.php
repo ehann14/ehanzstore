@@ -126,7 +126,7 @@ class PublicController extends Controller
             $query->where('sale_status', 'available')->hotDeal();
         }
 
-        // Titipan Terverifikasi saja: akun titipan yang lolos syarat email (otomatis tidak memuat clan)
+        // Titipan Terverifikasi saja: akun titipan yang lolos syarat Gmail (otomatis tidak memuat clan)
         if ($request->boolean('titipan') && $type !== 'clan') {
             $query->where('sale_status', 'available')->verifiedConsignment();
         }
@@ -136,7 +136,7 @@ class PublicController extends Controller
             $query->where('town_hall', (int) $request->input('th'));
         }
 
-        // Filter lanjutan: harga, level hero minimum, email, proteksi
+        // Filter lanjutan: harga, level hero minimum, Gmail, proteksi
         $this->applyAdvancedFilters($query, $request);
 
         // Pengurutan katalog
@@ -211,7 +211,7 @@ class PublicController extends Controller
                 $query->whereIn('clan_league', array_slice(CocAccount::CLAN_LEAGUES, $idx));
             }
 
-            return; // filter hero / email / proteksi tidak relevan untuk clan
+            return; // filter hero / Gmail / proteksi tidak relevan untuk clan
         }
 
         // Level hero minimum, contoh: Archer Queen minimal 60

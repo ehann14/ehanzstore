@@ -14,7 +14,7 @@ use Illuminate\Console\Command;
  */
 class ResetTwoFactor extends Command
 {
-    protected $signature = 'twofactor:reset {email : Email pengguna}';
+    protected $signature = 'twofactor:reset {email : Gmail pengguna}';
 
     protected $description = 'Matikan verifikasi dua langkah milik satu pengguna (untuk pemulihan darurat)';
 

@@ -8,6 +8,8 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WarrantyCheckController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\SellerSubmissionController;
+use App\Http\Controllers\Admin\SellerLinkController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\CustomerController;
@@ -39,10 +41,16 @@ Route::post('/akun/{account_code}/klik-wa', [PublicController::class, 'trackWhat
 Route::get('/cara-membeli', [PublicController::class, 'howToBuy'])->name('how.to.buy');
 Route::get('/garansi', [PublicController::class, 'warranty'])->name('warranty');
 
-// Syarat titip akun untuk dijual (konsinyasi): wajib email bisa diganti ke Gmail pembeli
+// Syarat titip akun untuk dijual (konsinyasi): wajib Gmail bisa diganti ke Gmail pembeli
 Route::get('/syarat-titip-akun', [PublicController::class, 'consignmentTerms'])->name('consignment.terms');
 
 // Booking akun dengan DP: syarat & ketentuan, buat booking, halaman booking pembeli
+// Link titip untuk penjual (tanpa login, sekali pakai): penjual mengisi data & foto akun titipan sendiri
+Route::get('/titip/{token}', [SellerSubmissionController::class, 'show'])->name('seller.form');
+Route::post('/titip/{token}', [SellerSubmissionController::class, 'submit'])
+    ->middleware('throttle:12,1')
+    ->name('seller.submit');
+
 Route::get('/syarat-dp', [BookingController::class, 'terms'])->name('booking.terms');
 Route::post('/akun/{account_code}/booking', [BookingController::class, 'store'])
     ->middleware('throttle:5,1')
@@ -172,6 +180,12 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
 
         Route::post('stale-stock/{account}/apply-price', [StaleStockController::class, 'applyPrice'])
             ->name('stale.apply');
+
+        // Link titip penjual: admin buat akun draft (nama saja), penjual isi data & foto lewat link
+        Route::get('seller-links', [SellerLinkController::class, 'index'])->name('seller-links.index');
+        Route::post('seller-links', [SellerLinkController::class, 'store'])->name('seller-links.store');
+        Route::post('seller-links/{account}/renew', [SellerLinkController::class, 'renew'])->name('seller-links.renew');
+        Route::delete('seller-links/{account}', [SellerLinkController::class, 'destroy'])->name('seller-links.destroy');
 
         // Titip jual (konsinyasi): rekap komisi & setoran ke pemilik akun
         Route::get('consignments', [ConsignmentController::class, 'index'])->name('consignments.index');

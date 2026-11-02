@@ -208,7 +208,7 @@
             <li>Garansi hanya berlaku untuk pembelian resmi melalui admin EHANZSTORE.ID di WhatsApp.</li>
             <li>Masa garansi ({{ \App\Models\Sale::warrantyOptionsText() }}, sesuai yang dicatat pada transaksi) dihitung sejak admin mengonfirmasi serah terima selesai di chat.</li>
             <li>Klaim harus diajukan sebelum masa garansi berakhir, dengan bukti berupa kode akun, bukti pembayaran, dan screenshot atau rekaman layar.</li>
-            <li>Segera setelah menerima akun, pembeli wajib mengamankannya dengan mengganti kata sandi dan email, serta tidak membagikan data login kepada siapa pun.</li>
+            <li>Segera setelah menerima akun, pembeli wajib mengamankannya dengan mengganti kata sandi dan Gmail, serta tidak membagikan data login kepada siapa pun.</li>
             <li>Simpan seluruh riwayat chat WhatsApp sebagai bukti transaksi dan serah terima.</li>
             <li>Keputusan akhir atas valid atau tidaknya klaim ada pada admin berdasarkan hasil pemeriksaan, dan akan dijelaskan alasannya kepada pembeli.</li>
             <li>EHANZSTORE.ID berhak menolak klaim yang terbukti tidak benar atau mengandung manipulasi bukti.</li>

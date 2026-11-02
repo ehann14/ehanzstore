@@ -47,7 +47,7 @@
                         [
                             'num' => '04',
                             'title' => 'Serah Terima & Garansi Aktif',
-                            'desc' => 'Data login dikirim via WA. Segera ganti password & aktifkan 2FA. Garansi personal berlaku sejak serah terima selesai: 7 hari jika email sudah diganti ke Gmail pembeli, 14 hari jika belum, atau 21 hari lewat Garansi Plus.',
+                            'desc' => 'Data login dikirim via WA. Segera ganti password & aktifkan 2FA. Garansi personal berlaku sejak serah terima selesai: 7 hari jika Gmail sudah diganti ke Gmail pembeli, 14 hari jika belum, atau 21 hari lewat Garansi Plus.',
                             'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
                         ],
                     ];

@@ -79,7 +79,7 @@
                 @csrf
                 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Gmail Address</label>
                     <input type="email" name="email" value="{{ old('email') }}" required autofocus
                            class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
                            placeholder="admin@ehanzstore.id">

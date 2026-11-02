@@ -294,7 +294,7 @@
 
                         <a href="mailto:?subject={{ rawurlencode($shareTitle) }}&body={{ rawurlencode($shareText . "\n" . $shareUrl) }}"
                            class="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold py-2.5 rounded-xl transition">
-                            Email
+                            Gmail
                         </a>
                     </div>
                 </div>

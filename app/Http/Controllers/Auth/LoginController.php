@@ -15,8 +15,8 @@ use Illuminate\Support\Str;
 class LoginController extends Controller
 {
     /**
-     * Hash bcrypt palsu: dipakai agar waktu respons sama baik email terdaftar maupun tidak
-     * (mencegah orang menebak email admin dari kecepatan respons).
+     * Hash bcrypt palsu: dipakai agar waktu respons sama baik Gmail terdaftar maupun tidak
+     * (mencegah orang menebak Gmail admin dari kecepatan respons).
      */
     private const DUMMY_HASH = '$2y$12$nL7cAj6cpc1gV9F2/Gt2R.wH2xT.P92fF3Yke8FrhjcIL/Tmyw5Xa';
 
@@ -55,7 +55,7 @@ class LoginController extends Controller
             ])->onlyInput('email');
         }
 
-        // 2) Periksa password. Hash::check tetap dijalankan walau email tidak ada.
+        // 2) Periksa password. Hash::check tetap dijalankan walau Gmail tidak ada.
         $valid = Hash::check($credentials['password'], $user?->password ?? self::DUMMY_HASH) && $user !== null;
 
         if (! $valid) {
@@ -70,8 +70,8 @@ class LoginController extends Controller
 
             return back()->withErrors([
                 'email' => $left > 0
-                    ? "Email atau password salah. Sisa percobaan: {$left}."
-                    : 'Email atau password salah. Login diblokir sementara, coba lagi dalam ' . self::waitText($decay) . '.',
+                    ? "Gmail atau password salah. Sisa percobaan: {$left}."
+                    : 'Gmail atau password salah. Login diblokir sementara, coba lagi dalam ' . self::waitText($decay) . '.',
             ])->onlyInput('email');
         }
 
@@ -79,7 +79,7 @@ class LoginController extends Controller
             return back()->withErrors(['email' => 'Akun Anda telah dinonaktifkan.'])->onlyInput('email');
         }
 
-        // Password benar: hapus hitungan gagal untuk email ini (hitungan IP tetap, agar tidak bisa di-reset penyerang)
+        // Password benar: hapus hitungan gagal untuk Gmail ini (hitungan IP tetap, agar tidak bisa di-reset penyerang)
         RateLimiter::clear($emailKey);
 
         // 3) Super Admin dengan 2FA aktif belum login: minta kode dulu.
@@ -126,7 +126,7 @@ class LoginController extends Controller
 
     public static function emailKey(string $email, ?string $ip): string
     {
-        return 'login:email:' . sha1(Str::lower($email) . '|' . $ip);
+        return 'login:Gmail:' . sha1(Str::lower($email) . '|' . $ip);
     }
 
     public static function ipKey(?string $ip): string

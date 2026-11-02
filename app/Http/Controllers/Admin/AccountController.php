@@ -24,7 +24,9 @@ class AccountController extends Controller
     public function index(Request $request)
     {
         // Admin biasa hanya melihat akun miliknya; super admin melihat semua.
+        // Placeholder link titip yang belum diisi penjual tidak ditampilkan di sini (ada di menu Link Titip Penjual).
         $base = fn () => CocAccount::query()
+            ->notAwaitingSeller()
             ->when(!Auth::user()->isSuperAdmin(), fn ($q) => $q->where('created_by', Auth::id()));
 
         // Dua bagian: "ready" (belum terjual: tersedia + arsip) dan "sold" (sudah terjual)
@@ -154,6 +156,12 @@ class AccountController extends Controller
         $validated = $request->validate($rules, $this->messages());
         unset($validated['images']);
 
+        // Link titip yang belum diisi penjual: datanya masih kosong, jangan diterbitkan / dijadwalkan dulu
+        if ($account->submission_status === CocAccount::SUBMISSION_PENDING
+            && (($validated['publication_status'] ?? null) === 'published' || filled($validated['publish_date'] ?? null))) {
+            return back()->withInput()->with('error', 'Akun ini belum diisi penjual lewat link titip, jadi belum bisa diterbitkan.');
+        }
+
         if ($errors = array_merge(
             $this->consignmentEmailErrors($request, $account->listing_type ?? 'account', $account),
             $this->consignmentPhoneErrors($request, $account->listing_type ?? 'account', $account)
@@ -247,6 +255,10 @@ class AccountController extends Controller
 
         $changes = array_filter($data);
 
+        if (($changes['publication_status'] ?? null) === 'published' && $account->submission_status === CocAccount::SUBMISSION_PENDING) {
+            return back()->with('error', 'Akun ini belum diisi penjual lewat link titip, jadi belum bisa diterbitkan.');
+        }
+
         // Terbit / sembunyikan manual berarti jadwal tayang tidak diperlukan lagi
         if (isset($changes['publication_status'])) {
             $changes['publish_at'] = null;
@@ -310,6 +322,7 @@ class AccountController extends Controller
 
         $query = CocAccount::query()
             ->where('sale_status', 'available')
+            ->notAwaitingSeller()
             ->when(!Auth::user()->isSuperAdmin(), fn ($q) => $q->where('created_by', Auth::id()));
 
         if ($request->boolean('select_all')) {
@@ -685,7 +698,7 @@ class AccountController extends Controller
                     }
                 },
             ],
-            // syarat wajib titip akun: konfirmasi email bisa diganti ke Gmail pembeli (dicek di consignmentEmailErrors)
+            // syarat wajib titip akun: konfirmasi Gmail bisa diganti ke Gmail pembeli (dicek di consignmentEmailErrors)
             'consignor_email_ok'   => 'nullable|boolean',
             // syarat wajib titip akun (bagian 2): proteksi ON -> nomor proteksi bisa diganti ke pembeli (dicek di consignmentPhoneErrors)
             'consignor_phone_ok'   => 'nullable|boolean',
@@ -745,10 +758,10 @@ class AccountController extends Controller
     }
 
     /**
-     * Ubah input "email bisa diganti dalam N hari" menjadi tanggal email_change_available_at.
+     * Ubah input "Gmail bisa diganti dalam N hari" menjadi tanggal email_change_available_at.
      * - Bila hari diisi > 0, status otomatis menjadi Bisa Ganti. Bila status Tidak Bisa Ganti
      *   dan hari kosong/0, tanggal dikosongkan.
-     * - Kosong / 0 = email sudah bisa diganti sekarang.
+     * - Kosong / 0 = Gmail sudah bisa diganti sekarang.
      * - Saat edit, jika angka hari sama dengan sisa hari saat ini, tanggal lama dipertahankan
      *   (supaya menyimpan form tanpa mengubah angka tidak mengulang hitungan dari awal).
      */
@@ -757,7 +770,7 @@ class AccountController extends Controller
         $days = $validated['email_change_days'] ?? null;
         unset($validated['email_change_days']);
 
-        // Clan tidak punya status email, jadi tidak disentuh
+        // Clan tidak punya status Gmail, jadi tidak disentuh
         if (! array_key_exists('email_change_status', $validated)) {
             return;
         }
@@ -929,9 +942,9 @@ class AccountController extends Controller
 
     /**
      * Syarat WAJIB titip akun: Gmail akun harus bisa diganti ke Gmail pembeli.
-     * - Status email harus "Bisa Ganti" (atau hari tunggu diisi), bukan "Tidak Bisa Ganti".
+     * - Status Gmail harus "Bisa Ganti" (atau hari tunggu diisi), bukan "Tidak Bisa Ganti".
      * - Hari tunggu tidak boleh melebihi batas di config('store.consign_max_email_wait_days') (bawaan 0 = harus sudah bisa diganti sekarang).
-     * - Clan tidak punya email, akun yang sudah terjual tidak diperiksa lagi (sudah dikunci).
+     * - Clan tidak punya Gmail, akun yang sudah terjual tidak diperiksa lagi (sudah dikunci).
      *
      * @return array<string, string> pesan error (semua ditampilkan di kotak titip jual), kosong bila lolos
      */

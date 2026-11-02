@@ -38,6 +38,8 @@ class ActivityLog extends Model
         'reject_review'  => ['label' => 'Tolak ulasan',       'tone' => 'amber'],
         'delete_review'  => ['label' => 'Hapus ulasan',       'tone' => 'red'],
         'apply_price_suggestion' => ['label' => 'Terapkan saran harga', 'tone' => 'blue'],
+        'create_seller_link' => ['label' => 'Buat link titip penjual', 'tone' => 'blue'],
+        'seller_submit'  => ['label' => 'Penjual mengisi data titipan', 'tone' => 'green'],
         'bulk_price'     => ['label' => 'Diskon massal (Flash Sale)', 'tone' => 'amber'],
         // Titip jual
         'pay_consignor'   => ['label' => 'Setor ke pemilik titipan', 'tone' => 'green'],

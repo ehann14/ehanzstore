@@ -102,6 +102,16 @@
             $consignBadge = 0;
         }
 
+        // Jumlah akun titipan yang sudah diisi penjual dan menunggu ditinjau (lencana di menu Link Titip)
+        try {
+            $sellerBadge = \App\Models\CocAccount::where('submission_status', \App\Models\CocAccount::SUBMISSION_SUBMITTED)
+                ->where('publication_status', 'draft')
+                ->when(! $isSuper, fn ($q) => $q->where('created_by', $user->id))
+                ->count();
+        } catch (\Throwable $e) {
+            $sellerBadge = 0;
+        }
+
         // Jumlah booking yang menunggu DP / keputusan (lencana di menu Booking)
         try {
             $bookingBadge = \App\Models\Booking::where(function ($q) {
@@ -124,6 +134,8 @@
                  'icon' => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
                 ['href' => route('admin.stale.index'), 'label' => 'Stok Lama', 'active' => request()->routeIs('admin.stale.*'), 'badge' => $staleBadge,
                  'icon' => 'M5 3h14M5 21h14M7 3v3a5 5 0 002 4l3 2-3 2a5 5 0 00-2 4v3m10-18v3a5 5 0 01-2 4l-3 2 3 2a5 5 0 012 4v3'],
+                ['href' => route('admin.seller-links.index'), 'label' => 'Link Titip Penjual', 'active' => request()->routeIs('admin.seller-links.*'), 'badge' => $sellerBadge,
+                 'icon' => 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'],
                 ['href' => route('admin.consignments.index'), 'label' => 'Titip Jual', 'active' => request()->routeIs('admin.consignments.*'), 'badge' => $consignBadge,
                  'icon' => 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z'],
                 ['href' => route('admin.banners.index'), 'label' => 'Banner Beranda', 'active' => request()->routeIs('admin.banners.*'),

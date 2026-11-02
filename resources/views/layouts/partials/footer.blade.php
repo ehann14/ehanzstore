@@ -59,15 +59,15 @@
                         <span class="text-white font-medium group-hover:text-electric transition">&#64;{{ $storeIg }}</span>
                     </span>
                 </a>
-                <div class="flex items-center gap-3">
+                <a href="mailto:ferhan142009@gmail.com" class="flex items-center gap-3 group">
                     <span class="w-9 h-9 rounded-lg bg-electric/10 text-electric flex items-center justify-center shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     </span>
                     <span>
                         <span class="block text-slate-500 text-xs">Email Bisnis</span>
-                        <span class="text-white font-medium">admin@ehanzstore.id</span>
+                        <span class="text-white font-medium group-hover:text-electric transition">ferhan142009@gmail.com</span>
                     </span>
-                </div>
+                </a>
             </div>
         </div>
     </div>

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CocAccount extends Model
 {
@@ -21,6 +22,7 @@ class CocAccount extends Model
         'protection_status', 'email_change_status', 'email_change_available_at', 'price', 'original_price', 'is_hot_deal', 'hot_deal_ends_at', 'cost_price', 'description',
         'publication_status', 'publish_at', 'sale_status', 'created_by',
         'is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok', 'consignor_phone_ok',
+        'submission_token', 'submission_status', 'submission_expires_at', 'submitted_at',
     ];
 
     protected $casts = [
@@ -35,7 +37,53 @@ class CocAccount extends Model
         'consignor_email_ok' => 'boolean',
         'consignor_phone_ok' => 'boolean',
         'commission_value' => 'decimal:2',
+        'submission_expires_at' => 'datetime',
+        'submitted_at' => 'datetime',
     ];
+
+    /** Link titip penjual: menunggu diisi penjual / sudah diisi (menunggu ditinjau admin). */
+    public const SUBMISSION_PENDING   = 'pending';
+    public const SUBMISSION_SUBMITTED = 'submitted';
+
+    /** Sembunyikan placeholder yang masih menunggu diisi penjual (datanya masih kosong). */
+    public function scopeNotAwaitingSeller($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('submission_status')->orWhere('submission_status', '<>', self::SUBMISSION_PENDING);
+        });
+    }
+
+    /** Link titip masih bisa dipakai penjual? (belum diisi, belum kedaluwarsa) */
+    public function sellerLinkIsOpen(): bool
+    {
+        return $this->submission_status === self::SUBMISSION_PENDING
+            && filled($this->submission_token)
+            && (! $this->submission_expires_at || $this->submission_expires_at->isFuture());
+    }
+
+    /** Link titip sudah lewat batas waktu tapi penjual belum mengisi. */
+    public function sellerLinkIsExpired(): bool
+    {
+        return $this->submission_status === self::SUBMISSION_PENDING
+            && $this->submission_expires_at
+            && $this->submission_expires_at->isPast();
+    }
+
+    /** URL link titip untuk dibagikan ke penjual. Null bila link sudah mati. */
+    public function sellerLinkUrl(): ?string
+    {
+        return filled($this->submission_token) ? route('seller.form', $this->submission_token) : null;
+    }
+
+    /** Token acak baru yang belum dipakai akun mana pun. */
+    public static function newSubmissionToken(): string
+    {
+        do {
+            $token = Str::random(48);
+        } while (static::withTrashed()->where('submission_token', $token)->exists());
+
+        return $token;
+    }
 
     /** Jenis komisi titip jual: kunci => label. */
     public const COMMISSION_TYPES = [
@@ -138,8 +186,8 @@ class CocAccount extends Model
      * Aturannya sama dengan validasi saat simpan (AccountController::consignmentEmailErrors
      * dan consignmentPhoneErrors), dicek ulang di sini supaya data lama atau hasil edit manual
      * di database tidak lolos begitu saja:
-     *  1. Email bisa diganti ke Gmail pembeli: admin sudah mengonfirmasi, bukan clan (clan tidak
-     *     punya email), status email "Bisa Ganti", dan sisa hari tunggu tidak melebihi
+     *  1. Gmail bisa diganti ke Gmail pembeli: admin sudah mengonfirmasi, bukan clan (clan tidak
+     *     punya Gmail), status Gmail "Bisa Ganti", dan sisa hari tunggu tidak melebihi
      *     config('store.consign_max_email_wait_days').
      *  2. Bila proteksi ON, nomor HP proteksi bisa diganti ke nomor pembeli (konfirmasi admin).
      *     Bila proteksi OFF, syarat ini tidak berlaku.
@@ -432,8 +480,8 @@ class CocAccount extends Model
     }
 
     /**
-     * Sisa hari sampai email akun bisa diganti (dibulatkan ke atas).
-     * Null jika email sudah bisa diganti sekarang, tidak bisa diganti, atau ini clan.
+     * Sisa hari sampai Gmail akun bisa diganti (dibulatkan ke atas).
+     * Null jika Gmail sudah bisa diganti sekarang, tidak bisa diganti, atau ini clan.
      * Otomatis kembali null saat tanggalnya lewat, tanpa perlu cron.
      */
     public function emailChangeDaysLeft(): ?int
@@ -449,7 +497,7 @@ class CocAccount extends Model
         return $seconds > 0 ? (int) ceil($seconds / 86400) : null;
     }
 
-    /** Teks status email untuk publik: "Bisa Ganti", "Bisa Ganti dalam 5 hari", "Tidak Bisa Ganti". */
+    /** Teks status Gmail untuk publik: "Bisa Ganti", "Bisa Ganti dalam 5 hari", "Tidak Bisa Ganti". */
     public function emailStatusLabel(): string
     {
         if ($this->email_change_status !== 'Changeable') {
