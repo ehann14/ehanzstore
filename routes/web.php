@@ -103,6 +103,10 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
         Route::get('/dashboard', [AccountController::class, 'index'])
             ->name('dashboard');
 
+        // Diskon / promo massal untuk akun yang dicentang (Last Clash Sale)
+        Route::post('accounts/bulk-price', [AccountController::class, 'bulkPrice'])
+            ->name('accounts.bulk-price');
+
         Route::resource('accounts', AccountController::class);
 
         Route::post('accounts/{account}/status', [

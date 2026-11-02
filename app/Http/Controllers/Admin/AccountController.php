@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\CocAccount;
 use App\Models\CocAccountImage;
+use App\Models\Booking;
 use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Support\Uploads;
@@ -260,6 +262,164 @@ class AccountController extends Controller
     }
 
     /** Form data pembeli: dibuka saat akun akan ditandai terjual. */
+    /**
+     * Diskon / promo massal (misal Last Clash Sale) untuk akun yang dicentang di Kelola Akun.
+     *
+     * action=apply : turunkan harga semua akun terpilih, persen (mode=percent) atau potongan rupiah (mode=fixed).
+     *                Harga lama disimpan sebagai harga coret (original_price). Bila akun sudah punya diskon aktif,
+     *                potongan dihitung dari harga normalnya (bukan ditumpuk di atas harga diskon).
+     * action=end   : akhiri diskon akun terpilih, harga kembali ke harga normal.
+     *
+     * Yang dilewati (dan dilaporkan): akun terjual, akun sedang di-booking DP, harga hasil potongan <= 0,
+     * dan harga di bawah modal (kecuali titipan, karena modal titipan dihitung otomatis dari harga).
+     */
+    public function bulkPrice(Request $request)
+    {
+        $data = $request->validate([
+            'action'           => 'required|in:apply,end',
+            'select_all'       => 'nullable|boolean',
+            'ids'              => 'nullable|array|max:500',
+            'ids.*'            => 'integer',
+            'q'                => 'nullable|string|max:100',
+            'mode'             => 'required_if:action,apply|nullable|in:percent,fixed',
+            'value'            => 'required_if:action,apply|nullable|numeric|gt:0|max:999999999',
+            'is_hot_deal'      => 'nullable|boolean',
+            'hot_deal_ends_at' => 'nullable|date',
+        ], [
+            'value.required_if' => 'Isi besar potongan (persen atau rupiah).',
+            'value.gt'          => 'Besar potongan harus lebih dari 0.',
+            'mode.required_if'  => 'Pilih jenis potongan: persen atau rupiah.',
+        ]);
+
+        $action = $data['action'];
+        $mode   = $data['mode'] ?? null;
+        $value  = (float) ($data['value'] ?? 0);
+
+        if ($action === 'apply' && $mode === 'percent' && $value > 90) {
+            return back()->with('error', 'Diskon persen maksimal 90%.');
+        }
+
+        $endsAt = null;
+        if ($action === 'apply' && filled($data['hot_deal_ends_at'] ?? null)) {
+            $endsAt = Carbon::parse($data['hot_deal_ends_at'], Sale::DISPLAY_TZ)->setTimezone(config('app.timezone'));
+
+            if ($endsAt->isPast()) {
+                return back()->withInput()->with('error', 'Waktu promo berakhir harus di masa depan.');
+            }
+        }
+
+        $query = CocAccount::query()
+            ->where('sale_status', 'available')
+            ->when(!Auth::user()->isSuperAdmin(), fn ($q) => $q->where('created_by', Auth::id()));
+
+        if ($request->boolean('select_all')) {
+            // "Pilih semua" lintas halaman: ikut pencarian yang sedang aktif
+            $search = trim((string) ($data['q'] ?? ''));
+            $query->when($search !== '', fn ($q) => $q->where(function ($w) use ($search) {
+                $w->where('account_code', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            }));
+        } else {
+            $ids = array_values(array_unique(array_map('intval', $data['ids'] ?? [])));
+
+            if (empty($ids)) {
+                return back()->with('error', 'Centang minimal satu akun dulu.');
+            }
+
+            $query->whereIn('id', $ids);
+        }
+
+        $changed = 0;
+        $skipped = [];
+
+        DB::transaction(function () use ($query, $action, $mode, $value, $endsAt, $request, &$changed, &$skipped) {
+            $accounts = $query->lockForUpdate()->get();
+            $holds    = Booking::holdingMap($accounts->pluck('id')->all());
+
+            foreach ($accounts as $account) {
+                $code = $account->account_code;
+
+                if (isset($holds[$account->id])) {
+                    $skipped[] = "{$code} (sedang di-booking)";
+                    continue;
+                }
+
+                $hasPromo = $account->original_price !== null && (float) $account->original_price > (float) $account->price;
+
+                if ($action === 'end') {
+                    if (! $hasPromo && ! $account->is_hot_deal && ! $account->hot_deal_ends_at) {
+                        $skipped[] = "{$code} (tidak sedang diskon)";
+                        continue;
+                    }
+
+                    $account->update([
+                        'price'            => $hasPromo ? $account->original_price : $account->price,
+                        'original_price'   => null,
+                        'is_hot_deal'      => false,
+                        'hot_deal_ends_at' => null,
+                    ]);
+                    $changed++;
+                    continue;
+                }
+
+                // Harga normal = harga coret bila sudah diskon, kalau belum ya harga sekarang
+                $base = $hasPromo ? (float) $account->original_price : (float) $account->price;
+                $new  = $mode === 'percent'
+                    ? round($base * (1 - $value / 100))
+                    : $base - $value;
+
+                if ($new <= 0) {
+                    $skipped[] = "{$code} (potongan melebihi harga)";
+                    continue;
+                }
+
+                if (! $account->isConsignment() && (float) $account->cost_price > 0 && $new < (float) $account->cost_price) {
+                    $skipped[] = "{$code} (di bawah modal)";
+                    continue;
+                }
+
+                $account->update([
+                    'price'            => $new,
+                    'original_price'   => $base,
+                    'is_hot_deal'      => $request->boolean('is_hot_deal') ? true : $account->is_hot_deal,
+                    'hot_deal_ends_at' => $endsAt,
+                ]);
+                $changed++;
+            }
+        });
+
+        if ($changed > 0) {
+            ActivityLog::record('bulk_price', null, $changed . ' akun', [
+                'action'      => $action,
+                'mode'        => $mode,
+                'value'       => $value,
+                'ends_at'     => $endsAt?->toDateTimeString(),
+                'changed'     => $changed,
+                'skipped'     => count($skipped),
+            ]);
+        }
+
+        $label = $action === 'end'
+            ? 'Diskon diakhiri'
+            : 'Diskon ' . ($mode === 'percent'
+                ? rtrim(rtrim(number_format($value, 2, ',', '.'), '0'), ',') . '%'
+                : 'Rp ' . number_format($value, 0, ',', '.')) . ' diterapkan';
+
+        $redirect = redirect()->route('admin.accounts.index', array_filter([
+            'tab' => 'ready',
+            'q'   => $request->input('q'),
+        ]));
+
+        if ($skipped) {
+            $shown = implode(', ', array_slice($skipped, 0, 6)) . (count($skipped) > 6 ? ' dan ' . (count($skipped) - 6) . ' lainnya' : '');
+            $redirect->with('error', count($skipped) . ' akun dilewati: ' . $shown . '.');
+        }
+
+        return $changed > 0
+            ? $redirect->with('success', "{$label} ke {$changed} akun.")
+            : $redirect->with('error', 'Tidak ada akun yang berubah. ' . ($skipped ? '' : 'Tidak ada akun yang cocok.'));
+    }
+
     public function sell(CocAccount $account)
     {
         $this->authorizeAccount($account);

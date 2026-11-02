@@ -69,6 +69,22 @@
             $holds = \App\Models\Booking::holdingMap($accounts->pluck('id')->all());
         @endphp
 
+        @if($tab === 'ready')
+            {{-- Toolbar centang: pilih semua untuk diskon massal (Last Clash Sale, dll) --}}
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 px-1">
+                <label class="inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none">
+                    <input type="checkbox" id="bulk-check-all" class="w-5 h-5 rounded border-white/20 bg-brand-950/50 text-electric focus:ring-electric">
+                    Pilih semua di halaman ini
+                </label>
+                @if($accounts->total() > $accounts->count())
+                    <button type="button" id="bulk-all-pages" class="hidden text-xs font-semibold text-electric hover:underline">
+                        Pilih semua {{ $accounts->total() }} akun{{ $search !== '' ? ' hasil pencarian' : '' }} (semua halaman)
+                    </button>
+                @endif
+                <span class="text-[11px] text-slate-500">Centang akun untuk mengatur diskon sekaligus.</span>
+            </div>
+        @endif
+
         <div class="space-y-4">
             @foreach($accounts as $account)
                 @php
@@ -101,6 +117,17 @@
 
                     {{-- ===== Info akun ===== --}}
                     <div class="p-3 sm:p-4 flex items-start gap-3 sm:gap-4">
+                        @if($tab === 'ready' && $account->sale_status === 'available')
+                            @php
+                                $bulkBase = $account->hasDiscount() ? (float) $account->original_price : (float) $account->price;
+                            @endphp
+                            <label class="shrink-0 pt-1 cursor-pointer" title="Pilih untuk diskon massal">
+                                <input type="checkbox" name="ids[]" value="{{ $account->id }}" form="bulk-form" data-bulk-check
+                                       data-code="{{ $account->account_code }}" data-base="{{ (int) $bulkBase }}"
+                                       data-cost="{{ $account->isConsignment() ? 0 : (int) $account->cost_price }}"
+                                       class="w-5 h-5 rounded border-white/20 bg-brand-950/50 text-electric focus:ring-electric">
+                            </label>
+                        @endif
                         <div class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden bg-midnight border border-white/10 relative">
                             @if($imageUrl)
                                 <img src="{{ $imageUrl }}"
@@ -135,6 +162,11 @@
                                     <p class="text-blue-400 font-bold text-base sm:text-lg whitespace-nowrap">Rp {{ number_format($priceShown, 0, ',', '.') }}</p>
                                     @if($doneSale)
                                         <p class="text-[10px] uppercase tracking-wider text-slate-500">Harga jual</p>
+                                    @elseif($account->hasDiscount())
+                                        <p class="text-[11px] text-slate-500 whitespace-nowrap">
+                                            <span class="line-through">Rp {{ number_format((float) $account->original_price, 0, ',', '.') }}</span>
+                                            <span class="ml-1 px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 font-bold">-{{ $account->discountPercent() }}%</span>
+                                        </p>
                                     @endif
                                 </div>
                             </div>
@@ -288,11 +320,212 @@
 
         <div class="mt-8">{{ $accounts->links() }}</div>
     @endif
+
+@if($tab === 'ready' && $accounts->isNotEmpty())
+    {{-- Bar aksi: muncul saat ada akun yang dicentang --}}
+    <div id="bulk-bar" class="hidden fixed bottom-20 lg:bottom-6 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40">
+        <div class="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-electric/40 bg-midnight/95 backdrop-blur px-4 py-3 shadow-2xl shadow-black/50">
+            <span class="text-sm font-semibold text-white"><span id="bulk-count">0</span> akun dipilih</span>
+            <button type="button" id="bulk-open" class="px-4 py-2 rounded-xl bg-electric hover:bg-blue-500 text-white text-sm font-semibold transition">Atur Diskon</button>
+            <button type="submit" form="bulk-form" name="action" value="end" id="bulk-end"
+                    class="px-3 py-2 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 text-sm font-medium transition">Akhiri Diskon</button>
+            <button type="button" id="bulk-clear" class="px-3 py-2 rounded-xl text-slate-500 hover:text-white text-sm transition">Batal</button>
+        </div>
+    </div>
+
+    {{-- Modal pengaturan diskon massal. Checkbox di kartu terhubung ke form ini lewat atribut form="bulk-form". --}}
+    <div id="bulk-modal" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center bg-black/70 p-3">
+        <form id="bulk-form" method="POST" action="{{ route('admin.accounts.bulk-price') }}"
+              class="w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-midnight p-5 space-y-4">
+            @csrf
+            <input type="hidden" name="select_all" id="bulk-select-all" value="0">
+            <input type="hidden" name="q" value="{{ $search }}">
+
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Diskon Massal</h2>
+                    <p class="text-xs text-slate-400 mt-0.5"><span id="bulk-count-2">0</span> akun akan diubah sekaligus.</p>
+                </div>
+                <button type="button" id="bulk-close" class="text-slate-500 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+
+            <div>
+                <p class="block text-xs font-semibold text-slate-400 mb-2">Jenis potongan</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="mode" value="percent" class="peer sr-only" checked>
+                        <span class="block text-center rounded-xl border border-white/10 py-2.5 text-sm font-semibold text-slate-300 peer-checked:border-electric peer-checked:bg-electric/15 peer-checked:text-white transition">Persen (%)</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="mode" value="fixed" class="peer sr-only">
+                        <span class="block text-center rounded-xl border border-white/10 py-2.5 text-sm font-semibold text-slate-300 peer-checked:border-electric peer-checked:bg-electric/15 peer-checked:text-white transition">Rupiah (Rp)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label for="bulk-value" class="block text-xs font-semibold text-slate-400 mb-2">Besar potongan <span id="bulk-unit" class="text-slate-500 font-normal">(%)</span></label>
+                <input type="number" id="bulk-value" name="value" min="0" step="any" inputmode="decimal" placeholder="Contoh: 5"
+                       class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition">
+                <div id="bulk-chips" class="flex flex-wrap gap-2 mt-2"></div>
+                <p id="bulk-preview" class="text-[11px] text-slate-400 mt-2 min-h-[1rem]"></p>
+            </div>
+
+            <label class="flex items-start gap-3 cursor-pointer select-none">
+                <input type="checkbox" name="is_hot_deal" value="1" checked
+                       class="mt-0.5 w-4 h-4 rounded border-white/20 bg-brand-950/50 text-orange-500 focus:ring-orange-500">
+                <span>
+                    <span class="block text-sm font-semibold text-white">Tandai sebagai Hot Deal</span>
+                    <span class="block text-[11px] text-slate-500 mt-0.5">Tampil di bagian Hot Deal beranda selama promo berjalan.</span>
+                </span>
+            </label>
+
+            <div>
+                <label for="bulk-ends" class="block text-xs font-semibold text-slate-400 mb-2">Promo berakhir pada (WIB) <span class="text-slate-600 font-normal">(opsional)</span></label>
+                <input type="datetime-local" id="bulk-ends" name="hot_deal_ends_at"
+                       class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition [color-scheme:dark]">
+                <div class="flex flex-wrap gap-2 mt-2">
+                    @foreach([1 => '+1 hari', 3 => '+3 hari', 7 => '+7 hari'] as $d => $lbl)
+                        <button type="button" data-bulk-end="{{ $d }}" class="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-slate-300 transition">{{ $lbl }}</button>
+                    @endforeach
+                    <button type="button" data-bulk-end="0" class="px-3 py-1.5 rounded-lg border border-white/10 text-[11px] font-semibold text-slate-500 hover:text-white hover:bg-white/5 transition">Kosongkan</button>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">Setelah waktu ini lewat, harga otomatis kembali ke harga normal. Kosongkan jika tanpa batas waktu.</p>
+            </div>
+
+            <div class="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[11px] text-slate-400 leading-relaxed">
+                Harga sebelum diskon tersimpan sebagai harga coret. Akun yang sudah diskon dihitung dari harga normalnya (tidak ditumpuk).
+                Akun yang jadi di bawah modal atau sedang di-booking akan dilewati.
+            </div>
+
+            <div class="flex gap-2 pt-1">
+                <button type="button" id="bulk-cancel" class="flex-1 px-4 py-3 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 text-sm font-medium transition">Batal</button>
+                <button type="submit" name="action" value="apply" id="bulk-submit"
+                        class="flex-1 px-4 py-3 rounded-xl bg-electric hover:bg-blue-500 text-white text-sm font-semibold transition">Terapkan Diskon</button>
+            </div>
+        </form>
+    </div>
+@endif
 </div>
 @endsection
 
 @push('scripts')
 <script>
+    (function () {
+        const form = document.getElementById('bulk-form');
+        if (!form) return;
+
+        const checks   = () => Array.from(document.querySelectorAll('[data-bulk-check]'));
+        const checked  = () => checks().filter(c => c.checked);
+        const bar      = document.getElementById('bulk-bar');
+        const modal    = document.getElementById('bulk-modal');
+        const allBox   = document.getElementById('bulk-check-all');
+        const allPages = document.getElementById('bulk-all-pages');
+        const flag     = document.getElementById('bulk-select-all');
+        const valueIn  = document.getElementById('bulk-value');
+        const unit     = document.getElementById('bulk-unit');
+        const chips    = document.getElementById('bulk-chips');
+        const preview  = document.getElementById('bulk-preview');
+        const ends     = document.getElementById('bulk-ends');
+        const rp       = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+        const total    = {{ (int) $accounts->total() }};
+        const mode     = () => form.querySelector('input[name="mode"]:checked').value;
+
+        const PRESETS = { percent: [5, 10, 15, 20, 30], fixed: [5000, 10000, 25000, 50000, 100000] };
+
+        function count() { return flag.value === '1' ? total : checked().length; }
+
+        function refresh() {
+            const n = count();
+            document.getElementById('bulk-count').textContent = n;
+            document.getElementById('bulk-count-2').textContent = n;
+            bar.classList.toggle('hidden', n === 0);
+            const all = checks();
+            allBox.checked = all.length > 0 && all.every(c => c.checked);
+            if (allPages) allPages.classList.toggle('hidden', !(allBox.checked && flag.value !== '1'));
+            renderPreview();
+        }
+
+        function newPrice(base, v) {
+            return mode() === 'percent' ? Math.round(base * (1 - v / 100)) : base - v;
+        }
+
+        function renderPreview() {
+            const v = parseFloat(valueIn.value);
+            const sel = checked();
+            preview.className = 'text-[11px] text-slate-400 mt-2 min-h-[1rem]';
+            if (!sel.length || isNaN(v) || v <= 0) { preview.textContent = ''; return; }
+            if (mode() === 'percent' && v > 90) { preview.textContent = 'Diskon persen maksimal 90%.'; preview.className = 'text-[11px] text-amber-400 mt-2'; return; }
+            const first = sel[0], base = +first.dataset.base, np = newPrice(base, v);
+            let below = 0;
+            sel.forEach(c => { const p = newPrice(+c.dataset.base, v); if (p <= 0 || (+c.dataset.cost > 0 && p < +c.dataset.cost)) below++; });
+            let t = 'Contoh ' + first.dataset.code + ': ' + rp(base) + ' → ' + rp(Math.max(0, np));
+            if (below) t += ' · ' + below + ' akun terpilih di halaman ini akan dilewati (di bawah modal)';
+            preview.textContent = t;
+            if (below) preview.className = 'text-[11px] text-amber-400 mt-2';
+        }
+
+        function renderChips() {
+            const isPct = mode() === 'percent';
+            unit.textContent = isPct ? '(%)' : '(Rp)';
+            valueIn.placeholder = isPct ? 'Contoh: 5' : 'Contoh: 5000';
+            chips.innerHTML = '';
+            PRESETS[mode()].forEach(n => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-slate-300 transition';
+                b.textContent = isPct ? n + '%' : rp(n);
+                b.addEventListener('click', () => { valueIn.value = n; renderPreview(); });
+                chips.appendChild(b);
+            });
+            renderPreview();
+        }
+
+        const open  = () => { modal.classList.remove('hidden'); modal.classList.add('flex'); renderChips(); setTimeout(() => valueIn.focus(), 50); };
+        const close = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+
+        document.addEventListener('change', e => {
+            if (e.target.matches('[data-bulk-check]')) { flag.value = '0'; refresh(); }
+        });
+        allBox.addEventListener('change', () => { flag.value = '0'; checks().forEach(c => c.checked = allBox.checked); refresh(); });
+        if (allPages) allPages.addEventListener('click', () => { flag.value = '1'; allPages.classList.add('hidden'); refresh(); });
+        document.getElementById('bulk-open').addEventListener('click', open);
+        ['bulk-close', 'bulk-cancel'].forEach(id => document.getElementById(id).addEventListener('click', close));
+        modal.addEventListener('click', e => { if (e.target === modal) close(); });
+        document.getElementById('bulk-clear').addEventListener('click', () => { flag.value = '0'; checks().forEach(c => c.checked = false); refresh(); });
+        form.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener('change', renderChips));
+        valueIn.addEventListener('input', renderPreview);
+
+        // Tombol cepat tanggal berakhir: sekarang + N hari dalam WIB
+        const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+        function wib(ms) {
+            const p = {};
+            fmt.formatToParts(new Date(ms)).forEach(x => { p[x.type] = x.value; });
+            return p.year + '-' + p.month + '-' + p.day + 'T' + (p.hour === '24' ? '00' : p.hour) + ':' + p.minute;
+        }
+        form.querySelectorAll('[data-bulk-end]').forEach(b => b.addEventListener('click', () => {
+            const d = Number(b.dataset.bulkEnd);
+            ends.value = d ? wib(Date.now() + d * 86400000) : '';
+        }));
+
+        // Konfirmasi sebelum menyimpan (harga langsung berubah di katalog)
+        form.addEventListener('submit', e => {
+            const act = e.submitter ? e.submitter.value : 'apply';
+            const n = count();
+            if (n === 0) { e.preventDefault(); alert('Centang minimal satu akun dulu.'); return; }
+            if (act === 'apply') {
+                const v = parseFloat(valueIn.value);
+                if (isNaN(v) || v <= 0) { e.preventDefault(); alert('Isi besar potongan dulu.'); return; }
+                const t = mode() === 'percent' ? v + '%' : rp(v);
+                if (!confirm('Terapkan diskon ' + t + ' ke ' + n + ' akun? Harga di katalog langsung berubah.')) e.preventDefault();
+            } else if (!confirm('Akhiri diskon ' + n + ' akun dan kembalikan ke harga normal?')) {
+                e.preventDefault();
+            }
+        });
+
+        refresh();
+    })();
+
     function copyReviewLink(btn) {
         const url = btn.dataset.copy;
         const done = () => {
