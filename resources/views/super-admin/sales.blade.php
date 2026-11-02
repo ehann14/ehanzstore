@@ -113,7 +113,7 @@
 
                                     @if($sale->transaction_status === 'completed')
                                         @php [$wText, $wCls] = $sale->warrantyBadge(); @endphp
-                                        <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!} class="mt-1.5 inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
+                                        <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi habis', true) !!} class="mt-1.5 inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
                                         @if($sale->warranty_expires_at)
                                             <p class="text-[11px] text-slate-500 mt-1 whitespace-nowrap">s/d {{ $sale->warrantyUntilLabel() }} · {{ $sale->warrantyDays() }} hari</p>
                                         @endif
@@ -176,7 +176,7 @@
                             <span class="text-[11px] {{ $sale->hasBuyerData() ? 'text-slate-300' : 'text-amber-300' }}">
                                 {{ $sale->hasBuyerData() ? 'Pembeli: ' . $sale->buyer_name : 'Data pembeli belum diisi' }}
                             </span>
-                            <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!} class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
+                            <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi habis', true) !!} class="px-2 py-0.5 rounded-full border text-[11px] font-medium {{ $wCls }}">{{ $wText }}</span>
                             <a href="{{ route('admin.sales.buyer', $sale) }}" class="text-[11px] text-electric hover:underline ml-auto">
                                 {{ $sale->hasBuyerData() ? 'Ubah' : 'Isi data pembeli' }}
                             </a>

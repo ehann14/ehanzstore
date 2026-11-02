@@ -148,7 +148,7 @@
                         </div>
                         <div class="flex items-center gap-3 sm:justify-end shrink-0">
                             <div class="sm:text-right">
-                                <span {!! $alert->countdownAttrs('Garansi sisa ', 'Garansi berakhir', true) !!} class="inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-semibold bg-amber-500/15 text-amber-300 border-amber-500/30">Garansi {{ $alert->warrantyRemainingText() }}</span>
+                                <span {!! $alert->countdownAttrs('Garansi sisa ', 'Garansi habis', true) !!} class="inline-flex whitespace-nowrap px-2.5 py-0.5 rounded-full border text-[11px] font-semibold bg-amber-500/15 text-amber-300 border-amber-500/30">Garansi {{ $alert->warrantyRemainingText() }}</span>
                                 <p class="text-[11px] text-slate-500 mt-1 whitespace-nowrap">s/d {{ $alert->warrantyUntilLabel() }}</p>
                             </div>
                             @if($waUrl)

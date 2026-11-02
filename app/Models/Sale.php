@@ -363,6 +363,14 @@ class Sale extends Model
         return min(self::WARRANTY_OPTIONS) . '–' . max(self::WARRANTY_OPTIONS);
     }
 
+    /** Garansi sudah habis? (transaksi selesai, punya tanggal berakhir, dan waktunya sudah lewat) */
+    public function warrantyHasEnded(): bool
+    {
+        return $this->transaction_status === 'completed'
+            && $this->warranty_expires_at !== null
+            && now()->gte($this->warranty_expires_at);
+    }
+
     public function warrantyIsActive(): bool
     {
         return $this->transaction_status === 'completed'
@@ -395,7 +403,7 @@ class Sale extends Model
      * Mengembalikan string kosong kalau garansi tidak aktif, jadi cukup dipasang di elemen:
      *   <span {!! $sale->countdownAttrs('sisa ') !!}>sisa 4 hari</span>
      */
-    public function countdownAttrs(string $prefix = 'sisa ', string $expired = 'Garansi berakhir', bool $badge = false): string
+    public function countdownAttrs(string $prefix = 'sisa ', string $expired = 'Garansi habis', bool $badge = false): string
     {
         if (! $this->warrantyIsActive()) {
             return '';
@@ -456,7 +464,7 @@ class Sale extends Model
         }
 
         if (now()->gte($this->warranty_expires_at)) {
-            return ['Garansi berakhir', 'bg-red-500/15 text-red-300 border-red-500/30'];
+            return ['Garansi habis', 'bg-red-500/15 text-red-300 border-red-500/30'];
         }
 
         $seconds = $this->warranty_expires_at->getTimestamp() - now()->getTimestamp();

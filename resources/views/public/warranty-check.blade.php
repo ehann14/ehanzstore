@@ -125,7 +125,7 @@
 
                         {{-- Status & sisa waktu --}}
                         <div class="p-5 sm:p-6 text-center">
-                            <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!}
+                            <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi habis', true) !!}
                                   class="inline-block px-3 py-1 rounded-full border text-xs font-semibold {{ $badgeCls }}">{{ $badgeText }}</span>
 
                             @if($active)
@@ -140,7 +140,7 @@
                                 </div>
                                 <div class="flex justify-between text-[11px] text-slate-500 mt-1.5">
                                     <span>Serah terima</span>
-                                    <span>Garansi berakhir</span>
+                                    <span>Garansi habis</span>
                                 </div>
                             @else
                                 <p class="font-display text-3xl sm:text-4xl font-bold text-white mt-4">Garansi Berakhir</p>

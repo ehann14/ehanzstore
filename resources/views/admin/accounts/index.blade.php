@@ -231,7 +231,7 @@
 
                                 @if($doneSale)
                                     @php [$wText, $wCls] = $doneSale->warrantyBadge(); @endphp
-                                    <span {!! $doneSale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!}
+                                    <span {!! $doneSale->countdownAttrs('Garansi aktif · sisa ', 'Garansi habis', true) !!}
                                           class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $wCls }}">{{ $wText }}</span>
                                 @endif
                             </div>

@@ -173,7 +173,9 @@
                         $warrantyLeft = $warrantySale?->warrantyRemainingText();
                     @endphp
                     @if($warrantyLeft)
-                        <p class="text-center text-xs text-emerald-300">Garansi pembeli: <span {!! $warrantySale->countdownAttrs('aktif · sisa ', 'sudah berakhir') !!}>aktif &middot; {{ $warrantyLeft }}</span></p>
+                        <p class="text-center text-xs text-emerald-300">Garansi pembeli: <span {!! $warrantySale->countdownAttrs('aktif · sisa ', 'habis') !!}>aktif &middot; {{ $warrantyLeft }}</span></p>
+                    @elseif($warrantySale?->warrantyHasEnded())
+                        <p class="text-center text-xs"><span class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-500/15 border border-slate-400/30 text-slate-300 font-semibold">Garansi habis</span></p>
                     @endif
                     @if($warrantySale?->approvedReview)
                         @php $rv = $warrantySale->approvedReview; @endphp

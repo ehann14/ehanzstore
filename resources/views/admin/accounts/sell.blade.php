@@ -60,7 +60,7 @@
         </div>
         @if($isEdit)
             @php [$badgeText, $badgeCls] = $sale->warrantyBadge(); @endphp
-            <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi berakhir', true) !!} class="hidden sm:inline-flex px-2.5 py-1 rounded-full border text-[11px] font-medium {{ $badgeCls }}">{{ $badgeText }}</span>
+            <span {!! $sale->countdownAttrs('Garansi aktif · sisa ', 'Garansi habis', true) !!} class="hidden sm:inline-flex px-2.5 py-1 rounded-full border text-[11px] font-medium {{ $badgeCls }}">{{ $badgeText }}</span>
         @endif
     </div>
 
