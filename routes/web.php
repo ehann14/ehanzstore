@@ -187,6 +187,7 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
         Route::post('notifications/push/unsubscribe', [NotificationController::class, 'unsubscribe'])->name('notifications.push.unsubscribe');
         Route::post('notifications/push/test', [NotificationController::class, 'test'])->name('notifications.push.test');
         Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::post('notifications/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clear-all');
         Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
 
         // Pengingat stok lama + saran penurunan harga

@@ -15,7 +15,10 @@
      role="dialog" aria-label="Notifikasi">
     <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/5">
         <p class="font-display font-bold text-white text-sm">Notifikasi</p>
-        <button type="button" id="ntfReadAll" class="text-xs text-electric hover:text-white transition">Tandai semua dibaca</button>
+        <div class="flex items-center gap-3">
+            <button type="button" id="ntfReadAll" class="text-xs text-electric hover:text-white transition">Tandai semua dibaca</button>
+            <button type="button" id="ntfClearAll" class="text-xs text-red-400 hover:text-red-300 transition">Hapus semua</button>
+        </div>
     </div>
     <div id="ntfList" class="max-h-[50vh] overflow-y-auto custom-scrollbar divide-y divide-white/5">
         <p class="px-4 py-8 text-center text-sm text-slate-500">Memuat…</p>
@@ -50,6 +53,7 @@
     var list    = document.getElementById('ntfList');
     var toasts  = document.getElementById('ntfToasts');
     var readAll = document.getElementById('ntfReadAll');
+    var clearAll = document.getElementById('ntfClearAll');
     var knownIds = null;          // null = belum pernah memuat (jangan munculkan toast untuk data lama)
     var baseTitle = document.title;
     var audioCtx = null;
@@ -96,6 +100,10 @@
 
     function render(items) {
         list.textContent = '';
+
+        // Tombol hapus/tandai dibaca tidak berguna kalau daftar kosong
+        clearAll.hidden = !items.length;
+        readAll.hidden = !items.length;
 
         if (!items.length) {
             list.appendChild(el('p', 'px-4 py-8 text-center text-sm text-slate-500', 'Belum ada notifikasi.'));
@@ -219,6 +227,15 @@
 
     readAll.addEventListener('click', function () {
         post(READ_URL + '/read-all').then(load);
+    });
+
+    clearAll.addEventListener('click', function () {
+        if (!window.confirm('Hapus semua notifikasi? Tindakan ini tidak bisa dibatalkan.')) { return; }
+        clearAll.disabled = true;
+        post(READ_URL + '/clear-all').then(function () {
+            clearAll.disabled = false;
+            load();
+        });
     });
 
     // ----- Notifikasi push ke HP (Web Push) -----

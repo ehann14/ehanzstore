@@ -150,4 +150,18 @@ class NotificationController extends Controller
 
         return response()->json(['ok' => true]);
     }
+
+    /** Hapus SEMUA notifikasi milik user yang login (dibaca maupun belum) supaya tidak menumpuk. */
+    public function clearAll(Request $request): JsonResponse
+    {
+        try {
+            $deleted = $request->user()->notifications()->delete();
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json(['ok' => false, 'message' => 'Gagal menghapus notifikasi.'], 500);
+        }
+
+        return response()->json(['ok' => true, 'deleted' => $deleted]);
+    }
 }
