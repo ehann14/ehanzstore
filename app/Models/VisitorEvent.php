@@ -27,4 +27,34 @@ class VisitorEvent extends Model
         // withTrashed: "Akun Paling Diminati" tetap menampilkan nama akun yang sudah dihapus
         return $this->belongsTo(CocAccount::class, 'coc_account_id')->withTrashed();
     }
+
+    /**
+     * Hapus event yang lebih tua dari $days hari, sedikit demi sedikit supaya tabel tidak terkunci lama.
+     *
+     * @param int|null $maxChunks batasi jumlah putaran (null = sampai habis)
+     * @return int jumlah baris yang dihapus
+     */
+    public static function pruneOlderThan(int $days, int $chunk = 1000, ?int $maxChunks = null): int
+    {
+        if ($days <= 0) {
+            return 0;
+        }
+
+        $cutoff  = now()->subDays($days);
+        $chunk   = max(1, $chunk);
+        $total   = 0;
+        $rounds  = 0;
+
+        do {
+            $deleted = static::where('created_at', '<', $cutoff)
+                ->orderBy('id')
+                ->limit($chunk)
+                ->delete();
+
+            $total += $deleted;
+            $rounds++;
+        } while ($deleted === $chunk && ($maxChunks === null || $rounds < $maxChunks));
+
+        return $total;
+    }
 }

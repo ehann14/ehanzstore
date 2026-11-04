@@ -103,6 +103,24 @@ return [
     ],
 
     // ------------------------------------------------------------------
+    // Pencatatan pengunjung (tabel visitor_events)
+    // ------------------------------------------------------------------
+    'visitor_tracking' => [
+        // Event lebih tua dari sekian hari dihapus otomatis. Isi 0 untuk mematikan penghapusan.
+        'retention_days' => (int) env('VISITOR_RETENTION_DAYS', 90),
+
+        // Jumlah baris yang dihapus per query (supaya tabel tidak terkunci lama)
+        'prune_chunk' => 1000,
+
+        // Path yang tidak dicatat sebagai kunjungan (pola Request::is(), tanpa garis miring di depan)
+        'ignore_paths' => [
+            'admin/*', 'super-admin/*', 'uploads/*', 'login', 'login/*', 'csrf-token', 'up',
+            'favicon.ico', 'robots.txt', 'sitemap.xml', 'manifest.json', 'sw.js', 'offline.html',
+            'apple-touch-icon*', '.well-known/*',
+        ],
+    ],
+
+    // ------------------------------------------------------------------
     // Jam operasional toko (WIB, format 24 jam "H:i").
     // Dipakai badge Buka/Tutup dan tombol WhatsApp melayang.
     // ------------------------------------------------------------------
