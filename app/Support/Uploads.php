@@ -23,7 +23,7 @@ class Uploads
     public const DISK = 'uploads';
 
     /** Sub-folder yang diizinkan. */
-    public const DIRS = ['accounts', 'banners', 'maintenance'];
+    public const DIRS = ['accounts', 'banners', 'maintenance', 'payment'];
 
     public static function disk(): Filesystem
     {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Sale;
 use App\Support\AdminNotifier;
+use App\Support\PaymentSettings;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -63,6 +64,18 @@ class BookingController extends Controller
     {
         $booking = Booking::where('token', $token)->with('account.primaryImage')->firstOrFail();
 
-        return view('public.booking', compact('booking'));
+        $qris = PaymentSettings::qris();
+
+        return view('public.booking', compact('booking', 'qris'));
+    }
+
+    /** Status ringan untuk pengecekan diam-diam di halaman booking (tidak memuat ulang halaman). */
+    public function status(string $token)
+    {
+        $booking = Booking::where('token', $token)->firstOrFail();
+
+        return response()
+            ->json(['status' => $booking->status, 'dp_state' => $booking->dp_state])
+            ->header('Cache-Control', 'no-store, max-age=0');
     }
 }

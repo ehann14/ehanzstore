@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\CustomerController;
 use App\Http\Controllers\SuperAdmin\MaintenanceController;
+use App\Http\Controllers\SuperAdmin\PaymentController;
 use App\Http\Controllers\SuperAdmin\ReviewModerationController;
 use App\Http\Controllers\SuperAdmin\ReportController;
 use App\Http\Controllers\Admin\AccountController;
@@ -59,6 +60,10 @@ Route::post('/akun/{account_code}/booking', [BookingController::class, 'store'])
 Route::get('/booking/{token}', [BookingController::class, 'show'])
     ->middleware('throttle:30,1')
     ->name('booking.show');
+// Cek status ringan (dipakai halaman booking saat pembeli kembali dari aplikasi bank/e-wallet; tanpa muat ulang paksa)
+Route::get('/booking/{token}/status', [BookingController::class, 'status'])
+    ->middleware('throttle:60,1')
+    ->name('booking.status');
 
 // Token CSRF segar untuk form yang dibiarkan terbuka lama (dipanggil otomatis oleh JS).
 // Sekaligus memperpanjang masa aktif sesi.
@@ -89,7 +94,7 @@ Route::post('/ulasan/{token}', [ReviewController::class, 'store'])
 
 // Upload fallback: digunakan jika Apache tidak menemukan file fisiknya
 Route::get('/uploads/{path}', [PublicController::class, 'upload'])
-    ->where('path', '(accounts|banners|maintenance)/.*')
+    ->where('path', '(accounts|banners|maintenance|payment)/.*')
     ->name('uploads.fallback');
 
 // Auth Routes
@@ -274,6 +279,10 @@ Route::middleware(['auth', 'role:super_admin', 'two-factor'])
             ->middleware('throttle:10,1')
             ->name('activity-logs.clear');
         Route::delete('/activity-logs/{log}', [ActivityLogController::class, 'destroy'])->name('activity-logs.destroy');
+
+        // Pembayaran (QRIS di halaman booking pembeli)
+        Route::get('/payment', [PaymentController::class, 'edit'])->name('payment');
+        Route::post('/payment', [PaymentController::class, 'update'])->name('payment.update');
 
         // Mode maintenance
         Route::get('/maintenance', [MaintenanceController::class, 'edit'])->name('maintenance');

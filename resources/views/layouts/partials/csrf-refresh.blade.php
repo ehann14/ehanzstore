@@ -33,8 +33,11 @@
                 .finally(function () { busy = false; });
         }
 
-        // Halaman dipulihkan dari back/forward cache -> paksa muat ulang agar token baru
+        // Halaman dipulihkan dari back/forward cache -> paksa muat ulang agar token baru.
+        // Dikecualikan: halaman yang memasang <meta name="no-auto-reload"> (mis. halaman booking pembeli yang
+        // tidak punya form; pembeli kembali dari aplikasi bank/e-wallet dan tidak boleh kehilangan posisinya).
         window.addEventListener('pageshow', function (e) {
+            if (document.querySelector('meta[name="no-auto-reload"]')) return;
             var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
             if (e.persisted || (nav && nav.type === 'back_forward')) {
                 window.location.reload();

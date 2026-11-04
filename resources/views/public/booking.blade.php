@@ -4,6 +4,8 @@
 
 @push('meta')
     <meta name="robots" content="noindex, nofollow">
+    {{-- Pembeli sering keluar ke aplikasi bank/e-wallet lalu kembali: jangan muat ulang halaman otomatis. --}}
+    <meta name="no-auto-reload" content="1">
 @endpush
 
 @section('content')
@@ -35,7 +37,14 @@
     ];
 @endphp
 
-<div class="pt-28 sm:pt-32 pb-20 max-w-3xl mx-auto px-4">
+<div class="pt-28 sm:pt-32 {{ $status === 'pending' && $holding ? 'pb-36 sm:pb-20' : 'pb-20' }} max-w-3xl mx-auto px-4">
+
+    {{-- Pita pemberitahuan status berubah (pembeli yang memilih kapan memuat ulang) --}}
+    <div id="statusBanner" hidden class="fixed inset-x-3 z-50 sm:max-w-md sm:mx-auto rounded-2xl border border-electric/40 bg-slate-900 shadow-2xl px-4 py-3 flex items-center gap-3"
+         style="top: calc(env(safe-area-inset-top, 0px) + 5rem)" role="status">
+        <p class="text-sm text-slate-100 flex-1">Status booking diperbarui.</p>
+        <button type="button" id="statusReload" class="shrink-0 px-4 py-2 rounded-full bg-electric hover:bg-blue-500 text-white text-xs font-bold">Muat ulang</button>
+    </div>
 
     @if(session('booking_created'))
         <div class="mb-6 rounded-3xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-sm text-emerald-200">
@@ -93,6 +102,47 @@
             <p class="font-display font-extrabold text-2xl text-white mt-1" {!! $booking->countdownAttrs('Sisa waktu ', 'Waktu habis') !!}>{{ $booking->deadlineLabel() }}</p>
             <p class="text-xs text-amber-100/70 mt-1">Bayar DP maksimal {{ $payHours }} jam sejak booking dibuat, yaitu sebelum {{ $booking->deadlineLabel() }}. Lewat dari itu booking batal otomatis.</p>
 
+            @if($qris['image_url'])
+                {{-- QRIS langsung di halaman: tidak perlu menunggu info dari admin --}}
+                <div class="mt-5 rounded-3xl bg-slate-950/50 border border-white/10 p-4 sm:p-5 text-center">
+                    <p class="text-xs font-bold uppercase tracking-wider text-blue-300">Bayar dengan QRIS</p>
+                    <p class="text-sm text-slate-400 mt-2">Nominal DP yang harus dibayar</p>
+                    <p class="font-display font-extrabold text-4xl text-white mt-1">{{ $rp($booking->dp_amount) }}</p>
+                    <button type="button" id="copyAmount" data-amount="{{ (int) $booking->dp_amount }}"
+                            class="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold transition">
+                        <span id="copyLabel">Salin nominal</span>
+                    </button>
+
+                    <div class="mt-4 mx-auto w-full max-w-[19rem] rounded-2xl bg-white p-3">
+                        <img src="{{ $qris['image_url'] }}" alt="QRIS pembayaran EHANZSTORE" class="w-full h-auto block" decoding="async">
+                    </div>
+
+                    <a href="{{ $qris['image_url'] }}" download="QRIS-EHANZSTORE" class="mt-4 inline-flex items-center justify-center gap-2 bg-electric hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-full transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/></svg>
+                        Unduh QRIS
+                    </a>
+
+                    @if($qris['note'])
+                        <p class="mt-3 text-xs text-slate-300 whitespace-pre-line">{{ $qris['note'] }}</p>
+                    @endif
+
+                    <p class="mt-3 text-[11px] text-slate-500 leading-relaxed">
+                        Tips: unduh QRIS, buka e-wallet atau m-banking, pilih scan dari galeri, lalu isi nominal persis seperti di atas.
+                        Setelah bayar, kembali ke halaman ini dan tekan <b class="text-slate-300">Kirim Bukti Transfer</b>. Halaman ini tidak memuat ulang sendiri.
+                    </p>
+                </div>
+
+                <ol class="mt-5 space-y-2 text-sm text-slate-200 list-decimal pl-5">
+                    <li>Bayar DP <b>{{ $rp($booking->dp_amount) }}</b> lewat QRIS di atas.</li>
+                    <li>Screenshot bukti transfer, lalu tekan <b>Kirim Bukti Transfer</b> dan lampirkan gambarnya di WhatsApp (ikon klip).</li>
+                    <li>Setelah admin mengonfirmasi, akun sudah bisa langsung kamu mainkan selama masa pelunasan {{ $holdDays }} hari (data akun diganti setelah lunas).</li>
+                </ol>
+
+                <div class="mt-5 flex flex-col sm:flex-row gap-3">
+                    <a href="{{ $waProof }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-3 rounded-full transition">Kirim Bukti Transfer</a>
+                    <a href="{{ $waPay }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-6 py-3 rounded-full transition">Bayar lewat rekening bank? Tanya admin</a>
+                </div>
+            @else
             <ol class="mt-4 space-y-2 text-sm text-slate-200 list-decimal pl-5">
                 <li>Klik <b>Minta Info Pembayaran</b> untuk chat admin (kode booking terisi otomatis).</li>
                 <li>Transfer DP <b>{{ $rp($booking->dp_amount) }}</b> ke rekening/e-wallet resmi yang diberikan admin.</li>
@@ -103,6 +153,14 @@
                 <a href="{{ $waPay }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-3 rounded-full transition">Minta Info Pembayaran</a>
                 <a href="{{ $waProof }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-6 py-3 rounded-full transition">Kirim Bukti Transfer</a>
             </div>
+            @endif
+        </div>
+
+        {{-- Bar tetap di bawah (HP): pembeli yang kembali dari aplikasi bank langsung melihat tombol kirim bukti --}}
+        <div class="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-slate-950/95 px-4 pt-3" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + .75rem)">
+            <a href="{{ $waProof }}" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 w-full bg-green-600 active:bg-green-500 text-white font-bold py-3.5 rounded-full">
+                Sudah transfer? Kirim bukti
+            </a>
         </div>
 
     @elseif($status === 'active' && $holding)
@@ -146,3 +204,53 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        // ----- Salin nominal DP -----
+        var copyBtn = document.getElementById('copyAmount');
+        if (copyBtn) {
+            var label = document.getElementById('copyLabel');
+            copyBtn.addEventListener('click', function () {
+                var amount = copyBtn.getAttribute('data-amount');
+                var done = function () { label.textContent = 'Tersalin: ' + amount; setTimeout(function () { label.textContent = 'Salin nominal'; }, 2500); };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(amount).then(done, function () { legacy(amount, done); });
+                } else { legacy(amount, done); }
+            });
+            function legacy(text, done) {
+                var t = document.createElement('textarea');
+                t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;opacity:0;top:0';
+                document.body.appendChild(t); t.select();
+                try { document.execCommand('copy'); done(); } catch (e) {}
+                document.body.removeChild(t);
+            }
+        }
+
+        // ----- Cek status diam-diam: TIDAK pernah memuat ulang halaman sendiri -----
+        var banner = document.getElementById('statusBanner');
+        var initial = @json(['status' => $status, 'dp_state' => $booking->dp_state]);
+        var statusUrl = '{{ route('booking.status', $booking->token) }}';
+        if (!banner || (initial.status !== 'pending' && initial.status !== 'active')) { return; }
+
+        var busy = false, last = Date.now();
+        function check() {
+            if (busy || document.hidden) { return; }
+            busy = true; last = Date.now();
+            fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) {
+                    if (d && (d.status !== initial.status || d.dp_state !== initial.dp_state)) { banner.hidden = false; }
+                })
+                .catch(function () {})
+                .then(function () { busy = false; });
+        }
+
+        document.getElementById('statusReload').addEventListener('click', function () { window.location.reload(); });
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) { check(); } });
+        window.addEventListener('pageshow', function (e) { if (e.persisted) { check(); } });
+        setInterval(function () { if (Date.now() - last >= 30000) { check(); } }, 5000);
+    })();
+</script>
+@endpush
