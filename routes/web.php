@@ -11,6 +11,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\SellerSubmissionController;
 use App\Http\Controllers\Admin\SellerLinkController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\DeviceController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\CustomerController;
@@ -207,6 +208,12 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
         Route::get('consignments', [ConsignmentController::class, 'index'])->name('consignments.index');
         Route::post('consignments/{sale}/pay', [ConsignmentController::class, 'markPaid'])->name('consignments.pay');
         Route::post('consignments/{sale}/unpay', [ConsignmentController::class, 'markUnpaid'])->name('consignments.unpay');
+
+        // Perangkat yang sedang login + keluar dari semua perangkat lain
+        Route::get('devices', [DeviceController::class, 'index'])->name('devices');
+        Route::post('devices/logout-others', [DeviceController::class, 'logoutOthers'])
+            ->middleware('throttle:5,1')
+            ->name('devices.logout-others');
     });
 
 // Pengaturan keamanan Super Admin (2FA). Sengaja di luar grup di bawah:

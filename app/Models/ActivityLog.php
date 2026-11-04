@@ -57,6 +57,7 @@ class ActivityLog extends Model
         // Keamanan login
         'login_failed'   => ['label' => 'Login gagal',        'tone' => 'amber'],
         'login_locked'   => ['label' => 'Login diblokir sementara', 'tone' => 'red'],
+        'logout_all_devices' => ['label' => 'Keluar dari semua perangkat', 'tone' => 'amber'],
         'two_factor_failed'    => ['label' => '2FA: kode salah',         'tone' => 'amber'],
         'two_factor_enabled'   => ['label' => '2FA diaktifkan',          'tone' => 'green'],
         'two_factor_disabled'  => ['label' => '2FA dinonaktifkan',       'tone' => 'red'],
