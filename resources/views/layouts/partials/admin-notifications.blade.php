@@ -5,6 +5,11 @@
     - Isi notifikasi ditulis dengan textContent (aman dari HTML/script di teks ulasan pembeli)
     Dipasang sekali di layouts/admin.blade.php; tombol lonceng memakai class .ntf-bell
 --}}
+@php
+    // Kunci publik VAPID (dibuat otomatis sekali). Null = fitur push tidak tersedia (mis. openssl/tabel belum siap).
+    $pushKey = \App\Support\WebPush::publicKey();
+@endphp
+
 <!-- Panel notifikasi -->
 <div id="ntfPanel" class="hidden fixed z-[70] w-[calc(100vw-1.5rem)] max-w-sm glass-strong rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
      role="dialog" aria-label="Notifikasi">
@@ -12,9 +17,19 @@
         <p class="font-display font-bold text-white text-sm">Notifikasi</p>
         <button type="button" id="ntfReadAll" class="text-xs text-electric hover:text-white transition">Tandai semua dibaca</button>
     </div>
-    <div id="ntfList" class="max-h-[60vh] overflow-y-auto custom-scrollbar divide-y divide-white/5">
+    <div id="ntfList" class="max-h-[50vh] overflow-y-auto custom-scrollbar divide-y divide-white/5">
         <p class="px-4 py-8 text-center text-sm text-slate-500">Memuat…</p>
     </div>
+    @if($pushKey)
+    <div class="border-t border-white/5 px-4 py-3 space-y-2" id="pushBox" hidden>
+        <p id="pushStatus" class="text-xs text-slate-400"></p>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" id="pushOn" hidden class="px-3 py-1.5 rounded-full bg-electric hover:bg-blue-500 text-white text-xs font-bold transition">Aktifkan notifikasi di HP ini</button>
+            <button type="button" id="pushTest" hidden class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold transition">Kirim tes</button>
+            <button type="button" id="pushOff" hidden class="px-3 py-1.5 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-semibold transition">Matikan</button>
+        </div>
+    </div>
+    @endif
 </div>
 
 <!-- Toast notifikasi baru -->
@@ -26,6 +41,8 @@
     'use strict';
 
     var FEED_URL = '{{ route('admin.notifications.feed', [], false) }}';
+    var PUSH_KEY = @json($pushKey);
+    var PUSH_URL = '{{ url('/admin/notifications/push') }}';
     var READ_URL = '{{ url('/admin/notifications') }}';
     var POLL_MS  = 20000;
 
@@ -203,6 +220,115 @@
     readAll.addEventListener('click', function () {
         post(READ_URL + '/read-all').then(load);
     });
+
+    // ----- Notifikasi push ke HP (Web Push) -----
+    // Butuh HTTPS + service worker (public/sw.js). Di iPhone hanya jalan bila panel sudah dipasang ke layar utama.
+    (function setupPush() {
+        var box = document.getElementById('pushBox');
+        if (!PUSH_KEY || !box) { return; }
+
+        var status = document.getElementById('pushStatus');
+        var bOn = document.getElementById('pushOn'), bTest = document.getElementById('pushTest'), bOff = document.getElementById('pushOff');
+        box.hidden = false;
+
+        function show(msg, on, test, off) {
+            status.textContent = msg;
+            bOn.hidden = !on; bTest.hidden = !test; bOff.hidden = !off;
+        }
+
+        var supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+        if (!supported) {
+            var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+            show(ios
+                ? 'Di iPhone/iPad: pasang panel ke layar utama dulu (Bagikan → Tambah ke Layar Utama), lalu buka dari ikonnya.'
+                : 'Browser ini belum mendukung notifikasi HP. Pakai Chrome terbaru dan pastikan situs memakai HTTPS.', false, false, false);
+            return;
+        }
+
+        function keyBytes(b64) {
+            var s = (b64 + '===='.slice(b64.length % 4)).replace(/-/g, '+').replace(/_/g, '/');
+            var raw = atob(s), out = new Uint8Array(raw.length);
+            for (var i = 0; i < raw.length; i++) { out[i] = raw.charCodeAt(i); }
+            return out;
+        }
+
+        function send(path, endpoint) {
+            return fetch(PUSH_URL + path, {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ endpoint: endpoint || '' })
+            }).then(function (r) { return r.json().catch(function () { return {}; }); });
+        }
+
+        function registration() {
+            return navigator.serviceWorker.register('{{ asset('sw.js') }}', { scope: '/' })
+                .then(function () { return navigator.serviceWorker.ready; });
+        }
+
+        function refresh() {
+            if (Notification.permission === 'denied') {
+                show('Notifikasi diblokir. Buka pengaturan situs di browser (ikon gembok) lalu izinkan Notifikasi.', false, false, false);
+                return Promise.resolve();
+            }
+            return registration().then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+                if (sub && Notification.permission === 'granted') {
+                    send('/subscribe', sub.endpoint);          // sinkronkan ulang ke server (aman diulang)
+                    show('Notifikasi HP aktif di perangkat ini.', false, true, true);
+                } else {
+                    show('Dapatkan notifikasi booking & ulasan baru di HP, walau panel tidak dibuka.', true, false, false);
+                }
+            }).catch(function () {
+                show('Notifikasi HP belum bisa disiapkan di browser ini.', false, false, false);
+            });
+        }
+
+        bOn.addEventListener('click', function () {
+            bOn.disabled = true;
+            Notification.requestPermission().then(function (perm) {
+                if (perm !== 'granted') { return refresh(); }
+                return registration().then(function (reg) {
+                    return reg.pushManager.getSubscription().then(function (old) {
+                        // Kunci lama berbeda (jarang): batalkan dulu supaya bisa berlangganan ulang
+                        return old ? old.unsubscribe().catch(function () {}) : null;
+                    }).then(function () {
+                        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PUSH_KEY) });
+                    });
+                }).then(function (sub) { return send('/subscribe', sub.endpoint); })
+                  .then(function (r) {
+                      if (r && r.ok === false) { show(r.message || 'Gagal menyimpan langganan di server.', true, false, false); return; }
+                      return refresh();
+                  });
+            }).catch(function () {
+                show('Gagal mengaktifkan notifikasi. Coba lagi.', true, false, false);
+            }).then(function () { bOn.disabled = false; });
+        });
+
+        bTest.addEventListener('click', function () {
+            bTest.disabled = true;
+            // Panel terbuka = notifikasi HP sengaja tidak muncul. Tutup panel & beralih ke app lain dulu untuk melihatnya.
+            send('/test').then(function (r) {
+                status.textContent = r.ok
+                    ? 'Tes terkirim. Notifikasi HP tampil bila layar/aplikasi sedang tidak terbuka di panel ini.'
+                    : 'Tes gagal dikirim ke perangkat ini. Matikan lalu aktifkan lagi.';
+                load();
+            }).then(function () { bTest.disabled = false; });
+        });
+
+        bOff.addEventListener('click', function () {
+            registration().then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+                if (!sub) { return; }
+                var endpoint = sub.endpoint;
+                return sub.unsubscribe().then(function () { return send('/unsubscribe', endpoint); });
+            }).then(refresh);
+        });
+
+        // Push masuk saat panel terbuka: perbarui lonceng seketika
+        navigator.serviceWorker.addEventListener('message', function (e) {
+            if (e.data && e.data.type === 'push-refresh') { load(); }
+        });
+
+        refresh();
+    })();
 
     load();
     setInterval(function () { if (document.visibilityState === 'visible') { load(); } }, POLL_MS);

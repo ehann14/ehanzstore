@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\PushSubscription;
+use App\Notifications\PushTestNotification;
+use App\Support\WebPush;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -34,6 +37,83 @@ class NotificationController extends Controller
             // Tabel notifications belum dibuat: lonceng tetap tampil kosong, halaman tidak error.
             return response()->json(['unread' => 0, 'items' => [], 'missing_table' => true]);
         }
+    }
+
+    /**
+     * Dipanggil service worker saat ada push masuk: notifikasi yang belum dibaca dan baru dibuat
+     * (3 menit terakhir). Isinya diambil dari sini, bukan dari layanan push, jadi tetap privat.
+     */
+    public function pending(Request $request): JsonResponse
+    {
+        try {
+            $items = $request->user()->unreadNotifications()
+                ->where('created_at', '>=', now()->subMinutes(3))
+                ->oldest()->limit(5)->get()
+                ->map(fn ($n) => [
+                    'id'      => $n->id,
+                    'title'   => $n->data['title'] ?? 'Notifikasi',
+                    'message' => $n->data['message'] ?? '',
+                    'url'     => $n->data['url'] ?? null,
+                ])->values();
+        } catch (Throwable $e) {
+            $items = [];
+        }
+
+        return response()->json(['items' => $items]);
+    }
+
+    /** Simpan langganan push HP/browser ini. */
+    public function subscribe(Request $request): JsonResponse
+    {
+        $data = $request->validate(['endpoint' => ['required', 'url:https', 'max:2000']]);
+
+        try {
+            PushSubscription::updateOrCreate(
+                ['endpoint_hash' => PushSubscription::hashFor($data['endpoint'])],
+                [
+                    'user_id'    => $request->user()->id,
+                    'endpoint'   => $data['endpoint'],
+                    'user_agent' => mb_substr((string) $request->userAgent(), 0, 255),
+                ]
+            );
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json(['ok' => false, 'message' => 'Tabel push_subscriptions belum dibuat.'], 500);
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Matikan push di HP/browser ini. */
+    public function unsubscribe(Request $request): JsonResponse
+    {
+        $data = $request->validate(['endpoint' => ['required', 'string', 'max:2000']]);
+
+        try {
+            PushSubscription::where('user_id', $request->user()->id)
+                ->where('endpoint_hash', PushSubscription::hashFor($data['endpoint']))
+                ->delete();
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Kirim notifikasi uji ke semua perangkat milik user yang login. */
+    public function test(Request $request): JsonResponse
+    {
+        try {
+            $request->user()->notify(new PushTestNotification());
+            [$ok, $fail] = WebPush::sendNowToUser($request->user()->id);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json(['ok' => false, 'message' => 'Gagal mengirim tes.'], 500);
+        }
+
+        return response()->json(['ok' => $ok > 0, 'sent' => $ok, 'failed' => $fail]);
     }
 
     /** Tandai satu notifikasi sudah dibaca. */

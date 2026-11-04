@@ -25,13 +25,18 @@ class AdminNotifier
         try {
             $review->loadMissing('account');
 
-            foreach (static::recipients($review->account?->created_by) as $user) {
+            $recipients = static::recipients($review->account?->created_by);
+
+            foreach ($recipients as $user) {
                 $url = $user->isSuperAdmin()
                     ? route('super-admin.reviews', ['status' => 'pending'], false)
                     : ($review->account ? route('admin.accounts.edit', $review->account->id, false) : null);
 
                 $user->notify(new NewReviewNotification($review, $url));
             }
+
+            // Munculkan juga di HP admin (notifikasi push), walau panel tidak sedang dibuka
+            WebPush::notifyUsers($recipients->pluck('id')->all());
         } catch (Throwable $e) {
             report($e);
         }
@@ -42,9 +47,14 @@ class AdminNotifier
         try {
             $booking->loadMissing('account');
 
-            foreach (static::recipients($booking->account?->created_by) as $user) {
+            $recipients = static::recipients($booking->account?->created_by);
+
+            foreach ($recipients as $user) {
                 $user->notify(new NewBookingNotification($booking, route('admin.bookings.index', [], false)));
             }
+
+            // Munculkan juga di HP admin (notifikasi push), walau panel tidak sedang dibuka
+            WebPush::notifyUsers($recipients->pluck('id')->all());
         } catch (Throwable $e) {
             report($e);
         }

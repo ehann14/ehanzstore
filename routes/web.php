@@ -177,6 +177,10 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
 
         // Lonceng notifikasi admin (ulasan baru & booking baru)
         Route::get('notifications', [NotificationController::class, 'feed'])->name('notifications.feed');
+        Route::get('notifications/push/pending', [NotificationController::class, 'pending'])->name('notifications.push.pending');
+        Route::post('notifications/push/subscribe', [NotificationController::class, 'subscribe'])->name('notifications.push.subscribe');
+        Route::post('notifications/push/unsubscribe', [NotificationController::class, 'unsubscribe'])->name('notifications.push.unsubscribe');
+        Route::post('notifications/push/test', [NotificationController::class, 'test'])->name('notifications.push.test');
         Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
 
