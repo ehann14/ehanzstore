@@ -1,7 +1,8 @@
 {{--
     Halaman maintenance (dipakai oleh mode maintenance dari panel Super Admin
     dan oleh "php artisan down" lewat errors/503.blade.php).
-    Sengaja berdiri sendiri (CSS & ilustrasi SVG di dalam file) supaya tetap tampil walau database/asset bermasalah.
+    Sengaja berdiri sendiri (CSS & ilustrasi SVG di dalam file, tanpa font/skrip luar) supaya tetap tampil walau database/asset bermasalah.
+    Ringan: tanpa blur/backdrop-filter, animasi hanya transform/opacity (GPU), font bawaan perangkat.
     Variabel opsional:
       $title, $message, $until (Carbon|null)
       $image   : URL gambar kustom dari panel Super Admin ('' = pakai ilustrasi bawaan)
@@ -45,39 +46,28 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#020617">
     <title>{{ $title }} - EHANZSTORE.ID</title>
     <link rel="icon" href="{{ asset('images/logo.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --midnight: #020617;
-            --ink: #0b1220;
-            --electric: #3b82f6;
-            --royal: #0645AD;
-        }
-        html, body { min-height: 100%; }
+        :root { --bg: #020617; --card: #0b1220; --line: #1e293b; --blue: #3b82f6; --royal: #0645AD; }
+        html { background: var(--bg); }
         body {
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-            background: var(--midnight);
-            color: #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            min-height: 100vh; min-height: 100dvh;
+            display: flex; align-items: center; justify-content: center;
             padding: 24px 16px;
-            overflow-x: hidden;
-            position: relative;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #e2e8f0;
             -webkit-font-smoothing: antialiased;
+            /* Latar statis (tanpa blur/animasi) supaya tidak membebani GPU */
+            background:
+                radial-gradient(520px 320px at 12% -6%, rgba(6, 69, 173, .38), transparent 70%),
+                radial-gradient(460px 300px at 100% 108%, rgba(59, 130, 246, .2), transparent 70%),
+                var(--bg);
         }
         body.is-preview { padding-top: 76px; }
-        .blob { position: fixed; border-radius: 9999px; filter: blur(90px); opacity: .35; pointer-events: none; z-index: 0; }
-        .blob.a { width: 420px; height: 420px; background: var(--royal); top: -120px; left: -100px; animation: drift 14s ease-in-out infinite alternate; }
-        .blob.b { width: 360px; height: 360px; background: var(--electric); bottom: -140px; right: -80px; opacity: .22; animation: drift 18s ease-in-out infinite alternate-reverse; }
-        @keyframes drift { from { transform: translate(0, 0); } to { transform: translate(40px, 30px); } }
 
-        /* Bar pratinjau (hanya tampil untuk Super Admin dari panel) */
         .previewbar {
             position: fixed; top: 0; left: 0; right: 0; z-index: 10;
             display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 14px;
@@ -86,75 +76,64 @@
         .previewbar a { color: #0f172a; font-weight: 800; text-decoration: underline; }
 
         .card {
-            position: relative; z-index: 1;
-            width: 100%; max-width: 560px;
-            text-align: center;
-            padding: 44px 28px 32px;
-            border-radius: 32px;
-            background: rgba(15, 23, 42, .62);
-            border: 1px solid rgba(255, 255, 255, .08);
-            backdrop-filter: blur(22px);
-            -webkit-backdrop-filter: blur(22px);
-            box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .8), 0 0 0 1px rgba(59, 130, 246, .06);
+            width: 100%; max-width: 520px; text-align: center;
+            padding: 36px 24px 28px;
+            border-radius: 28px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            box-shadow: 0 24px 60px -28px rgba(0, 0, 0, .85);
         }
-        @media (min-width: 640px) { .card { padding: 52px 48px 36px; } }
+        @media (min-width: 640px) { .card { padding: 44px 44px 32px; } }
 
-        .brand { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 26px; }
-        .brand .logo { width: 46px; height: 46px; border-radius: 16px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .brand .logo img { width: 38px; height: 38px; object-fit: contain; }
-        .brand .name { font-family: 'Nunito', 'Inter', sans-serif; font-weight: 900; font-size: 20px; color: #fff; text-align: left; line-height: 1.1; }
-        .brand .tag { font-size: 11px; color: #94a3b8; font-weight: 500; margin-top: 3px; display: block; }
+        .brand { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+        .logo { width: 44px; height: 44px; border-radius: 14px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .logo img { width: 36px; height: 36px; object-fit: contain; }
+        .name { font-weight: 800; font-size: 19px; color: #fff; text-align: left; line-height: 1.1; letter-spacing: .01em; }
+        .tag { display: block; margin-top: 3px; font-size: 11px; font-weight: 500; color: #94a3b8; letter-spacing: 0; }
 
-        /* Gambar / ilustrasi maintenance */
-        .visual { margin: 0 auto 22px; }
-        .visual .hero-img {
-            display: block; margin: 0 auto;
-            max-width: 100%; max-height: 260px; width: auto; height: auto;
-            object-fit: contain; border-radius: 22px;
-            border: 1px solid rgba(255, 255, 255, .08);
-            box-shadow: 0 18px 50px -20px rgba(0, 0, 0, .7);
+        /* Ilustrasi: hanya transform (GPU), tanpa filter/gradient animasi */
+        .visual { margin: 0 auto 20px; contain: layout paint; }
+        .hero-img {
+            display: block; margin: 0 auto; max-width: 100%; max-height: 240px; width: auto; height: auto;
+            object-fit: contain; border-radius: 20px; border: 1px solid var(--line);
         }
-        .illus { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto; overflow: visible; }
-        /* Gerakan ilustrasi memakai animasi SMIL di dalam SVG (aman di browser/WebView lama); hanya kilau yang memakai CSS. */
-        .illus .tw     { animation: tw 2.6s ease-in-out infinite; }
-        .illus .tw.d1  { animation-delay: .5s; }
-        .illus .tw.d2  { animation-delay: 1.1s; }
-        .illus .tw.d3  { animation-delay: 1.7s; }
-        @keyframes tw    { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+        .illus { display: block; width: 100%; max-width: 260px; height: auto; margin: 0 auto; }
+        .gear { transform-box: fill-box; transform-origin: center; will-change: transform; }
+        .gear.big   { animation: spin 10s linear infinite; }
+        .gear.small { animation: spin 6s linear infinite reverse; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .pill {
-            display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px;
+            display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;
             padding: 6px 14px; border-radius: 9999px;
             background: rgba(245, 158, 11, .1); border: 1px solid rgba(245, 158, 11, .28);
-            color: #fbbf24; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+            color: #fbbf24; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
         }
         .pill i { width: 7px; height: 7px; border-radius: 9999px; background: #f59e0b; animation: blink 1.4s ease-in-out infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+        @keyframes blink { 50% { opacity: .25; } }
 
-        h1 { font-family: 'Nunito', 'Inter', sans-serif; font-weight: 900; font-size: 30px; line-height: 1.15; color: #fff; letter-spacing: -.01em; }
-        @media (min-width: 640px) { h1 { font-size: 38px; } }
-        h1 span { color: var(--electric); text-shadow: 0 0 24px rgba(59, 130, 246, .45); }
-        .msg { margin-top: 14px; font-size: 15px; line-height: 1.7; color: #94a3b8; white-space: pre-line; }
+        h1 { font-weight: 800; font-size: 28px; line-height: 1.15; color: #fff; letter-spacing: -.01em; }
+        @media (min-width: 640px) { h1 { font-size: 34px; } }
+        .msg { margin-top: 12px; font-size: 15px; line-height: 1.7; color: #94a3b8; white-space: pre-line; }
 
-        .bar { margin: 28px auto 0; height: 8px; width: 100%; max-width: 280px; border-radius: 9999px; background: rgba(255,255,255,.07); overflow: hidden; }
-        .bar i { display: block; height: 100%; width: 40%; border-radius: 9999px; background: linear-gradient(90deg, var(--royal), var(--electric), #93c5fd); animation: slide 1.8s ease-in-out infinite; }
-        @keyframes slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(300%); } }
+        .bar { position: relative; margin: 26px auto 0; height: 6px; width: 100%; max-width: 260px; border-radius: 9999px; background: #1e293b; overflow: hidden; }
+        .bar i { position: absolute; inset: 0; width: 100%; border-radius: 9999px; background: linear-gradient(90deg, var(--royal), var(--blue)); transform: translateX(-100%); animation: load 1.8s ease-in-out infinite; will-change: transform; }
+        @keyframes load { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
-        .eta { margin-top: 26px; padding: 16px 18px; border-radius: 22px; background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.2); }
-        .eta small { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #93c5fd; font-weight: 600; }
-        .eta strong { display: block; margin-top: 4px; font-family: 'Nunito', 'Inter', sans-serif; font-weight: 800; font-size: 22px; color: #fff; font-variant-numeric: tabular-nums; }
+        .eta { margin-top: 24px; padding: 14px 16px; border-radius: 20px; background: rgba(59, 130, 246, .08); border: 1px solid rgba(59, 130, 246, .22); }
+        .eta small { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #93c5fd; font-weight: 700; }
+        .eta strong { display: block; margin-top: 4px; font-weight: 800; font-size: 22px; color: #fff; font-variant-numeric: tabular-nums; }
         .eta em { display: block; margin-top: 2px; font-style: normal; font-size: 12px; color: #64748b; }
 
-        .actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 9999px; font-size: 14px; font-weight: 600; text-decoration: none; transition: transform .15s ease, background .15s ease; }
-        .btn:hover { transform: translateY(-2px); }
-        .btn.wa { background: #16a34a; color: #fff; box-shadow: 0 10px 24px -10px rgba(22,163,74,.7); }
-        .btn.wa:hover { background: #22c55e; }
-        .btn.ig { background: rgba(255,255,255,.06); color: #e2e8f0; border: 1px solid rgba(255,255,255,.1); }
-        .btn.ig:hover { background: rgba(255,255,255,.1); }
-        .btn svg { width: 18px; height: 18px; }
+        .actions { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 9999px; font-size: 14px; font-weight: 600; text-decoration: none; }
+        .btn:active { opacity: .85; }
+        .btn.wa { background: #16a34a; color: #fff; }
+        .btn.ig { background: #111a2e; color: #e2e8f0; border: 1px solid var(--line); }
+        .btn svg { width: 18px; height: 18px; flex: none; }
+        @media (hover: hover) { .btn.wa:hover { background: #22c55e; } .btn.ig:hover { background: #172036; } }
 
-        .foot { margin-top: 28px; font-size: 12px; color: #475569; }
+        .foot { margin-top: 26px; font-size: 12px; color: #475569; }
         .foot b { color: #64748b; font-weight: 500; }
 
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } }
@@ -168,107 +147,31 @@
         </div>
     @endif
 
-    <div class="blob a"></div>
-    <div class="blob b"></div>
-
     <main class="card" role="main">
         <div class="brand">
-            <div class="logo"><img src="{{ asset('images/logo.png') }}" alt="EHANZSTORE" onerror="this.style.display='none'"></div>
+            <div class="logo"><img src="{{ asset('images/logo.png') }}" alt="EHANZSTORE" width="36" height="36" decoding="async" onerror="this.style.display='none'"></div>
             <div class="name">EHANZSTORE<span class="tag">Marketplace COC</span></div>
         </div>
 
         <div class="visual">
             @if($image)
                 {{-- Gambar kustom dari panel Super Admin. Bila file gagal dimuat, otomatis pakai ilustrasi bawaan. --}}
-                <img class="hero-img" src="{{ $image }}" alt="Website sedang maintenance"
+                <img class="hero-img" src="{{ $image }}" alt="Website sedang maintenance" decoding="async"
                      onerror="this.style.display='none';document.getElementById('illus-fallback').style.display='block'">
             @endif
 
             <div id="illus-fallback" @if($image) style="display:none" @endif>
-                <svg class="illus" viewBox="0 0 360 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustrasi website sedang diperbaiki">
-                    <defs>
-                        <linearGradient id="mWin" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0" stop-color="#172554"/><stop offset="1" stop-color="#0b1220"/>
-                        </linearGradient>
-                        <linearGradient id="mBar" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0" stop-color="#0645AD"/><stop offset=".6" stop-color="#3b82f6"/><stop offset="1" stop-color="#93c5fd"/>
-                        </linearGradient>
-                        <linearGradient id="mGear" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#2563eb"/>
-                        </linearGradient>
-                        <linearGradient id="mSteel" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0" stop-color="#e2e8f0"/><stop offset="1" stop-color="#94a3b8"/>
-                        </linearGradient>
-                        <radialGradient id="mGlow" cx=".5" cy=".5" r=".5">
-                            <stop offset="0" stop-color="#3b82f6" stop-opacity=".35"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
-                        </radialGradient>
-                    </defs>
-
-                    <ellipse cx="180" cy="120" rx="170" ry="110" fill="url(#mGlow)"/>
-                    <ellipse cx="180" cy="221" rx="140" ry="9" fill="#000" opacity=".35"/>
-
-                    {{-- Jendela browser + roda gigi --}}
-                    <g>
-                        <animateTransform attributeName="transform" type="translate" values="0 0;0 -5;0 0" dur="5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
-                        <rect x="52" y="34" width="256" height="164" rx="18" fill="url(#mWin)" stroke="#3b82f6" stroke-opacity=".45" stroke-width="2"/>
-                        <path d="M52 52A18 18 0 0 1 70 34H290A18 18 0 0 1 308 52V62H52Z" fill="#0b1220"/>
-                        <circle cx="72" cy="48" r="4" fill="#ef4444"/>
-                        <circle cx="86" cy="48" r="4" fill="#f59e0b"/>
-                        <circle cx="100" cy="48" r="4" fill="#22c55e"/>
-                        <rect x="120" y="41" width="130" height="14" rx="7" fill="#1e293b"/>
-                        <text x="185" y="51" text-anchor="middle" font-size="8" fill="#64748b" font-family="Inter, system-ui, sans-serif">ehanzstore.id</text>
-
-                        <rect x="76" y="82" width="112" height="12" rx="6" fill="#334155"/>
-                        <rect x="76" y="102" width="168" height="8" rx="4" fill="#1e293b"/>
-                        <rect x="76" y="118" width="136" height="8" rx="4" fill="#1e293b"/>
-
-                        <rect x="76" y="146" width="208" height="12" rx="6" fill="#0b1220" stroke="#1e293b"/>
-                        <rect x="77" y="147" width="60" height="10" rx="5" fill="url(#mBar)">
-                            <animate attributeName="width" values="60;176;60" dur="6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
-                        </rect>
-
-                        <g transform="translate(300 14)">
-                            <g>
-                                <animateTransform attributeName="transform" type="rotate" from="360 21 21" to="0 21 21" dur="6s" repeatCount="indefinite"/>
-                                <path transform="scale(1.75)" d="{{ $gear }}" fill="#60a5fa"/>
-                            </g>
-                        </g>
-                        <g transform="translate(254 138)">
-                            <g>
-                                <animateTransform attributeName="transform" type="rotate" from="0 38.4 38.4" to="360 38.4 38.4" dur="9s" repeatCount="indefinite"/>
-                                <path transform="scale(3.2)" d="{{ $gear }}" fill="url(#mGear)"/>
-                            </g>
-                        </g>
-                    </g>
-
-                    {{-- Kunci inggris --}}
-                    <g transform="translate(104 180) rotate(24)">
-                        <g>
-                            <animateTransform attributeName="transform" type="rotate" values="-7 0 0;7 0 0;-7 0 0" dur="2.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
-                            <path d="M-12 -12A17 17 0 1 1 -12 12" fill="none" stroke="url(#mSteel)" stroke-width="10" stroke-linecap="round"/>
-                            <rect x="12" y="-6" width="78" height="12" rx="6" fill="url(#mSteel)"/>
-                            <circle cx="82" cy="0" r="2.4" fill="#475569"/>
-                        </g>
-                    </g>
-
-                    {{-- Kerucut pengaman --}}
-                    <g transform="translate(36 216)">
-                        <g>
-                            <animateTransform attributeName="transform" type="rotate" values="-2 0 -7;2 0 -7;-2 0 -7" dur="3.4s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
-                            <rect x="-22" y="-7" width="44" height="8" rx="2.5" fill="#c2410c"/>
-                            <path d="M-16 -7L-7 -53H7L16 -7Z" fill="#fb923c"/>
-                            <path d="M-12.9 -23H12.9L11.3 -31H-11.3Z" fill="#fff"/>
-                            <rect x="-8" y="-56" width="16" height="4" rx="2" fill="#ea580c"/>
-                        </g>
-                    </g>
-
-                    {{-- Kilau --}}
-                    <g fill="#93c5fd">
-                        <circle class="tw" cx="30" cy="70" r="2.5"/>
-                        <circle class="tw d1" cx="340" cy="104" r="2"/>
-                        <circle class="tw d2" cx="22" cy="118" r="1.8"/>
-                        <path class="tw d3" d="M344 138v10M339 143h10" stroke="#93c5fd" stroke-width="2" stroke-linecap="round" fill="none"/>
-                    </g>
+                <svg class="illus" viewBox="0 0 220 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustrasi website sedang diperbaiki">
+                    <rect x="16" y="14" width="188" height="122" rx="16" fill="#0f1a31" stroke="#1d3a78" stroke-width="2"/>
+                    <path d="M16 30a16 16 0 0 1 16-16h156a16 16 0 0 1 16 16v10H16z" fill="#0b1220"/>
+                    <circle cx="34" cy="27" r="3.5" fill="#ef4444"/><circle cx="46" cy="27" r="3.5" fill="#f59e0b"/><circle cx="58" cy="27" r="3.5" fill="#22c55e"/>
+                    <rect x="34" y="56" width="84" height="10" rx="5" fill="#334155"/>
+                    <rect x="34" y="74" width="116" height="7" rx="3.5" fill="#1e293b"/>
+                    <rect x="34" y="88" width="92" height="7" rx="3.5" fill="#1e293b"/>
+                    <rect x="34" y="110" width="100" height="9" rx="4.5" fill="#0b1220" stroke="#1e293b"/>
+                    <rect x="35" y="111" width="46" height="7" rx="3.5" fill="#3b82f6"/>
+                    <g transform="translate(130 66)"><g class="gear big"><path transform="translate(-30 -30) scale(2.5)" d="{{ $gear }}" fill="#3b82f6"/></g></g>
+                    <g transform="translate(176 40)"><g class="gear small"><path transform="translate(-14 -14) scale(1.17)" d="{{ $gear }}" fill="#60a5fa"/></g></g>
                 </svg>
             </div>
         </div>
@@ -307,14 +210,6 @@
 
     <script>
         (function () {
-            // Animasi SMIL tidak ikut aturan CSS reduced-motion, jadi dihentikan manual.
-            try {
-                if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                    var sv = document.querySelector('.illus');
-                    if (sv && sv.pauseAnimations) { sv.pauseAnimations(); }
-                }
-            } catch (e) {}
-
             var el = document.getElementById('eta-count');
 
             if (el) {
@@ -328,12 +223,20 @@
                     el.textContent = (d > 0 ? d + ' hari ' : '') + pad(h) + ':' + pad(m) + ':' + pad(s);
                 };
                 tick();
-                setInterval(tick, 1000);
+                // Hitung mundur berhenti saat tab tidak terlihat (hemat baterai/CPU)
+                var timer = setInterval(function () { if (!document.hidden) { tick(); } }, 1000);
             }
 
             @unless($preview)
             // Cek ulang tiap 60 detik: begitu maintenance dimatikan, halaman otomatis berganti ke website.
-            setTimeout(function () { location.reload(); }, 60000);
+            // Tab yang tersembunyi tidak memuat ulang; saat dibuka lagi dan sudah >60 dtk, langsung dimuat ulang.
+            var last = Date.now();
+            setInterval(function () {
+                if (!document.hidden && Date.now() - last >= 60000) { location.reload(); }
+            }, 5000);
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden && Date.now() - last >= 60000) { location.reload(); }
+            });
             @endunless
         })();
     </script>
