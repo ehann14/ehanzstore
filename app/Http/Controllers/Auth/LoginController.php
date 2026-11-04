@@ -91,8 +91,10 @@ class LoginController extends Controller
             return redirect()->route('two-factor.challenge');
         }
 
-        // "Ingat saya" tidak berlaku untuk Super Admin: cookie-nya akan melewati verifikasi dua langkah.
-        $remember = $request->boolean('remember') && ! $user->isSuperAdmin();
+        // Admin tetap login sampai menekan Keluar sendiri (cookie "ingat saya" selalu aktif, jadi
+        // login tidak hilang walau sesi di server terhapus). Super Admin dikecualikan: cookie itu akan
+        // melewati verifikasi dua langkah. Sesinya sendiri tetap tidak kedaluwarsa (lihat config/session.php).
+        $remember = ! $user->isSuperAdmin();
 
         return $this->completeLogin($request, $user, $remember);
     }

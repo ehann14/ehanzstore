@@ -32,7 +32,11 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+    // Sesi login admin TIDAK kedaluwarsa sendiri: login sekali, tetap masuk (juga setelah browser
+    // ditutup) sampai admin menekan tombol Keluar. Angka ini sengaja tidak dibaca dari .env supaya
+    // SESSION_LIFETIME=120 lama di server tidak mengembalikan logout otomatis. 525600 menit = 365 hari
+    // sejak aktivitas terakhir (batas aman umur cookie browser).
+    'lifetime' => 525600,
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 
