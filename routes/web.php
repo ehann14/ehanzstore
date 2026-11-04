@@ -10,6 +10,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\SellerSubmissionController;
 use App\Http\Controllers\Admin\SellerLinkController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\CustomerController;
@@ -173,6 +174,11 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
         Route::post('bookings/{booking}/extend', [AdminBookingController::class, 'extend'])->name('bookings.extend');
         Route::post('bookings/{booking}/cancel', [AdminBookingController::class, 'cancel'])->name('bookings.cancel');
         Route::post('bookings/{booking}/resolve', [AdminBookingController::class, 'resolve'])->name('bookings.resolve');
+
+        // Lonceng notifikasi admin (ulasan baru & booking baru)
+        Route::get('notifications', [NotificationController::class, 'feed'])->name('notifications.feed');
+        Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
 
         // Pengingat stok lama + saran penurunan harga
         Route::get('stale-stock', [StaleStockController::class, 'index'])

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Sale;
+use App\Support\AdminNotifier;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -50,6 +51,9 @@ class BookingController extends Controller
                 ->withInput($request->only('buyer_name', 'buyer_phone'))
                 ->withErrors(['booking' => $error], 'booking');
         }
+
+        // Beri tahu admin lewat lonceng notifikasi
+        AdminNotifier::newBooking($booking);
 
         return redirect()->route('booking.show', $booking->token)->with('booking_created', true);
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Review;
 use App\Models\Sale;
+use App\Support\AdminNotifier;
 use Illuminate\Http\Request;
 
 /**
@@ -51,7 +52,7 @@ class ReviewController extends Controller
             'comment.max'            => 'Ulasan maksimal 500 karakter.',
         ]);
 
-        Review::create([
+        $review = Review::create([
             'sale_id'        => $sale->id,
             'coc_account_id' => $sale->coc_account_id,
             'reviewer_name'  => trim(strip_tags($data['reviewer_name'])),
@@ -59,6 +60,9 @@ class ReviewController extends Controller
             'comment'        => trim(strip_tags($data['comment'])),
             'status'         => 'pending',
         ]);
+
+        // Beri tahu admin lewat lonceng notifikasi
+        AdminNotifier::newReview($review);
 
         return redirect()->route('review.form', $token)->with('review_sent', true);
     }

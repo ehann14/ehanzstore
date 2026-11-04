@@ -189,6 +189,12 @@
             <div>
                 <h1 class="font-display font-bold text-white leading-none">{{ $brand }}</h1>
             </div>
+            <div class="ml-auto">
+                <button type="button" class="ntf-bell relative shrink-0 w-10 h-10 flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 transition" aria-label="Notifikasi" aria-haspopup="dialog">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    <span class="ntf-badge absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-red-500 text-[9px] font-bold text-white items-center justify-center" style="display:none">0</span>
+                </button>
+            </div>
         </div>
 
         <nav class="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar">
@@ -250,6 +256,10 @@
                         <p class="text-[10px] uppercase tracking-widest text-slate-500 leading-none">{{ $brand }}</p>
                         <p class="font-display font-bold text-white truncate leading-tight mt-1">@yield('title', $brand)</p>
                     </div>
+<button type="button" class="ntf-bell relative shrink-0 w-10 h-10 flex items-center justify-center rounded-xl text-slate-300 hover:text-white hover:bg-white/5 active:bg-white/10 transition" aria-label="Notifikasi" aria-haspopup="dialog">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    <span class="ntf-badge absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-red-500 text-[9px] font-bold text-white items-center justify-center" style="display:none">0</span>
+                </button>
                     <span class="shrink-0 font-mono text-xs text-electric" data-live-clock="time">{{ now()->timezone('Asia/Jakarta')->format('H:i:s') }}</span>
                 </div>
             </header>
@@ -401,6 +411,8 @@
         // Layar diputar / melebar ke desktop: pastikan panel tertutup
         window.addEventListener('resize', function () { if (window.innerWidth >= 1024) { closeDrawer(); } });
     </script>
+
+    @include('layouts.partials.admin-notifications')
 
     @stack('outside-forms')
     {{-- Jam & hitung mundur realtime: ditanam langsung di halaman (tidak bergantung pada file di public/js) --}}
