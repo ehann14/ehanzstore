@@ -7,8 +7,8 @@
     $fieldClass = 'w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-electric';
     $tabs = [
         'open'    => ['Aktif', null],
-        'pending' => ['Menunggu DP', $counts['pending']],
-        'active'  => ['DP diterima', $counts['active']],
+        'unpaid'  => ['Belum TF', $summary['unpaid_count']],
+        'paid'    => ['Sudah TF', null],
         'decide'  => ['Perlu keputusan DP', $counts['decide']],
         'forfeited' => ['DP Hangus', null],
         'completed' => ['Selesai', null],
@@ -32,6 +32,31 @@
                 Total DP hangus: <b class="text-amber-200">{{ 'Rp ' . number_format($forfeitedTotal, 0, ',', '.') }}</b>.
             @endif
         </p>
+    </div>
+
+    <!-- Ringkasan: belum TF vs sudah TF -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <a href="{{ route('admin.bookings.index', ['status' => 'unpaid']) }}"
+           class="rounded-3xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 p-4 transition {{ $filter === 'unpaid' ? 'ring-2 ring-amber-400/60' : '' }}">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <p class="text-xs font-bold uppercase tracking-wider text-amber-300">Belum TF</p>
+            </div>
+            <p class="mt-2 text-2xl font-display font-extrabold text-white">{{ $summary['unpaid_count'] }} <span class="text-sm font-semibold text-slate-400">booking</span></p>
+            <p class="text-xs text-slate-300 mt-0.5">DP menunggu transfer: <b class="text-amber-200">{{ $rp($summary['unpaid_total']) }}</b></p>
+        </a>
+        <a href="{{ route('admin.bookings.index', ['status' => 'paid']) }}"
+           class="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15 p-4 transition {{ $filter === 'paid' ? 'ring-2 ring-emerald-400/60' : '' }}">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <p class="text-xs font-bold uppercase tracking-wider text-emerald-300">Sudah TF</p>
+            </div>
+            <p class="mt-2 text-2xl font-display font-extrabold text-white">{{ $summary['paid_count'] }} <span class="text-sm font-semibold text-slate-400">booking</span></p>
+            <p class="text-xs text-slate-300 mt-0.5">
+                DP sudah masuk: <b class="text-emerald-200">{{ $rp($summary['paid_total']) }}</b>
+                &middot; sisa pelunasan: <b class="text-emerald-200">{{ $rp($summary['paid_outstanding']) }}</b>
+            </p>
+        </a>
     </div>
 
     <!-- Tab status -->
@@ -64,13 +89,18 @@
                 @php
                     $acc    = $b->account;
                     $img    = $acc?->primaryImage?->image_path ? upload_url($acc->primaryImage->image_path) : null;
+                    $waLine = $b->isAwaitingTransfer()
+                        ? ' (DP ' . $rp($b->dp_amount) . ') belum kami terima. Mohon transfer DP sebelum batas waktu ya. Detail: '
+                        : ($b->status === 'active'
+                            ? ' (DP ' . $rp($b->dp_amount) . ') sudah kami terima, sisa pelunasan ' . $rp($b->remaining()) . '. Detail: '
+                            : ' (DP ' . $rp($b->dp_amount) . '). Detail: ');
                     $wa     = $b->buyerWhatsappUrl(
                         'Halo ' . $b->buyer_name . ', ini EHANZSTORE. Booking ' . $b->booking_code . ' untuk akun ' . $b->account_code_snapshot
-                        . ' (DP ' . $rp($b->dp_amount) . '). Detail: ' . $b->publicUrl()
+                        . $waLine . $b->publicUrl()
                     );
                 @endphp
 
-                <div class="glass-panel rounded-3xl p-4 sm:p-5">
+                <div class="glass-panel rounded-3xl p-4 sm:p-5 border-l-4 {{ $b->paymentEdge() }}">
                     <div class="flex flex-col lg:flex-row gap-4 lg:items-center">
                         <div class="flex items-center gap-4 min-w-0 flex-1">
                             <div class="w-16 h-16 shrink-0 rounded-2xl overflow-hidden bg-midnight border border-white/10">
@@ -79,6 +109,10 @@
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2 mb-1">
                                     <span class="font-mono text-xs text-slate-400">{{ $b->booking_code }}</span>
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[11px] font-extrabold uppercase tracking-wide {{ $b->paymentTone() }}">
+                                        <span class="w-1.5 h-1.5 rounded-full {{ $b->isPaid() ? 'bg-emerald-400' : 'bg-amber-400' }}"></span>
+                                        {{ $b->paymentLabel() }}
+                                    </span>
                                     <span class="px-2.5 py-0.5 rounded-full border text-[11px] font-semibold {{ $b->statusTone() }}">{{ $b->statusLabel() }}</span>
                                     <span class="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[11px] text-slate-300">DP: {{ $b->dpLabel() }}</span>
                                 </div>
@@ -92,8 +126,8 @@
                                 <p class="text-[10px] uppercase tracking-wider text-slate-500">Harga</p>
                                 <p class="text-xs sm:text-sm font-bold text-white mt-0.5 break-words">{{ $rp($b->price_snapshot) }}</p>
                             </div>
-                            <div class="rounded-2xl bg-electric/10 p-2 sm:p-2.5 min-w-0">
-                                <p class="text-[10px] uppercase tracking-wider text-blue-300">DP {{ $b->dp_percent }}%</p>
+                            <div class="rounded-2xl p-2 sm:p-2.5 min-w-0 {{ $b->isPaid() ? 'bg-emerald-500/10' : 'bg-amber-500/10' }}">
+                                <p class="text-[10px] uppercase tracking-wider {{ $b->isPaid() ? 'text-emerald-300' : 'text-amber-300' }}">DP {{ $b->dp_percent }}% &middot; {{ $b->isPaid() ? 'sudah TF' : 'belum TF' }}</p>
                                 <p class="text-xs sm:text-sm font-bold text-white mt-0.5 break-words">{{ $rp($b->dp_amount) }}</p>
                             </div>
                             <div class="rounded-2xl bg-white/[0.04] p-2 sm:p-2.5 min-w-0">
@@ -106,6 +140,15 @@
                     <div class="mt-4 pt-4 border-t border-white/5 flex flex-col lg:flex-row lg:items-center gap-3">
                         <div class="text-xs text-slate-400 space-y-0.5 flex-1">
                             <p>Dibuat {{ $b->createdLabel() }} WIB</p>
+                            @if($b->isPaid())
+                                <p class="text-emerald-300 font-semibold">
+                                    DP {{ $rp($b->dp_amount) }} sudah ditransfer{{ $b->paidAtLabel() ? ', dikonfirmasi ' . $b->paidAtLabel() : '' }}
+                                </p>
+                            @elseif($b->status === 'pending')
+                                <p class="text-amber-300 font-semibold">DP {{ $rp($b->dp_amount) }} belum ditransfer</p>
+                            @else
+                                <p>Tidak pernah transfer DP</p>
+                            @endif
                             @if($b->isHolding() && $b->expires_at)
                                 <p class="text-amber-300 font-semibold">
                                     {{ $b->status === 'pending' ? 'Batas bayar DP' : 'Batas pelunasan' }}:

@@ -97,9 +97,15 @@
                 <x-hot-deal-badge />
             @endif
             @if($isBooked)
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-amber-400 text-slate-900 text-[10px] sm:text-[11px] font-extrabold shadow-lg">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Dibooking
+                @php $bookedPaid = $account->isBookedPaid(); @endphp
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full {{ $bookedPaid ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-slate-900' }} text-[10px] sm:text-[11px] font-extrabold shadow-lg">
+                    @if($bookedPaid)
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                        Dibooking &middot; Sudah TF
+                    @else
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Dibooking &middot; Belum TF
+                    @endif
                 </span>
             @endif
         </div>

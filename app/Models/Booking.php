@@ -272,6 +272,28 @@ class Booking extends Model
         return static::$heldIds;
     }
 
+    /**
+     * Get IDs of accounts that are currently held by paid bookings (active status with DP received)
+     *
+     * @return array
+     */
+    public static function paidHeldAccountIds(): array
+    {
+        try {
+            return static::where('status', self::ACTIVE)
+                ->where('dp_state', '!=', self::DP_UNPAID)
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                          ->orWhere('expires_at', '>', now());
+                })
+                ->pluck('coc_account_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
     public static function forgetCache(): void
     {
         static::$heldIds = null;
@@ -337,6 +359,78 @@ class Booking extends Model
     public function dpLabel(): string
     {
         return self::DP_LABELS[$this->dp_state] ?? $this->dp_state;
+    }
+
+    // ------------------------------------------------------------------
+    // Sudah TF / Belum TF
+    //
+    // "Sudah TF" = pembeli sudah transfer DP dan admin sudah menandai DP diterima
+    // (dp_state bukan 'unpaid'). "Belum TF" = DP belum dibayar / belum dikonfirmasi.
+    // ------------------------------------------------------------------
+
+    /** Pembeli sudah transfer DP (dan sudah dikonfirmasi admin)? */
+    public function isPaid(): bool
+    {
+        return $this->dp_state !== self::DP_UNPAID;
+    }
+
+    /** Booking masih berjalan dan DP-nya belum ditransfer. */
+    public function isAwaitingTransfer(): bool
+    {
+        return $this->status === self::PENDING && ! $this->isPaid();
+    }
+
+    /** Teks lencana pembayaran: "Sudah TF" atau "Belum TF" (dengan catatan bila DP sudah diselesaikan). */
+    public function paymentLabel(): string
+    {
+        if (! $this->isPaid()) {
+            return 'Belum TF';
+        }
+
+        return match ($this->dp_state) {
+            self::DP_REFUNDED  => 'Sudah TF · DP dikembalikan',
+            self::DP_FORFEITED => 'Sudah TF · DP hangus',
+            default            => 'Sudah TF',
+        };
+    }
+
+    /** Kelas warna lencana pembayaran: hijau = sudah TF, kuning = belum TF. */
+    public function paymentTone(): string
+    {
+        return $this->isPaid()
+            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+            : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+    }
+
+    /** Garis warna di tepi kiri kartu booking (hijau sudah TF, kuning belum TF, abu-abu bila sudah berakhir tanpa TF). */
+    public function paymentEdge(): string
+    {
+        if ($this->isPaid()) {
+            return 'border-l-emerald-500';
+        }
+
+        return $this->status === self::PENDING ? 'border-l-amber-400' : 'border-l-slate-600';
+    }
+
+    /** Waktu DP dikonfirmasi diterima, mis. "04 Nov 2026, 14:30 WIB". Null bila belum TF. */
+    public function paidAtLabel(): ?string
+    {
+        if (! $this->isPaid() || ! $this->dp_paid_at) {
+            return null;
+        }
+
+        return $this->dp_paid_at->clone()->timezone(Sale::DISPLAY_TZ)->format('d M Y, H:i') . ' WIB';
+    }
+
+    /** Booking yang DP-nya sudah ditransfer. */
+    public function scopePaid($query)
+    {
+        return $query->where('dp_state', '!=', self::DP_UNPAID);
+    }
+
+    /** Booking yang DP-nya belum ditransfer. */
+    public function scopeUnpaid($query) {
+        return $query->where('dp_state', self::DP_UNPAID);
     }
 
     /** Kelas warna lencana status. */

@@ -541,6 +541,12 @@ class CocAccount extends Model
     }
 
     /** Booking yang sedang menahan akun ini (null bila tidak ada). */
+    /** Akun sedang dibooking dan DP-nya sudah TF (bukan sekadar menunggu transfer). */
+    public function isBookedPaid(): bool
+    {
+        return $this->isBooked() && in_array((int) $this->id, Booking::paidHeldAccountIds(), true);
+    }
+
     public function activeBooking(): ?Booking
     {
         return $this->isBooked() ? Booking::holdingFor($this->id) : null;

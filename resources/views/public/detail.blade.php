@@ -190,8 +190,9 @@
                     </a>
                 @elseif($account->isBooked())
                     @php $held = $account->activeBooking(); @endphp
-                    <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-center space-y-1.5">
-                        <p class="font-display font-extrabold text-lg text-amber-200">{{ ucfirst($noun) }} ini sedang dibooking</p>
+                    @php $heldPaid = $held && $held->isPaid(); @endphp
+                    <div class="rounded-2xl border {{ $heldPaid ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-amber-500/30 bg-amber-500/10' }} p-5 text-center space-y-1.5">
+                        <p class="font-display font-extrabold text-lg {{ $heldPaid ? 'text-emerald-200' : 'text-amber-200' }}">{{ ucfirst($noun) }} ini sedang dibooking &middot; {{ $heldPaid ? 'DP sudah TF' : 'DP belum TF' }}</p>
                         <p class="text-xs text-amber-100/80">
                             {{ ucfirst($noun) }} ini sudah di-booking pembeli lain dengan DP.
                             @if($held && $held->expires_at)

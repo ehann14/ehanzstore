@@ -220,8 +220,8 @@
                                 @endif
 
                                 @if($hold)
-                                    <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-amber-500/15 text-amber-300 border-amber-500/30">
-                                        {{ $hold->status === 'pending' ? 'Booking · menunggu DP' : 'Di-booking (DP masuk)' }}
+                                    <span class="px-2 py-0.5 rounded-full border text-[11px] font-bold whitespace-nowrap {{ $hold->paymentTone() }}">
+                                        {{ $hold->isPaid() ? 'Di-booking · Sudah TF (DP masuk)' : 'Di-booking · Belum TF (menunggu DP)' }}
                                     </span>
                                     <span {!! $hold->countdownAttrs($hold->status === 'pending' ? 'Batas bayar DP · sisa ' : 'Harus lunas · sisa ', 'Waktu habis') !!}
                                           class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-white/5 text-slate-300 border-white/10">
@@ -240,9 +240,11 @@
                                 <p class="text-[11px] sm:text-xs text-slate-500 mt-2 truncate">
                                     Booking <span class="font-mono">{{ $hold->booking_code }}</span>
                                     &middot; Pembeli: <span class="text-slate-300">{{ $hold->buyer_name }}</span>
-                                    @if($hold->status === 'active')
-                                        &middot; DP Rp {{ number_format((float) $hold->dp_amount, 0, ',', '.') }}
+                                    @if($hold->isPaid())
+                                        &middot; <span class="text-emerald-300 font-semibold">DP Rp {{ number_format((float) $hold->dp_amount, 0, ',', '.') }} sudah TF</span>
                                         &middot; Sisa <span class="text-amber-300 font-semibold">Rp {{ number_format($hold->remaining(), 0, ',', '.') }}</span>
+                                    @else
+                                        &middot; <span class="text-amber-300 font-semibold">DP Rp {{ number_format((float) $hold->dp_amount, 0, ',', '.') }} belum TF</span>
                                     @endif
                                 </p>
                             @endif

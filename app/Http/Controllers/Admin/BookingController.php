@@ -22,6 +22,10 @@ class BookingController extends Controller
         $query = $this->scopedQuery()->with('account.primaryImage')->latest('id');
 
         $query->when($filter === 'open', fn ($q) => $q->whereIn('status', [Booking::PENDING, Booking::ACTIVE]))
+              // Belum TF: booking masih berjalan, DP belum ditransfer / belum dikonfirmasi
+              ->when($filter === 'unpaid', fn ($q) => $q->where('status', Booking::PENDING)->where('dp_state', Booking::DP_UNPAID))
+              // Sudah TF: booking masih berjalan, DP sudah diterima admin
+              ->when($filter === 'paid', fn ($q) => $q->where('status', Booking::ACTIVE)->where('dp_state', Booking::DP_HELD))
               ->when($filter === 'decide', fn ($q) => $q->where('status', Booking::EXPIRED)->where('dp_state', Booking::DP_HELD))
               ->when($filter === 'forfeited', fn ($q) => $q->where('dp_state', Booking::DP_FORFEITED))
               ->when(in_array($filter, [Booking::PENDING, Booking::ACTIVE, Booking::COMPLETED, Booking::CANCELLED, Booking::EXPIRED], true),
@@ -48,7 +52,19 @@ class BookingController extends Controller
         // Total DP yang hangus (uang DP yang tidak dikembalikan karena pembeli tidak melunasi / membatalkan)
         $forfeitedTotal = (float) $this->scopedQuery()->where('dp_state', Booking::DP_FORFEITED)->sum('dp_amount');
 
-        return view('admin.bookings.index', compact('bookings', 'filter', 'search', 'counts', 'forfeitedTotal'));
+        // Ringkasan booking berjalan: belum TF (menunggu transfer DP) vs sudah TF (DP sudah masuk)
+        $unpaidBase = $this->scopedQuery()->where('status', Booking::PENDING)->where('dp_state', Booking::DP_UNPAID);
+        $paidBase   = $this->scopedQuery()->where('status', Booking::ACTIVE)->where('dp_state', Booking::DP_HELD);
+
+        $summary = [
+            'unpaid_count'     => (clone $unpaidBase)->count(),
+            'unpaid_total'     => (float) (clone $unpaidBase)->sum('dp_amount'),
+            'paid_count'       => (clone $paidBase)->count(),
+            'paid_total'       => (float) (clone $paidBase)->sum('dp_amount'),
+            'paid_outstanding' => (float) (clone $paidBase)->selectRaw('COALESCE(SUM(price_snapshot - dp_amount), 0) as total')->value('total'),
+        ];
+
+        return view('admin.bookings.index', compact('bookings', 'filter', 'search', 'counts', 'forfeitedTotal', 'summary'));
     }
 
     /** Form catat booking DP dari Kelola Akun (pembeli bayar DP dulu, lunas dalam 7 / 14 hari). */

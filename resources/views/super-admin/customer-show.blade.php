@@ -181,6 +181,7 @@
                                 </td>
                                 <td class="px-4 py-3 text-right text-white whitespace-nowrap">
                                     {{ $rupiah($b->dp_amount) }}
+                                    <p class="text-[11px] font-semibold {{ $b->isPaid() ? 'text-emerald-300' : 'text-amber-300' }}">{{ $b->paymentLabel() }}</p>
                                     <p class="text-[11px] text-slate-500">{{ \App\Models\Booking::DP_LABELS[$b->dp_state] ?? $b->dp_state }}</p>
                                 </td>
                                 <td class="px-4 py-3">
