@@ -311,11 +311,12 @@
                             <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                                 <a href="{{ route('admin.accounts.sell', $account) }}"
                                    class="{{ $btn }} border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">Terjual (Lunas)</a>
-                                @unless($account->isConsignment())
-                                    {{-- Akun titipan tidak punya sistem DP: wajib lunas --}}
+                                {{-- Akun titipan tidak punya sistem DP: wajib lunas.
+                                     DP juga hanya untuk akun yang Gmail-nya belum bisa diganti. --}}
+                                @if(! $account->isConsignment() && \App\Models\Booking::allowsDp($account))
                                     <a href="{{ route('admin.accounts.booking', $account) }}"
                                        class="{{ $btn }} border-amber-500/30 text-amber-300 hover:bg-amber-500/10">Booking / DP</a>
-                                @endunless
+                                @endif
                             </div>
                         @endif
 

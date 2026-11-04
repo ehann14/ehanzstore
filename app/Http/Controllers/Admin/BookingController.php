@@ -67,6 +67,12 @@ class BookingController extends Controller
                 ->with('error', 'Akun titipan tidak bisa dibooking dengan DP. Pembayaran harus lunas (gunakan tombol Terjual).');
         }
 
+        // DP hanya untuk akun yang Gmail-nya belum bisa diganti
+        if (! Booking::allowsDp($account)) {
+            return redirect()->route('admin.accounts.index')
+                ->with('error', Booking::dpNotAllowedMessage() . ' Gunakan tombol Terjual (Lunas).');
+        }
+
         if ($held = Booking::holdingFor($account->id)) {
             return redirect()
                 ->route('admin.bookings.index', ['status' => 'open', 'q' => $held->booking_code])
@@ -83,6 +89,13 @@ class BookingController extends Controller
     {
         $this->authorizeAccount($account);
 
+        if (! Booking::allowsDp($account)) {
+            return redirect()->route('admin.accounts.index')
+                ->with('error', Booking::dpNotAllowedMessage() . ' Gunakan tombol Terjual (Lunas).');
+        }
+
+        $maxDays = Booking::maxHoldDaysFor($account);
+
         $data = $request->validate([
             'buyer_name'  => ['required', 'string', 'min:2', 'max:100'],
             'buyer_phone' => [
@@ -96,7 +109,7 @@ class BookingController extends Controller
                 },
             ],
             'dp_amount'   => ['required', 'numeric', 'min:1000', 'max:999999999'],
-            'hold_days'   => ['required', 'integer', Rule::in(Booking::holdOptions())],
+            'hold_days'   => ['required', 'integer', Rule::in(Booking::holdOptionsFor($account))],
             'notes'       => ['nullable', 'string', 'max:500'],
         ], [
             'buyer_name.required'  => 'Nama pembeli wajib diisi.',
@@ -106,7 +119,9 @@ class BookingController extends Controller
             'dp_amount.numeric'    => 'Nominal DP harus berupa angka.',
             'dp_amount.min'        => 'Nominal DP minimal Rp 1.000.',
             'hold_days.required'   => 'Pilih batas pelunasan.',
-            'hold_days.in'         => 'Batas pelunasan harus ' . implode(' atau ', Booking::holdOptions()) . ' hari.',
+            'hold_days.in'         => $maxDays === null
+                ? 'Batas pelunasan harus ' . implode(' atau ', Booking::holdOptions()) . ' hari.'
+                : "Batas pelunasan maksimal {$maxDays} hari (sisa waktu sampai Gmail akun bisa diganti).",
         ]);
 
         $data['buyer_phone'] = Sale::normalizePhone($data['buyer_phone']);
@@ -122,6 +137,7 @@ class BookingController extends Controller
             'buyer'   => $booking->buyer_name,
             'dp'      => $booking->dp_amount,
             'days'    => (int) $data['hold_days'],
+            'deadline' => $booking->expires_at?->toDateTimeString(),
         ]);
 
         return redirect()->route('admin.accounts.index')->with(
@@ -137,11 +153,14 @@ class BookingController extends Controller
     {
         $this->authorizeBooking($booking);
 
-        $days = Booking::normalizeHoldDays($request->filled('days') ? (int) $request->input('days') : null);
+        // Masa pelunasan dibatasi sisa waktu Gmail akun bisa diganti (dihitung di model)
+        $days = $request->filled('days') ? (int) $request->input('days') : null;
 
         if ($error = $booking->confirmDp(Auth::id(), $days)) {
             return back()->with('error', $error);
         }
+
+        $booking->refresh();
 
         ActivityLog::record('confirm_booking_dp', $booking->account, 'Booking ' . $booking->booking_code, [
             'buyer' => $booking->buyer_name,
@@ -159,11 +178,20 @@ class BookingController extends Controller
         $days = (int) $request->input('days', 1);
         $days = max(1, min(14, $days));
 
-        $booking->extend($days);
+        $before = $booking->expires_at;
+
+        if ($error = $booking->extend($days)) {
+            return back()->with('error', $error);
+        }
 
         ActivityLog::record('extend_booking', $booking->account, 'Booking ' . $booking->booking_code, ['days' => $days]);
 
-        return back()->with('success', "Batas pelunasan {$booking->booking_code} diperpanjang {$days} hari.");
+        // Bila terpotong batas Gmail bisa diganti, beri tahu admin
+        $capped = $before && $booking->expires_at && $booking->expires_at->lt($before->clone()->addDays($days)->subMinute());
+
+        return back()->with('success', $capped
+            ? "Batas pelunasan {$booking->booking_code} diperpanjang sampai {$booking->deadlineLabel()}, tidak bisa lebih karena Gmail akun sudah bisa diganti setelah itu."
+            : "Batas pelunasan {$booking->booking_code} diperpanjang {$days} hari.");
     }
 
     /** Batalkan booking (oleh pembeli: DP hangus, atau oleh toko: DP dikembalikan). */

@@ -9,13 +9,19 @@
     $dp        = \App\Models\Booking::calculateDp($price);
     $percent   = \App\Models\Booking::dpPercent();
     $payHours  = (int) config('store.booking_pay_hours', 24);
-    $holdDays  = implode(' atau ', \App\Models\Booking::holdOptions());
+    $allowsDp  = \App\Models\Booking::allowsDp($account);
+    $holdDays  = \App\Models\Booking::holdDaysText($account);   // "maksimal 5" (akun) / "7 atau 14" (clan)
+    $maxDays   = \App\Models\Booking::maxHoldDaysFor($account);
     $rp        = fn ($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
     $bag       = $errors->getBag('booking');
     $fieldCls  = 'w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-electric transition';
 @endphp
 
-@if($dp > 0)
+@if($dp > 0 && ! $allowsDp)
+    <p class="text-[11px] text-slate-400 text-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+        Booking DP hanya untuk akun yang Gmail-nya belum bisa diganti. {{ $account->noun() }} ini bisa langsung dibeli <b class="text-slate-200">lunas</b> lewat WhatsApp.
+    </p>
+@elseif($dp > 0)
 <div x-data="{ open: {{ $bag->any() ? 'true' : 'false' }} }">
     <button type="button" @click="open = true"
             class="flex items-center justify-center gap-2 w-full border border-electric/40 bg-electric/10 hover:bg-electric/20 text-blue-200 font-bold py-3.5 rounded-full transition active:scale-[0.98]">
@@ -24,6 +30,7 @@
     </button>
     <p class="text-[10px] text-slate-500 text-center mt-2">
         Amankan akun ini untukmu, langsung bisa dimainkan setelah DP diterima. Sisanya dilunasi sebelum data akun diganti.
+        @if($maxDays !== null)Gmail akun ini baru bisa diganti dalam {{ $maxDays }} hari, jadi masa DP <b class="text-slate-300">maksimal {{ $maxDays }} hari</b>.@endif
         <a href="{{ route('booking.terms') }}" class="text-electric hover:text-white underline-offset-2 hover:underline">Syarat &amp; ketentuan DP</a>
     </p>
 
@@ -55,7 +62,7 @@
 
                 <ul class="text-xs text-slate-400 space-y-1.5 mb-5 list-disc pl-5">
                     <li>DP dibayar maksimal <b class="text-slate-200">{{ $payHours }} jam</b> setelah booking, lewat itu booking batal otomatis.</li>
-                    <li>Setelah DP diterima admin, akun <b class="text-slate-200">sudah bisa langsung dimainkan</b>, tapi data akun (Gmail, nomor proteksi, dll.) baru bisa diganti setelah lunas. Batas pelunasan <b class="text-slate-200">{{ $holdDays }} hari</b>.</li>
+                    <li>Setelah DP diterima admin, akun <b class="text-slate-200">sudah bisa langsung dimainkan</b>, tapi data akun (Gmail, nomor proteksi, dll.) baru bisa diganti setelah lunas. Batas pelunasan <b class="text-slate-200">{{ $holdDays }} hari</b>@if($maxDays !== null) (sampai Gmail akun bisa diganti)@endif.</li>
                     <li>DP <b class="text-slate-200">tidak dikembalikan</b> bila pembeli membatalkan atau tidak melunasi tepat waktu.</li>
                 </ul>
 

@@ -24,7 +24,7 @@
         <h1 class="text-2xl sm:text-3xl font-display font-bold text-white">Booking Akun</h1>
         <p class="text-sm text-slate-400 mt-1">
             Booking dibuat pembeli lewat website (DP {{ \App\Models\Booking::dpPercent() }}%) atau dicatat admin lewat tombol <b class="text-slate-200">Booking / DP</b> di Kelola Akun.
-            Setelah DP diterima, pembeli sudah bisa memainkan akun tapi data akun belum diganti sampai lunas (batas pelunasan {{ implode(' atau ', \App\Models\Booking::holdOptions()) }} hari). Setelah lunas, lanjutkan lewat tombol <b class="text-slate-200">Proses Penjualan</b>.
+            Setelah DP diterima, pembeli sudah bisa memainkan akun tapi data akun belum diganti sampai lunas (batas pelunasan paling lama sampai Gmail akun bisa diganti; mis. Gmail bisa diganti dalam 5 hari = DP maksimal 5 hari). DP hanya untuk akun yang Gmail-nya belum bisa diganti. Setelah lunas, lanjutkan lewat tombol <b class="text-slate-200">Proses Penjualan</b>.
         </p>
         <p class="text-sm text-amber-300/90 mt-2">
             Tidak lunas sampai batas waktu: akun otomatis ditarik kembali (tersedia lagi) dan DP hangus.
@@ -129,12 +129,20 @@
                             @if($b->status === 'pending' || ($b->status === 'expired' && $b->dp_state === 'unpaid'))
                                 <form method="POST" action="{{ route('admin.bookings.confirm', $b) }}" class="flex items-center gap-2" onsubmit="return confirm('Konfirmasi DP {{ $rp($b->dp_amount) }} sudah masuk ke rekening?')">
                                     @csrf
-                                    <select name="days" title="Batas pelunasan" class="rounded-full bg-slate-900 border border-white/10 text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-electric">
-                                        @foreach(\App\Models\Booking::holdOptions() as $opt)
-                                            <option value="{{ $opt }}" @selected($opt === \App\Models\Booking::defaultHoldDays())>Lunas {{ $opt }} hari</option>
+                                    @php
+                                        $holdOpts = $acc ? \App\Models\Booking::holdOptionsFor($acc) : \App\Models\Booking::holdOptions();
+                                        $holdDef  = $acc ? \App\Models\Booking::holdDaysFor($acc, null) : \App\Models\Booking::defaultHoldDays();
+                                    @endphp
+                                    @if($holdOpts)
+                                    <select name="days" title="Batas pelunasan (maksimal sampai Gmail akun bisa diganti)" class="rounded-full bg-slate-900 border border-white/10 text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-electric">
+                                        @foreach($holdOpts as $opt)
+                                            <option value="{{ $opt }}" @selected($opt === $holdDef)>Lunas {{ $opt }} hari</option>
                                         @endforeach
                                     </select>
-                                    <button class="px-4 py-2 rounded-full bg-electric hover:bg-blue-500 text-white text-xs font-bold transition">
+                                    @else
+                                        <span class="text-[11px] text-red-300 max-w-[14rem]">Gmail akun sudah bisa diganti: DP tidak bisa diaktifkan, jual lunas.</span>
+                                    @endif
+                                    <button @disabled(! $holdOpts) class="px-4 py-2 rounded-full bg-electric hover:bg-blue-500 text-white text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed">
                                         {{ $b->status === 'pending' ? 'DP Sudah Diterima' : 'Aktifkan Lagi (DP Diterima)' }}
                                     </button>
                                 </form>

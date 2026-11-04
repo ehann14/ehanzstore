@@ -8,7 +8,7 @@
     $percent  = \App\Models\Booking::dpPercent();
     $rest     = 100 - $percent;
     $payHours = (int) config('store.booking_pay_hours', 24);
-    $holdDays = implode(' atau ', \App\Models\Booking::holdOptions());
+    $clanDays = implode(' atau ', \App\Models\Booking::holdOptions());
     $maxPhone = (int) config('store.booking_max_per_phone', 2);
     $waAsk    = $storeWaUrl . '?text=' . rawurlencode('Halo Admin EHANZSTORE, saya mau tanya soal booking DP.');
 
@@ -19,6 +19,15 @@
                 "Booking adalah cara mengamankan satu akun/clan supaya tidak dibeli orang lain dengan membayar uang muka (DP) sebesar {$percent}% dari harga.",
                 'DP dibulatkan ke atas ke kelipatan Rp 1.000 dan tidak pernah melebihi harga akun.',
                 'Harga akun dikunci sesuai harga saat booking dibuat, walaupun setelahnya ada perubahan harga atau promo.',
+            ],
+        ],
+        [
+            't' => 'Akun yang bisa dibooking',
+            'items' => [
+                'Booking DP hanya untuk akun yang Gmail-nya BELUM bisa diganti. Di halaman detail akan tertulis, misalnya, "Bisa Ganti dalam 5 hari".',
+                'Akun yang Gmail-nya sudah bisa diganti tidak bisa dibooking dengan DP. Akun seperti itu bisa langsung diserahkan, jadi pembayarannya harus lunas.',
+                'Akun yang Gmail-nya tidak bisa diganti juga tidak bisa dibooking dengan DP.',
+                "Untuk clan (tidak memakai Gmail), masa pelunasan mengikuti pilihan admin: {$clanDays} hari.",
             ],
         ],
         [
@@ -41,10 +50,12 @@
         [
             't' => 'Akses akun & pelunasan',
             'items' => [
-                "Setelah DP dikonfirmasi, akun sudah bisa langsung kamu mainkan selama masa pelunasan {$holdDays} hari.",
+                'Setelah DP dikonfirmasi, akun sudah bisa langsung kamu mainkan selama masa pelunasan.',
+                'Masa pelunasan paling lama sama dengan sisa hari sampai Gmail akun bisa diganti. Contoh: Gmail bisa diganti dalam 5 hari, maka DP maksimal 5 hari. Admin bisa memberi waktu lebih pendek, tetapi tidak pernah lebih panjang dari itu.',
+                'Saat batas itu tiba, akun sudah masuk masa Gmail bisa diganti sehingga harus sudah lunas dan diserahkan.',
                 'Selama belum lunas, data akun (Gmail, nomor proteksi, dan data lain) belum bisa diganti ke milikmu. Penggantian data dilakukan setelah pelunasan.',
                 "Sisa pembayaran ({$rest}% dari harga) wajib dilunasi dalam masa pelunasan tersebut.",
-                'Perpanjangan masa pelunasan hanya berlaku bila disetujui admin sebelum batas waktu habis.',
+                'Perpanjangan masa pelunasan hanya berlaku bila disetujui admin sebelum batas waktu habis, dan tidak bisa melewati waktu Gmail akun bisa diganti.',
                 'DP adalah bagian dari harga: sisa pelunasan = harga yang dikunci dikurangi DP.',
             ],
         ],
@@ -102,8 +113,8 @@
             <p class="text-[11px] sm:text-xs text-slate-400 mt-1">Batas bayar DP</p>
         </div>
         <div>
-            <p class="font-display font-extrabold text-3xl sm:text-4xl text-white">{{ $holdDays }}<span class="text-electric text-xl sm:text-2xl"> hari</span></p>
-            <p class="text-[11px] sm:text-xs text-slate-400 mt-1">Batas pelunasan</p>
+            <p class="font-display font-extrabold text-3xl sm:text-4xl text-white">Maks.<span class="text-electric text-xl sm:text-2xl"> sisa hari</span></p>
+            <p class="text-[11px] sm:text-xs text-slate-400 mt-1">Pelunasan = sampai Gmail bisa diganti</p>
         </div>
     </div>
 </div>

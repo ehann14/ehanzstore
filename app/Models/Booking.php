@@ -143,6 +143,93 @@ class Booking extends Model
         return in_array((int) $days, static::holdOptions(), true) ? (int) $days : static::defaultHoldDays();
     }
 
+    // ------------------------------------------------------------------
+    // Aturan DP terkait Gmail akun
+    //
+    // DP hanya untuk akun yang Gmail-nya BELUM bisa diganti. Masa pelunasan paling lama
+    // sama dengan sisa waktu sampai Gmail bisa diganti (mis. bisa ganti dalam 5 hari
+    // berarti DP maksimal 5 hari). Setelah Gmail bisa diganti, akun dijual lunas.
+    // Clan tidak punya Gmail, jadi tetap memakai pilihan config (7 / 14 hari).
+    // ------------------------------------------------------------------
+
+    /** Waktu Gmail akun bisa diganti (batas atas masa pelunasan). Null jika tidak ada batas. */
+    public static function emailLimit(CocAccount $account): ?\Illuminate\Support\Carbon
+    {
+        if ($account->isClan()
+            || $account->email_change_status !== 'Changeable'
+            || ! $account->email_change_available_at
+            || $account->email_change_available_at->isPast()) {
+            return null;
+        }
+
+        return $account->email_change_available_at->clone();
+    }
+
+    /** Batas maksimal masa pelunasan (hari). Null = tanpa batas Gmail (clan). 0 = DP tidak boleh. */
+    public static function maxHoldDaysFor(CocAccount $account): ?int
+    {
+        if ($account->isClan()) {
+            return null;
+        }
+
+        return (int) ($account->emailChangeDaysLeft() ?? 0);
+    }
+
+    /** Apakah akun ini boleh dibooking dengan DP. */
+    public static function allowsDp(CocAccount $account): bool
+    {
+        $max = static::maxHoldDaysFor($account);
+
+        return $max === null || $max >= 1;
+    }
+
+    /** Pesan untuk akun yang tidak boleh DP. */
+    public static function dpNotAllowedMessage(): string
+    {
+        return 'Booking DP hanya untuk akun yang Gmail-nya belum bisa diganti. Gmail akun ini sudah bisa diganti atau tidak bisa diganti, jadi pembayaran harus lunas.';
+    }
+
+    /** Pilihan masa pelunasan (hari) untuk akun ini. Akun: 1 sampai sisa hari ganti Gmail. */
+    public static function holdOptionsFor(CocAccount $account): array
+    {
+        $max = static::maxHoldDaysFor($account);
+
+        if ($max === null) {
+            return static::holdOptions();
+        }
+
+        return $max >= 1 ? range(1, $max) : [];
+    }
+
+    /** Masa pelunasan yang dipakai: bawaan = batas maksimal akun, dan tidak pernah melebihinya. */
+    public static function holdDaysFor(CocAccount $account, ?int $days): int
+    {
+        $max = static::maxHoldDaysFor($account);
+
+        if ($max === null) {
+            return static::normalizeHoldDays($days);
+        }
+
+        return max(1, min($days && $days > 0 ? $days : $max, max(1, $max)));
+    }
+
+    /** Batas waktu pelunasan: sekian hari dari sekarang, tapi tidak melewati waktu Gmail bisa diganti. */
+    public static function holdDeadlineFor(CocAccount $account, int $days): \Illuminate\Support\Carbon
+    {
+        $end   = now()->addDays($days);
+        $limit = static::emailLimit($account);
+
+        return ($limit && $limit->lt($end)) ? $limit : $end;
+    }
+
+    /** Teks "maksimal 5" / "7 atau 14" untuk kalimat "...masa pelunasan {teks} hari". */
+    public static function holdDaysText(?CocAccount $account = null): string
+    {
+        $max = $account ? static::maxHoldDaysFor($account) : null;
+
+        return $max === null ? implode(' atau ', static::holdOptions()) : 'maksimal ' . max(1, $max);
+    }
+
     public function remaining(): float
     {
         return max(0, (float) $this->price_snapshot - (float) $this->dp_amount);
@@ -334,6 +421,11 @@ class Booking extends Model
                     return [null, 'Akun titipan tidak bisa dibooking dengan DP. Silakan beli lunas lewat WhatsApp.'];
                 }
 
+                // DP hanya untuk akun yang Gmail-nya belum bisa diganti.
+                if (! static::allowsDp($account)) {
+                    return [null, static::dpNotAllowedMessage() . ' Silakan beli lunas lewat WhatsApp.'];
+                }
+
                 if (static::holding()->where('coc_account_id', $account->id)->exists()) {
                     return [null, 'Akun ini sedang dibooking pembeli lain. Coba lagi nanti atau pilih akun lain.'];
                 }
@@ -401,6 +493,10 @@ class Booking extends Model
                     return [null, 'Akun titipan tidak bisa dibooking dengan DP. Pembayaran harus lunas.'];
                 }
 
+                if (! static::allowsDp($locked)) {
+                    return [null, static::dpNotAllowedMessage()];
+                }
+
                 if (static::holding()->where('coc_account_id', $locked->id)->exists()) {
                     return [null, 'Akun ini sudah dibooking. Kelola lewat menu Booking DP.'];
                 }
@@ -416,7 +512,7 @@ class Booking extends Model
                     return [null, 'DP harus lebih dari 0 dan kurang dari harga akun (Rp ' . number_format($price, 0, ',', '.') . '). Kalau sudah lunas, pakai tombol Terjual.'];
                 }
 
-                $days = static::normalizeHoldDays(isset($data['hold_days']) ? (int) $data['hold_days'] : null);
+                $days = static::holdDaysFor($locked, isset($data['hold_days']) ? (int) $data['hold_days'] : null);
 
                 $booking = static::create([
                     'coc_account_id'        => $locked->id,
@@ -431,7 +527,7 @@ class Booking extends Model
                     'dp_state'              => self::DP_HELD,
                     'dp_paid_at'            => now(),
                     'confirmed_by'          => $userId,
-                    'expires_at'            => now()->addDays($days),
+                    'expires_at'            => static::holdDeadlineFor($locked, $days),
                     'notes'                 => filled($data['notes'] ?? null) ? trim($data['notes']) : null,
                     'terms_accepted_at'     => now(),
                 ]);
@@ -481,6 +577,13 @@ class Booking extends Model
                 return 'Akun ini sudah dibooking pembeli lain.';
             }
 
+            // Gmail akun sudah bisa diganti: tidak ada lagi masa DP, akun harus dijual lunas.
+            if (! static::allowsDp($account)) {
+                return static::dpNotAllowedMessage() . ' Kembalikan DP ke pembeli atau selesaikan sebagai penjualan lunas.';
+            }
+
+            $holdDays = static::holdDaysFor($account, $days);
+
             $this->update([
                 'status'        => self::ACTIVE,
                 'dp_state'      => self::DP_HELD,
@@ -488,7 +591,7 @@ class Booking extends Model
                 'confirmed_by'  => $userId,
                 'cancelled_at'  => null,
                 'cancel_reason' => null,
-                'expires_at'    => now()->addDays(static::normalizeHoldDays($days)),
+                'expires_at'    => static::holdDeadlineFor($account, $holdDays),
             ]);
 
             static::forgetCache();
@@ -497,17 +600,37 @@ class Booking extends Model
         });
     }
 
-    /** Tambah masa pelunasan (hari) untuk booking aktif. */
-    public function extend(int $days): void
+    /**
+     * Tambah masa pelunasan (hari) untuk booking aktif.
+     * Tidak boleh melewati waktu Gmail akun bisa diganti.
+     *
+     * @return string|null pesan error, null jika berhasil
+     */
+    public function extend(int $days): ?string
     {
         if ($this->status !== self::ACTIVE) {
-            return;
+            return null;
         }
 
-        $base = $this->expires_at && $this->expires_at->isFuture() ? $this->expires_at : now();
+        $base  = $this->expires_at && $this->expires_at->isFuture() ? $this->expires_at : now();
+        $new   = $base->clone()->addDays(max(1, $days));
+        $limit = $this->account ? static::emailLimit($this->account) : null;
 
-        $this->update(['expires_at' => $base->clone()->addDays(max(1, $days))]);
+        if ($limit) {
+            if ($base->gte($limit)) {
+                return 'Tidak bisa diperpanjang: batas pelunasan sudah sama dengan waktu Gmail akun bisa diganti ('
+                    . $limit->clone()->timezone(Sale::DISPLAY_TZ)->format('d M Y, H:i') . ' WIB).';
+            }
+
+            if ($new->gt($limit)) {
+                $new = $limit;
+            }
+        }
+
+        $this->update(['expires_at' => $new]);
         static::forgetCache();
+
+        return null;
     }
 
     /**

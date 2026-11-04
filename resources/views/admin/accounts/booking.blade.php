@@ -7,11 +7,13 @@
     /** @var \App\Models\CocAccount $account */
     $imageUrl   = $account->primaryImage?->image_path ? upload_url($account->primaryImage->image_path) : null;
     $price      = (int) $account->price;
-    $options    = \App\Models\Booking::holdOptions();
+    $options    = \App\Models\Booking::holdOptionsFor($account);
+    $maxDays    = \App\Models\Booking::maxHoldDaysFor($account);   // null = clan (tanpa batas Gmail)
+    $emailLimit = \App\Models\Booking::emailLimit($account);
     $defaultDp  = \App\Models\Booking::calculateDp((float) $account->price);
     $dpVal      = (int) old('dp_amount', $defaultDp);
-    $daysVal    = (int) old('hold_days', \App\Models\Booking::defaultHoldDays());
-    if (! in_array($daysVal, $options, true)) { $daysVal = \App\Models\Booking::defaultHoldDays(); }
+    $daysVal    = (int) old('hold_days', \App\Models\Booking::holdDaysFor($account, null));
+    if (! in_array($daysVal, $options, true)) { $daysVal = \App\Models\Booking::holdDaysFor($account, null); }
     $inputCls   = 'w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition';
     $labelCls   = 'block text-xs font-semibold text-slate-400 mb-2';
 @endphp
@@ -94,20 +96,19 @@
             </div>
 
             <div>
-                <span class="{{ $labelCls }}">Harus lunas dalam <span class="text-red-400">*</span></span>
-                <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Batas pelunasan">
+                <label for="bk_days" class="{{ $labelCls }}">Harus lunas dalam <span class="text-red-400">*</span></label>
+                @if($maxDays !== null)
+                    <div class="mb-3 p-3 rounded-xl bg-electric/10 border border-electric/20 text-xs text-blue-200">
+                        Gmail akun ini baru bisa diganti dalam <b class="text-white">{{ $maxDays }} hari</b>
+                        @if($emailLimit)({{ $emailLimit->clone()->timezone(\App\Models\Sale::DISPLAY_TZ)->format('d M Y, H:i') }} WIB)@endif.
+                        Masa DP <b class="text-white">maksimal {{ $maxDays }} hari</b>, tidak boleh melewati waktu itu.
+                    </div>
+                @endif
+                <select id="bk_days" name="hold_days" required class="{{ $inputCls }}">
                     @foreach($options as $opt)
-                        <label class="cursor-pointer">
-                            <input type="radio" name="hold_days" value="{{ $opt }}" required class="peer sr-only" @checked($daysVal === $opt)>
-                            <span class="block text-center rounded-xl border border-white/10 bg-brand-950/50 px-3 py-3 transition hover:bg-white/5 text-slate-300
-                                         peer-checked:border-amber-500/60 peer-checked:bg-amber-500/15 peer-checked:text-amber-300
-                                         peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500">
-                                <span class="block text-base font-bold">{{ $opt }} hari</span>
-                                <span class="block text-[11px] opacity-70">{{ $opt <= 7 ? 'Standar' : 'Lebih longgar' }}</span>
-                            </span>
-                        </label>
+                        <option value="{{ $opt }}" @selected($daysVal === $opt)>{{ $opt }} hari{{ $maxDays !== null && $opt === $maxDays ? ' (maksimal)' : '' }}</option>
                     @endforeach
-                </div>
+                </select>
                 @error('hold_days') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
@@ -141,6 +142,7 @@
 <script>
     (function () {
         const PRICE = {{ $price }};
+        const LIMIT = {{ $emailLimit ? $emailLimit->getTimestamp() * 1000 : 'null' }}; // waktu Gmail bisa diganti (ms) atau null
         const dp    = document.getElementById('bk_dp');
         const rem   = document.getElementById('bk_remaining');
         const dead  = document.getElementById('bk_deadline');
@@ -154,9 +156,11 @@
         }
 
         function renderDeadline() {
-            const checked = form.querySelector('input[name="hold_days"]:checked');
-            if (!checked) { dead.textContent = '-'; return; }
-            const end = new Date(Date.now() + parseInt(checked.value, 10) * 86400000);
+            const sel = form.querySelector('select[name="hold_days"]');
+            if (!sel || !sel.value) { dead.textContent = '-'; return; }
+            let endMs = Date.now() + parseInt(sel.value, 10) * 86400000;
+            if (LIMIT !== null && LIMIT < endMs) { endMs = LIMIT; }   // tidak boleh lewat waktu Gmail bisa diganti
+            const end = new Date(endMs);
             try {
                 dead.textContent = new Intl.DateTimeFormat('id-ID', {
                     timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric',
@@ -168,7 +172,8 @@
         }
 
         dp.addEventListener('input', renderRemaining);
-        form.querySelectorAll('input[name="hold_days"]').forEach(r => r.addEventListener('change', renderDeadline));
+        const daysSel = form.querySelector('select[name="hold_days"]');
+        if (daysSel) { daysSel.addEventListener('change', renderDeadline); }
         form.querySelectorAll('[data-dp-pct]').forEach(btn => btn.addEventListener('click', function () {
             const pct = parseInt(btn.dataset.dpPct, 10);
             dp.value = Math.min(PRICE - 1, Math.ceil(PRICE * pct / 100 / 1000) * 1000);

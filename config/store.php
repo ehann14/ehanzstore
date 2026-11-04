@@ -41,7 +41,9 @@ return [
     // Batas pelunasan bawaan setelah DP diterima admin (hari). Selama masa ini akun sudah bisa dimainkan pembeli, tapi data akun (Gmail, nomor proteksi) belum diganti sampai lunas.
     'booking_hold_days' => (int) env('BOOKING_HOLD_DAYS', 7),
 
-    // Pilihan batas pelunasan yang bisa dipilih admin (hari). Lewat batas = akun ditarik kembali, DP hangus.
+    // Pilihan batas pelunasan (hari) HANYA untuk clan (tidak punya Gmail). Lewat batas = akun ditarik kembali, DP hangus.
+    // Akun biasa: DP hanya bila Gmail belum bisa diganti, dan masa pelunasan maksimal sama dengan sisa hari
+    // sampai Gmail bisa diganti (mis. bisa ganti dalam 5 hari = DP maksimal 5 hari). Lihat Booking::maxHoldDaysFor().
     'booking_hold_options' => [7, 14],
 
     // Maksimal booking aktif (menunggu DP / DP diterima) per nomor WhatsApp
