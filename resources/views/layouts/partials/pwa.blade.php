@@ -14,7 +14,7 @@
         // 1) Daftarkan service worker (wajib agar bisa di-install; butuh HTTPS atau localhost)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('{{ asset('sw.js') }}', { scope: '/' }).catch(function () {});
+                navigator.serviceWorker.register('{{ asset('sw.js') }}?v={{ @filemtime(public_path('sw.js')) ?: 1 }}', { scope: '/' }).catch(function () {});
             });
         }
 

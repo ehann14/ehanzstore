@@ -261,7 +261,7 @@
         }
 
         function registration() {
-            return navigator.serviceWorker.register('{{ asset('sw.js') }}', { scope: '/' })
+            return navigator.serviceWorker.register('{{ asset('sw.js') }}?v={{ @filemtime(public_path('sw.js')) ?: 1 }}', { scope: '/' })
                 .then(function () { return navigator.serviceWorker.ready; });
         }
 
@@ -272,8 +272,15 @@
             }
             return registration().then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
                 if (sub && Notification.permission === 'granted') {
-                    send('/subscribe', sub.endpoint);          // sinkronkan ulang ke server (aman diulang)
-                    show('Notifikasi HP aktif di perangkat ini.', false, true, true);
+                    // Sinkronkan ke server (aman diulang). Jangan bilang "aktif" bila server gagal menyimpan.
+                    return send('/subscribe', sub.endpoint).then(function (r) {
+                        if (r && r.ok === true) {
+                            show('Notifikasi HP aktif di perangkat ini.', false, true, true);
+                        } else {
+                            show('Belum tersimpan di server: ' + ((r && r.message) || 'coba matikan lalu aktifkan lagi.')
+                                + ' (Pastikan tabel push_subscriptions sudah dibuat.)', false, false, true);
+                        }
+                    });
                 } else {
                     show('Dapatkan notifikasi booking & ulasan baru di HP, walau panel tidak dibuka.', true, false, false);
                 }
@@ -304,14 +311,32 @@
         });
 
         bTest.addEventListener('click', function () {
+            // Saat panel terbuka, notifikasi HP sengaja tidak ditampilkan (cukup lonceng).
+            // Karena itu tes dikirim 10 detik lagi: tutup Chrome / kunci layar HP sekarang, lalu tunggu.
             bTest.disabled = true;
-            // Panel terbuka = notifikasi HP sengaja tidak muncul. Tutup panel & beralih ke app lain dulu untuk melihatnya.
-            send('/test').then(function (r) {
-                status.textContent = r.ok
-                    ? 'Tes terkirim. Notifikasi HP tampil bila layar/aplikasi sedang tidak terbuka di panel ini.'
-                    : 'Tes gagal dikirim ke perangkat ini. Matikan lalu aktifkan lagi.';
-                load();
-            }).then(function () { bTest.disabled = false; });
+            var left = 10;
+            status.textContent = 'Tes dikirim dalam ' + left + ' detik. TUTUP Chrome atau kunci layar HP sekarang...';
+            var t = setInterval(function () {
+                left--;
+                if (left > 0) { status.textContent = 'Tes dikirim dalam ' + left + ' detik. TUTUP Chrome atau kunci layar HP sekarang...'; return; }
+                clearInterval(t);
+                send('/test').then(function (r) {
+                    var lines = [];
+                    (r.devices || []).forEach(function (d) { lines.push((d.ok ? '✓ ' : '✗ ') + d.device + ': ' + d.message); });
+                    if (!(r.devices || []).length) {
+                        lines.push('✗ Belum ada perangkat terdaftar di server. Tekan "Matikan", lalu "Aktifkan" lagi.');
+                    }
+                    if (r.checks && r.checks.https === false) { lines.push('⚠ Situs dibuka lewat HTTP. Notifikasi push butuh HTTPS.'); }
+                    if (r.checks && r.checks.openssl === false) { lines.push('⚠ Ekstensi openssl PHP belum aktif di server.'); }
+                    if (r.message) { lines.push(r.message); }
+                    if (r.ok) { lines.push('Kalau notifikasi tetap tidak muncul di HP: cek Pengaturan Android → Aplikasi → Chrome → Notifikasi (harus aktif) dan matikan penghemat baterai untuk Chrome.'); }
+                    status.textContent = lines.join('\n');
+                    status.style.whiteSpace = 'pre-line';
+                    load();
+                }).catch(function () {
+                    status.textContent = 'Tes gagal: tidak bisa menghubungi server.';
+                }).then(function () { bTest.disabled = false; });
+            }, 1000);
         });
 
         bOff.addEventListener('click', function () {

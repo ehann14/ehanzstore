@@ -17,6 +17,14 @@ Options -Indexes -ExecCGI
     </IfModule>
 </FilesMatch>
 
+# Service worker & manifest HARUS selalu versi terbaru. Kalau tersimpan di cache (browser/Cloudflare),
+# HP tetap memakai sw.js lama yang belum punya kode notifikasi push.
+<FilesMatch "^(sw\.js|manifest\.json)$">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-cache, max-age=0, must-revalidate"
+    </IfModule>
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

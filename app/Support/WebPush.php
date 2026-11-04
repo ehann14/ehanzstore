@@ -37,8 +37,11 @@ class WebPush
     }
 
     /**
-     * Kirim "ketukan" push ke semua perangkat milik user-user ini, SETELAH respons dikirim ke pengunjung
-     * (supaya pembeli yang booking/ulasan tidak menunggu).
+     * Kirim "ketukan" push ke semua perangkat milik user-user ini.
+     *
+     * Dikirim langsung (bukan menunggu akhir request) supaya pasti jalan di hosting mana pun.
+     * Timeout dibuat pendek (maks ~4 dtk per perangkat) dan semua error ditelan, jadi pembeli
+     * yang booking/mengirim ulasan tidak pernah gagal gara-gara notifikasi.
      *
      * @param array<int,int> $userIds
      */
@@ -50,58 +53,102 @@ class WebPush
             return;
         }
 
-        app()->terminating(function () use ($userIds) {
-            try {
-                PushSubscription::whereIn('user_id', $userIds)->get()->each(fn ($sub) => static::send($sub));
-            } catch (Throwable $e) {
-                report($e);
-            }
-        });
+        try {
+            PushSubscription::whereIn('user_id', $userIds)->get()->each(fn ($sub) => static::send($sub));
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 
-    /** Kirim sekarang ke semua perangkat satu user. Mengembalikan [berhasil, gagal]. */
+    /**
+     * Kirim sekarang ke semua perangkat satu user, lengkap dengan hasil per perangkat (untuk tombol "Kirim tes").
+     *
+     * @return array<int, array{ok:bool,status:int|null,message:string,device:string}>
+     */
     public static function sendNowToUser(int $userId): array
     {
-        $ok = $fail = 0;
+        $results = [];
 
         foreach (PushSubscription::where('user_id', $userId)->get() as $sub) {
-            static::send($sub) ? $ok++ : $fail++;
+            $results[] = static::deliver($sub) + ['device' => static::deviceLabel($sub)];
         }
 
-        return [$ok, $fail];
+        return $results;
     }
 
-    /** Kirim satu ketukan push. Langganan yang sudah dicabut (404/410) dihapus otomatis. */
+    /** Kirim satu ketukan push. Mengembalikan true bila diterima layanan push. */
     public static function send(PushSubscription $sub): bool
+    {
+        return static::deliver($sub)['ok'];
+    }
+
+    /**
+     * Kirim satu ketukan push dan laporkan hasilnya. Langganan yang sudah dicabut (404/410) dihapus otomatis.
+     *
+     * @return array{ok:bool,status:int|null,message:string}
+     */
+    public static function deliver(PushSubscription $sub): array
     {
         try {
             $origin = static::origin($sub->endpoint);
             $keys   = static::keys();
 
             $response = Http::withHeaders([
-                'Authorization' => 'vapid t=' . static::jwt($origin, $keys['pem']) . ', k=' . $keys['public'],
-                'TTL'           => '86400',
-                'Urgency'       => 'high',
-            ])->connectTimeout(3)->timeout(6)->send('POST', $sub->endpoint, ['body' => '']);
+                'Authorization'  => 'vapid t=' . static::jwt($origin, $keys['pem']) . ', k=' . $keys['public'],
+                'TTL'            => '86400',
+                'Urgency'        => 'high',
+                'Content-Length' => '0',
+            ])->connectTimeout(2)->timeout(4)->send('POST', $sub->endpoint, ['body' => '']);
 
-            if (in_array($response->status(), [404, 410], true)) {
+            $status = $response->status();
+
+            if (in_array($status, [404, 410], true)) {
                 $sub->delete();
 
-                return false;
+                return ['ok' => false, 'status' => $status, 'message' => 'Langganan di HP ini sudah kedaluwarsa. Matikan lalu aktifkan lagi.'];
             }
 
             if ($response->successful()) {
                 $sub->forceFill(['last_sent_at' => now()])->saveQuietly();
 
-                return true;
+                return ['ok' => true, 'status' => $status, 'message' => 'Diterima layanan push (' . static::host($sub->endpoint) . ').'];
             }
 
-            report(new \RuntimeException('Web Push ditolak (' . $response->status() . ') ' . $origin));
+            report(new \RuntimeException('Web Push ditolak (' . $status . ') ' . $origin . ': ' . mb_substr($response->body(), 0, 200)));
+
+            return ['ok' => false, 'status' => $status, 'message' => static::explain($status)];
         } catch (Throwable $e) {
             report($e);
-        }
 
-        return false;
+            return ['ok' => false, 'status' => null, 'message' => 'Server tidak bisa menghubungi layanan push: ' . mb_substr($e->getMessage(), 0, 140)];
+        }
+    }
+
+    protected static function explain(int $status): string
+    {
+        return match (true) {
+            in_array($status, [401, 403], true) => "Ditolak layanan push ({$status}): kunci VAPID tidak cocok. Matikan lalu aktifkan lagi notifikasi di HP.",
+            $status === 400 => 'Ditolak layanan push (400): permintaan tidak valid.',
+            $status === 413 => 'Ditolak layanan push (413).',
+            $status === 429 => 'Terlalu banyak permintaan ke layanan push (429). Coba lagi sebentar.',
+            $status >= 500  => "Layanan push sedang bermasalah ({$status}). Coba lagi nanti.",
+            default         => "Ditolak layanan push (kode {$status}).",
+        };
+    }
+
+    protected static function host(string $endpoint): string
+    {
+        return (string) (parse_url($endpoint, PHP_URL_HOST) ?: 'push');
+    }
+
+    protected static function deviceLabel(PushSubscription $sub): string
+    {
+        $ua = (string) $sub->user_agent;
+
+        $os      = str_contains($ua, 'Android') ? 'Android' : (preg_match('/iPhone|iPad/', $ua) ? 'iPhone/iPad' : (str_contains($ua, 'Windows') ? 'Windows' : (str_contains($ua, 'Mac') ? 'Mac' : 'Perangkat')));
+        $browser = str_contains($ua, 'Edg/') ? 'Edge' : (str_contains($ua, 'Firefox') ? 'Firefox' : (str_contains($ua, 'Chrome') ? 'Chrome' : 'Browser'));
+
+        return "{$os} · {$browser}";
     }
 
     // ------------------------------------------------------------------
@@ -150,7 +197,7 @@ class WebPush
             . '.' . static::b64u(json_encode([
                 'aud' => $audience,
                 'exp' => time() + 12 * 3600,
-                'sub' => 'mailto:' . (config('mail.from.address') ?: 'admin@ehanzstore.id'),
+                'sub' => 'mailto:admin@' . (parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'ehanzstore.id'),
             ]));
 
         if (! openssl_sign($signing, $der, $pem, OPENSSL_ALGO_SHA256)) {

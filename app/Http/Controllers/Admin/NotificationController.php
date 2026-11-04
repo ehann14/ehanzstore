@@ -104,16 +104,27 @@ class NotificationController extends Controller
     /** Kirim notifikasi uji ke semua perangkat milik user yang login. */
     public function test(Request $request): JsonResponse
     {
+        $checks = [
+            'https'   => $request->isSecure(),
+            'openssl' => extension_loaded('openssl'),
+        ];
+
         try {
+            // Catatan dibuat DULU, baru push dikirim: service worker mengambil isinya dari /push/pending
             $request->user()->notify(new PushTestNotification());
-            [$ok, $fail] = WebPush::sendNowToUser($request->user()->id);
+
+            $results = WebPush::sendNowToUser($request->user()->id);
         } catch (Throwable $e) {
             report($e);
 
-            return response()->json(['ok' => false, 'message' => 'Gagal mengirim tes.'], 500);
+            return response()->json(['ok' => false, 'message' => 'Gagal mengirim tes: ' . mb_substr($e->getMessage(), 0, 160), 'checks' => $checks], 500);
         }
 
-        return response()->json(['ok' => $ok > 0, 'sent' => $ok, 'failed' => $fail]);
+        return response()->json([
+            'ok'      => collect($results)->contains('ok', true),
+            'devices' => $results,
+            'checks'  => $checks,
+        ]);
     }
 
     /** Tandai satu notifikasi sudah dibaca. */

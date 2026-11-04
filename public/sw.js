@@ -4,7 +4,7 @@
  * Fungsinya hanya: membuat situs bisa di-install, dan menampilkan halaman "offline"
  * bila internet mati. Naikkan VERSION bila file ini diubah.
  */
-const VERSION = 'ehanz-admin-v2';
+const VERSION = 'ehanz-admin-v3';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
