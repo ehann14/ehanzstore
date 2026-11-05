@@ -1,11 +1,27 @@
 /*
  * Service worker EHANZSTORE Admin.
  * Sengaja SEDERHANA dan aman: halaman admin (login, CSRF, data penjualan) TIDAK di-cache.
- * Fungsinya hanya: membuat situs bisa di-install, dan menampilkan halaman "offline"
- * bila internet mati. Naikkan VERSION bila file ini diubah.
+ * Fungsinya:
+ *  - membuat situs bisa di-install
+ *  - menampilkan halaman "offline" bila internet mati
+ *  - mempercepat pembukaan aplikasi: pustaka & font pihak ketiga (Tailwind, Alpine, Google Fonts)
+ *    disimpan di HP dan diperbarui diam-diam di belakang (stale-while-revalidate)
+ *  - navigation preload: permintaan halaman berjalan paralel dengan service worker yang sedang bangun
+ * Naikkan VERSION bila file ini diubah.
  */
-const VERSION = 'ehanz-admin-v3';
+const VERSION = 'ehanz-admin-v4';          // halaman offline + ikon (aset kecil, wajib ada)
+const STATIC_CACHE = 'ehanz-static-v1';    // pustaka / font pihak ketiga (diperbarui di belakang)
 const OFFLINE_URL = '/offline.html';
+
+// Hanya aset statis dari host ini yang disimpan. Halaman admin tidak pernah masuk daftar ini.
+const STATIC_HOSTS = [
+    'cdn.tailwindcss.com',
+    'unpkg.com',
+    'cdn.jsdelivr.net',
+    'cdnjs.cloudflare.com',
+    'fonts.googleapis.com',
+    'fonts.gstatic.com',
+];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -16,22 +32,71 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys()
-            .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
-            .then(() => self.clients.claim())
-    );
+    event.waitUntil((async () => {
+        // Navigation preload: halaman mulai diunduh sementara service worker masih bangun (lebih cepat saat aplikasi dibuka).
+        if (self.registration.navigationPreload) {
+            try { await self.registration.navigationPreload.enable(); } catch (e) { /* tidak didukung: abaikan */ }
+        }
+
+        const keep = [VERSION, STATIC_CACHE];
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((k) => !keep.includes(k)).map((k) => caches.delete(k)));
+        await self.clients.claim();
+    })());
 });
+
+// Aset statis: tampilkan dari simpanan dulu (instan), lalu perbarui di belakang untuk pembukaan berikutnya.
+async function staleWhileRevalidate(event) {
+    const cache = await caches.open(STATIC_CACHE);
+    const cached = await cache.match(event.request);
+
+    const refresh = fetch(event.request)
+        .then((res) => {
+            // Simpan jawaban normal atau "opaque" (skrip lintas-domain). Jangan simpan error server.
+            if (res && (res.ok || res.type === 'opaque')) {
+                cache.put(event.request, res.clone());
+            }
+            return res;
+        })
+        .catch(() => null);
+
+    if (cached) {
+        event.waitUntil(refresh);   // biarkan pembaruan selesai walau halaman sudah tampil
+        return cached;
+    }
+
+    return (await refresh) || Response.error();
+}
 
 self.addEventListener('fetch', (event) => {
     const req = event.request;
 
-    // Hanya halaman (navigasi) yang ditangani; form POST, gambar, API, dll lewat normal.
-    if (req.mode !== 'navigate' || req.method !== 'GET') return;
+    if (req.method !== 'GET') return;
 
-    event.respondWith(
-        fetch(req).catch(() => caches.match(OFFLINE_URL))
-    );
+    // Halaman (navigasi): selalu dari server (tidak pernah di-cache). Offline -> halaman offline.
+    if (req.mode === 'navigate') {
+        event.respondWith((async () => {
+            try {
+                const preloaded = await event.preloadResponse;
+                if (preloaded) return preloaded;
+
+                return await fetch(req);
+            } catch (e) {
+                return (await caches.match(OFFLINE_URL)) || Response.error();
+            }
+        })());
+        return;
+    }
+
+    // Pustaka & font pihak ketiga + ikon/logo toko: instan dari simpanan, diperbarui di belakang.
+    const url = new URL(req.url);
+    const isStatic = STATIC_HOSTS.includes(url.hostname)
+        || (url.origin === self.location.origin && url.pathname.startsWith('/images/'));
+
+    if (isStatic) {
+        event.respondWith(staleWhileRevalidate(event));
+    }
+    // Selain itu (form, API, upload, dll) lewat normal.
 });
 
 

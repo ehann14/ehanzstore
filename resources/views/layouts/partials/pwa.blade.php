@@ -9,6 +9,59 @@
 <meta name="apple-mobile-web-app-title" content="EHANZ Admin">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
+{{--
+    Layar pembuka aplikasi. Dua hal:
+    1) Latar gelap langsung dari baris pertama, jadi tidak ada kilat putih sebelum Tailwind selesai dimuat.
+    2) Saat aplikasi dibuka dari ikon (mode terpasang), tampilkan logo + indikator muat sampai halaman siap.
+       Hanya sekali per pembukaan aplikasi (bukan di setiap pindah halaman). Dibuat lewat pseudo-element <html>,
+       jadi tidak butuh markup di <body>. Ada pengaman CSS: tertutup sendiri maksimal 6 detik walau JS gagal.
+--}}
+<style>
+    html { background: #020617; color-scheme: dark; }
+    html.app-launching::before {
+        content: ''; position: fixed; inset: 0; z-index: 2147483646;
+        background: #020617 url('{{ asset('images/pwa-192.png') }}') center calc(50% - 22px) / 88px 88px no-repeat;
+        animation: launch-failsafe .35s ease 6s forwards;
+        transition: opacity .25s ease;
+    }
+    html.app-launching::after {
+        content: ''; position: fixed; z-index: 2147483647; left: 50%; top: calc(50% + 52px);
+        width: 26px; height: 26px; margin-left: -13px; border-radius: 50%;
+        border: 3px solid rgba(148, 163, 184, .25); border-top-color: #3b82f6;
+        animation: launch-spin .8s linear infinite, launch-failsafe .35s ease 6s forwards;
+        transition: opacity .25s ease;
+    }
+    html.app-launching.launch-done::before, html.app-launching.launch-done::after { opacity: 0; pointer-events: none; }
+    @keyframes launch-spin { to { transform: rotate(360deg); } }
+    @keyframes launch-failsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+</style>
+<script>
+    (function () {
+        var root = document.documentElement;
+        var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+        var seen = false;
+
+        try { seen = sessionStorage.getItem('ehanzLaunched') === '1'; sessionStorage.setItem('ehanzLaunched', '1'); } catch (e) {}
+
+        // Layar pembuka hanya saat aplikasi terpasang baru dibuka, bukan di setiap pindah halaman / tab browser biasa.
+        if (!standalone || seen) return;
+
+        root.classList.add('app-launching');
+
+        function done() {
+            // Dua frame supaya Tailwind (CDN) sempat menerapkan gayanya sebelum layar pembuka diangkat.
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    root.classList.add('launch-done');
+                    setTimeout(function () { root.classList.remove('app-launching', 'launch-done'); }, 400);
+                });
+            });
+        }
+
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', done); } else { done(); }
+    })();
+</script>
+
 <script>
     (function () {
         // 1) Daftarkan service worker (wajib agar bisa di-install; butuh HTTPS atau localhost)

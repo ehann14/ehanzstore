@@ -8,6 +8,8 @@
   "start_url": "/admin/dashboard",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "launch_handler": { "client_mode": "navigate-existing" },
   "orientation": "any",
   "background_color": "#020617",
   "theme_color": "#020617",
@@ -18,6 +20,8 @@
     { "src": "/images/logo.png", "sizes": "1536x1536", "type": "image/png", "purpose": "any" }
   ],
   "shortcuts": [
+    { "name": "Booking Akun", "short_name": "Booking", "url": "/admin/bookings",
+      "icons": [{ "src": "/images/logo.png", "sizes": "1536x1536" }] },
     { "name": "Daftar Akun", "short_name": "Akun", "url": "/admin/accounts",
       "icons": [{ "src": "/images/logo.png", "sizes": "1536x1536" }] },
     { "name": "Tambah Akun", "short_name": "Tambah", "url": "/admin/accounts/create",
