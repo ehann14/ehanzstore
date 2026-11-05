@@ -59,6 +59,19 @@
         </a>
     </div>
 
+    <!-- Pengingat pelunasan: batas pelunasan hari ini / besok -->
+    @php $dueSoon = \App\Support\SettlementReminder::dueSoonCount(); @endphp
+    @if($dueSoon > 0)
+        <a href="{{ route('admin.bookings.index', ['status' => 'paid']) }}"
+           class="flex items-center gap-3 rounded-3xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/15 px-4 py-3 mb-6 transition">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+            <p class="text-sm text-amber-100">
+                <b class="text-amber-200">{{ $dueSoon }} booking</b> batas pelunasannya hari ini atau besok.
+                <span class="text-amber-300/80">Cari penanda H-1 lalu kirim pengingat lewat WhatsApp.</span>
+            </p>
+        </a>
+    @endif
+
     <!-- Tab status -->
     <div class="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-1 px-1">
         @foreach($tabs as $key => [$label, $count])
@@ -88,6 +101,7 @@
             @foreach($bookings as $b)
                 @php
                     $acc    = $b->account;
+                    $due    = \App\Support\SettlementReminder::daysLeft($b);   // 1 = H-1, 0 = Hari H, null = bukan
                     $img    = $acc?->primaryImage?->image_path ? upload_url($acc->primaryImage->image_path) : null;
                     $waLine = $b->isAwaitingTransfer()
                         ? ' (DP ' . $rp($b->dp_amount) . ') belum kami terima. Mohon transfer DP sebelum batas waktu ya. Detail: '
@@ -115,6 +129,12 @@
                                     </span>
                                     <span class="px-2.5 py-0.5 rounded-full border text-[11px] font-semibold {{ $b->statusTone() }}">{{ $b->statusLabel() }}</span>
                                     <span class="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[11px] text-slate-300">DP: {{ $b->dpLabel() }}</span>
+                                    @if($due !== null && $due <= 1)
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[11px] font-extrabold uppercase tracking-wide {{ \App\Support\SettlementReminder::tone($due) }}">
+                                            <span class="w-1.5 h-1.5 rounded-full {{ $due <= 0 ? 'bg-red-400' : 'bg-amber-400' }} animate-pulse"></span>
+                                            {{ \App\Support\SettlementReminder::label($due) }}
+                                        </span>
+                                    @endif
                                 </div>
                                 <h3 class="font-semibold text-white truncate">{{ $b->account_code_snapshot }} &middot; {{ $b->account_name_snapshot }}</h3>
                                 <p class="text-sm text-slate-300 truncate">{{ $b->buyer_name }} &middot; <span class="font-mono text-slate-400">{{ $b->localPhone() }}</span></p>
@@ -167,6 +187,9 @@
 
                         <div class="flex flex-wrap gap-2 lg:justify-end">
                             <a href="{{ $wa }}" target="_blank" rel="noopener" class="px-4 py-2 rounded-full bg-green-600/90 hover:bg-green-500 text-white text-xs font-bold transition">Chat Pembeli</a>
+                            @if($due !== null && $due <= 1)
+                                <a href="{{ \App\Support\SettlementReminder::whatsappUrl($b) }}" target="_blank" rel="noopener" class="px-4 py-2 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900 text-xs font-extrabold transition">Ingatkan Pelunasan (WA)</a>
+                            @endif
                             <a href="{{ $b->publicUrl() }}" target="_blank" rel="noopener" class="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold transition">Halaman Booking</a>
 
                             @if($b->status === 'pending' || ($b->status === 'expired' && $b->dp_state === 'unpaid'))
