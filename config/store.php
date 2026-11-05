@@ -129,4 +129,12 @@ return [
         'close' => env('STORE_CLOSE_TIME', '22:00'),
     ],
 
+    // ------------------------------------------------------------------
+    // Laporan konversi di dashboard Super Admin
+    // ------------------------------------------------------------------
+    'conversion' => [
+        // Akun masuk daftar "Banyak Dilihat, Belum Laku" bila dilihat minimal sekian pengunjung unik pada rentang laporan
+        'min_viewers' => (int) env('CONVERSION_MIN_VIEWERS', 5),
+    ],
+
 ];

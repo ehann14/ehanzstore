@@ -8,6 +8,7 @@ use App\Models\CocAccount;
 use App\Models\Sale;
 use App\Models\User;
 use App\Models\VisitorEvent;
+use App\Support\ConversionReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -18,7 +19,7 @@ class DashboardController extends Controller
     /**
      * Dashboard utama Super Admin.
      */
-    public function index()
+    public function index(Request $request)
     {
         // Pengunjung
         $totalVisitors     = VisitorEvent::distinct()->count('anonymous_session_id');
@@ -55,6 +56,9 @@ class DashboardController extends Controller
             ->with('account:id,name,account_code,price,town_hall,listing_type')
             ->get();
 
+        // Laporan konversi: pengunjung -> lihat akun -> booking -> terjual, kandidat turun harga, DP hangus per bulan
+        $conversion = ConversionReport::build(ConversionReport::normalizeRange($request->query('konversi')));
+
         // Transaksi terbaru
         $recentSales = Sale::with('account')->latest()->take(5)->get();
 
@@ -81,7 +85,8 @@ class DashboardController extends Controller
             'visitorStats',
             'topAccounts',
             'recentSales',
-            'warrantyAlerts'
+            'warrantyAlerts',
+            'conversion'
         ));
     }
 

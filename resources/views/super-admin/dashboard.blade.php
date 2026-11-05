@@ -213,6 +213,9 @@
         </div>
     </div>
 
+    <!-- Laporan konversi -->
+    @include('super-admin._conversion-report')
+
     <!-- Transaksi terbaru -->
     <div class="glass-panel rounded-2xl p-5 sm:p-6">
         <div class="flex items-center justify-between mb-5">

@@ -208,24 +208,65 @@
                             @endif
 
                             @if(in_array($b->status, ['pending', 'active'], true))
-                                <div x-data="{ open: false }" class="relative">
-                                    <button type="button" @click="open = !open" class="px-4 py-2 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold transition">Batalkan</button>
-                                    <div x-show="open" x-cloak @click.outside="open = false" x-transition
-                                         class="absolute right-0 bottom-full mb-2 z-30 w-72 rounded-3xl glass-strong p-4 shadow-2xl">
-                                        <form method="POST" action="{{ route('admin.bookings.cancel', $b) }}" class="space-y-3">
-                                            @csrf
-                                            @if($b->status === 'active')
-                                                <p class="text-xs text-slate-300 font-semibold">Siapa yang membatalkan?</p>
-                                                <label class="flex items-start gap-2 text-xs text-slate-300"><input type="radio" name="by" value="buyer" checked class="mt-0.5 accent-red-500"> <span><b>Pembeli</b> membatalkan: DP hangus</span></label>
-                                                <label class="flex items-start gap-2 text-xs text-slate-300"><input type="radio" name="by" value="store" class="mt-0.5 accent-red-500"> <span><b>Toko</b> membatalkan: DP dikembalikan</span></label>
-                                            @else
-                                                <input type="hidden" name="by" value="buyer">
-                                                <p class="text-xs text-slate-300">DP belum dibayar, jadi pembatalan tidak berdampak ke uang.</p>
-                                            @endif
-                                            <input type="text" name="reason" maxlength="200" placeholder="Alasan (opsional)" class="{{ $fieldClass }}">
-                                            <button class="w-full py-2 rounded-full bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition">Ya, batalkan booking</button>
-                                        </form>
-                                    </div>
+                                {{-- Form pembatalan: kartu bawah (bottom sheet) di HP, kotak di tengah di layar lebar.
+                                     Dipindah ke <body> (x-teleport) supaya tidak terpotong / bergeser oleh panel kaca (backdrop-filter) dan layar HP. --}}
+                                <div x-data="{ open: false }">
+                                    <button type="button" @click="open = true" class="px-4 py-2 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold transition">Batalkan</button>
+
+                                    <template x-teleport="body">
+                                        <div x-show="open" x-cloak x-transition.opacity
+                                             @keydown.escape.window="open = false"
+                                             @click.self="open = false"
+                                             class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4">
+                                            <div x-show="open" x-transition
+                                                 role="dialog" aria-modal="true" aria-label="Batalkan booking {{ $b->booking_code }}"
+                                                 class="w-full sm:max-w-sm max-h-[92vh] overflow-y-auto rounded-t-[2rem] sm:rounded-[2rem] bg-slate-900 border border-white/10 shadow-2xl p-5 sm:p-6"
+                                                 style="padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));">
+
+                                                <div class="flex items-start justify-between gap-3 mb-4">
+                                                    <div class="min-w-0">
+                                                        <h3 class="font-display font-extrabold text-lg text-white">Batalkan booking</h3>
+                                                        <p class="text-xs text-slate-400 mt-0.5 truncate">{{ $b->booking_code }} &middot; {{ $b->account_code_snapshot }} &middot; {{ $b->buyer_name }}</p>
+                                                    </div>
+                                                    <button type="button" @click="open = false" class="w-9 h-9 shrink-0 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 flex items-center justify-center" aria-label="Tutup">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    </button>
+                                                </div>
+
+                                                <form method="POST" action="{{ route('admin.bookings.cancel', $b) }}" class="space-y-4">
+                                                    @csrf
+                                                    @if($b->status === 'active')
+                                                        <div class="space-y-2.5">
+                                                            <p class="text-xs text-slate-300 font-semibold">Siapa yang membatalkan?</p>
+                                                            <label class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs text-slate-300 cursor-pointer">
+                                                                <input type="radio" name="by" value="buyer" checked class="mt-0.5 w-4 h-4 shrink-0 accent-red-500">
+                                                                <span><b class="text-white">Pembeli</b> membatalkan: DP hangus</span>
+                                                            </label>
+                                                            <label class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs text-slate-300 cursor-pointer">
+                                                                <input type="radio" name="by" value="store" class="mt-0.5 w-4 h-4 shrink-0 accent-red-500">
+                                                                <span><b class="text-white">Toko</b> membatalkan: DP dikembalikan</span>
+                                                            </label>
+                                                        </div>
+                                                    @else
+                                                        <input type="hidden" name="by" value="buyer">
+                                                        <p class="text-xs text-slate-300 rounded-2xl border border-white/10 bg-white/[0.03] p-3">DP belum dibayar, jadi pembatalan tidak berdampak ke uang.</p>
+                                                    @endif
+
+                                                    <div>
+                                                        <label for="cancel-reason-{{ $b->id }}" class="block text-xs font-semibold text-slate-400 mb-1.5">Alasan <span class="font-normal text-slate-500">(opsional)</span></label>
+                                                        {{-- text-base di HP mencegah iOS memperbesar layar saat mengetik --}}
+                                                        <textarea id="cancel-reason-{{ $b->id }}" name="reason" rows="3" maxlength="200" placeholder="Contoh: pembeli tidak bisa dihubungi"
+                                                                  class="{{ $fieldClass }} !text-base sm:!text-sm resize-none"></textarea>
+                                                    </div>
+
+                                                    <div class="grid grid-cols-2 gap-2 pt-1">
+                                                        <button type="button" @click="open = false" class="py-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-sm font-semibold transition">Kembali</button>
+                                                        <button class="py-3 rounded-full bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition">Ya, batalkan</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             @endif
 
