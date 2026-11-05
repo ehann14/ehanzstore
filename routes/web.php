@@ -12,6 +12,7 @@ use App\Http\Controllers\SellerSubmissionController;
 use App\Http\Controllers\Admin\SellerLinkController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\DeviceController;
+use App\Http\Controllers\Admin\PasswordController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\CustomerController;
@@ -215,6 +216,12 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
         Route::get('consignments', [ConsignmentController::class, 'index'])->name('consignments.index');
         Route::post('consignments/{sale}/pay', [ConsignmentController::class, 'markPaid'])->name('consignments.pay');
         Route::post('consignments/{sale}/unpay', [ConsignmentController::class, 'markUnpaid'])->name('consignments.unpay');
+
+        // Ganti password sendiri (Admin Posting + Super Admin)
+        Route::get('password', [PasswordController::class, 'edit'])->name('password');
+        Route::post('password', [PasswordController::class, 'update'])
+            ->middleware('throttle:5,1')
+            ->name('password.update');
 
         // Perangkat yang sedang login + keluar dari semua perangkat lain
         Route::get('devices', [DeviceController::class, 'index'])->name('devices');

@@ -87,9 +87,8 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
-                    <input type="password" name="password" required
-                           class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
-                           placeholder="••••••••">
+                    <x-password-input name="password" placeholder="••••••••" autocomplete="current-password"
+                        input-class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all" />
                 </div>
 
                 <button type="submit" 
