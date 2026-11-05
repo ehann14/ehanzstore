@@ -17,7 +17,11 @@
     $fieldCls  = 'w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-electric transition';
 @endphp
 
-@if($dp > 0 && ! $allowsDp)
+@if(! $account->bookingEnabled())
+    <p class="text-[11px] text-slate-400 text-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+        Booking DP sedang tidak dibuka untuk {{ $account->noun() }} ini. Silakan beli <b class="text-slate-200">lunas</b> lewat WhatsApp.
+    </p>
+@elseif($dp > 0 && ! $allowsDp)
     <p class="text-[11px] text-slate-400 text-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
         Booking DP hanya untuk akun yang Gmail-nya belum bisa diganti. {{ $account->noun() }} ini bisa langsung dibeli <b class="text-slate-200">lunas</b> lewat WhatsApp.
     </p>

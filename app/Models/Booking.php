@@ -183,6 +183,12 @@ class Booking extends Model
         return $max === null || $max >= 1;
     }
 
+    /** Pesan untuk akun yang booking-nya dimatikan admin (saklar ON/OFF di Kelola Akun). */
+    public static function disabledMessage(): string
+    {
+        return 'Booking DP untuk akun ini sedang dimatikan.';
+    }
+
     /** Pesan untuk akun yang tidak boleh DP. */
     public static function dpNotAllowedMessage(): string
     {
@@ -515,6 +521,11 @@ class Booking extends Model
                     return [null, 'Akun titipan tidak bisa dibooking dengan DP. Silakan beli lunas lewat WhatsApp.'];
                 }
 
+                // Booking dimatikan admin untuk akun ini (saklar ON/OFF di Kelola Akun).
+                if (! $account->bookingEnabled()) {
+                    return [null, static::disabledMessage() . ' Silakan beli lunas lewat WhatsApp.'];
+                }
+
                 // DP hanya untuk akun yang Gmail-nya belum bisa diganti.
                 if (! static::allowsDp($account)) {
                     return [null, static::dpNotAllowedMessage() . ' Silakan beli lunas lewat WhatsApp.'];
@@ -585,6 +596,10 @@ class Booking extends Model
                 // Akun titipan tidak punya sistem DP: pembayaran harus lunas.
                 if ($locked->isConsignment()) {
                     return [null, 'Akun titipan tidak bisa dibooking dengan DP. Pembayaran harus lunas.'];
+                }
+
+                if (! $locked->bookingEnabled()) {
+                    return [null, static::disabledMessage() . ' Nyalakan dulu lewat saklar Booking di Kelola Akun.'];
                 }
 
                 if (! static::allowsDp($locked)) {

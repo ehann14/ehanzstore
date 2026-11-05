@@ -83,6 +83,12 @@ class BookingController extends Controller
                 ->with('error', 'Akun titipan tidak bisa dibooking dengan DP. Pembayaran harus lunas (gunakan tombol Terjual).');
         }
 
+        // Booking dimatikan lewat saklar ON/OFF di Kelola Akun
+        if (! $account->bookingEnabled()) {
+            return redirect()->route('admin.accounts.index')
+                ->with('error', Booking::disabledMessage() . ' Nyalakan dulu lewat saklar Booking di kartu akun.');
+        }
+
         // DP hanya untuk akun yang Gmail-nya belum bisa diganti
         if (! Booking::allowsDp($account)) {
             return redirect()->route('admin.accounts.index')
@@ -104,6 +110,11 @@ class BookingController extends Controller
     public function storeForAccount(Request $request, CocAccount $account)
     {
         $this->authorizeAccount($account);
+
+        if (! $account->bookingEnabled()) {
+            return redirect()->route('admin.accounts.index')
+                ->with('error', Booking::disabledMessage() . ' Nyalakan dulu lewat saklar Booking di kartu akun.');
+        }
 
         if (! Booking::allowsDp($account)) {
             return redirect()->route('admin.accounts.index')

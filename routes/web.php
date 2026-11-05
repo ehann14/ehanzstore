@@ -122,6 +122,13 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
         Route::post('accounts/bulk-price', [AccountController::class, 'bulkPrice'])
             ->name('accounts.bulk-price');
 
+        // Booking (DP) ON/OFF: massal untuk akun yang dicentang / "pilih semua", dan per satu akun
+        Route::post('accounts/bulk-booking', [AccountController::class, 'bulkBooking'])
+            ->name('accounts.bulk-booking');
+
+        Route::post('accounts/{account}/booking-toggle', [AccountController::class, 'toggleBooking'])
+            ->name('accounts.booking-toggle');
+
         Route::resource('accounts', AccountController::class);
 
         Route::post('accounts/{account}/status', [

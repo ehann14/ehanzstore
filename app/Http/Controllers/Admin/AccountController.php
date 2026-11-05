@@ -433,6 +433,103 @@ class AccountController extends Controller
             : $redirect->with('error', 'Tidak ada akun yang berubah. ' . ($skipped ? '' : 'Tidak ada akun yang cocok.'));
     }
 
+    /**
+     * Saklar booking (DP) satu akun dari daftar Kelola Akun.
+     * enabled=1 -> booking dibuka, enabled=0 -> ditutup (pembeli tidak bisa booking akun ini).
+     * Booking yang sudah berjalan tidak ikut dibatalkan.
+     */
+    public function toggleBooking(Request $request, CocAccount $account)
+    {
+        $this->authorizeAccount($account);
+
+        $request->validate(['enabled' => 'required|boolean']);
+
+        if ($account->isConsignment()) {
+            return back()->with('error', 'Akun titipan tidak punya sistem booking DP (wajib lunas), jadi saklar booking tidak berlaku.');
+        }
+
+        if ($account->sale_status !== 'available') {
+            return back()->with('error', 'Saklar booking hanya untuk akun yang masih tersedia.');
+        }
+
+        $on = $request->boolean('enabled');
+
+        $account->update(['booking_enabled' => $on]);
+
+        ActivityLog::record('toggle_booking', $account, 'Akun ' . $account->account_code, ['enabled' => $on]);
+
+        return back()->with('success', 'Booking akun ' . $account->account_code . ($on ? ' dinyalakan (ON).' : ' dimatikan (OFF).'));
+    }
+
+    /**
+     * Booking (DP) ON/OFF massal untuk akun yang dicentang di Kelola Akun, termasuk "pilih semua"
+     * (satu halaman atau semua halaman, mengikuti pencarian yang sedang aktif).
+     *
+     * booking_state=on  : buka booking
+     * booking_state=off : tutup booking (booking yang sudah berjalan tetap lanjut)
+     *
+     * Yang tidak ikut: akun terjual / arsip dan akun titipan (titipan wajib lunas, tanpa DP).
+     */
+    public function bulkBooking(Request $request)
+    {
+        $data = $request->validate([
+            'booking_state' => 'required|in:on,off',
+            'select_all'    => 'nullable|boolean',
+            'ids'           => 'nullable|array|max:500',
+            'ids.*'         => 'integer',
+            'q'             => 'nullable|string|max:100',
+        ]);
+
+        $on = $data['booking_state'] === 'on';
+
+        $query = CocAccount::query()
+            ->where('sale_status', 'available')
+            ->where('is_consignment', false)
+            ->notAwaitingSeller()
+            ->when(! Auth::user()->isSuperAdmin(), fn ($q) => $q->where('created_by', Auth::id()));
+
+        $requested = null;
+
+        if ($request->boolean('select_all')) {
+            // "Pilih semua" lintas halaman: ikut pencarian yang sedang aktif
+            $search = trim((string) ($data['q'] ?? ''));
+            $query->when($search !== '', fn ($q) => $q->where(function ($w) use ($search) {
+                $w->where('account_code', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            }));
+        } else {
+            $ids = array_values(array_unique(array_map('intval', $data['ids'] ?? [])));
+
+            if (empty($ids)) {
+                return back()->with('error', 'Centang minimal satu akun dulu.');
+            }
+
+            $requested = count($ids);
+            $query->whereIn('id', $ids);
+        }
+
+        $matched = (clone $query)->count();
+
+        if ($matched === 0) {
+            return back()->with('error', 'Tidak ada akun yang bisa diubah (akun terjual, arsip, dan titipan tidak ikut).');
+        }
+
+        $query->update(['booking_enabled' => $on]);
+
+        ActivityLog::record('bulk_booking', null, $matched . ' akun', ['enabled' => $on, 'count' => $matched]);
+
+        $redirect = redirect()->route('admin.accounts.index', array_filter([
+            'tab' => 'ready',
+            'q'   => $request->input('q'),
+        ]));
+
+        if ($requested !== null && $requested > $matched) {
+            $redirect->with('error', ($requested - $matched) . ' akun dilewati (sudah tidak tersedia atau titipan).');
+        }
+
+        return $redirect->with('success', 'Booking ' . ($on ? 'dinyalakan (ON)' : 'dimatikan (OFF)') . " untuk {$matched} akun.");
+    }
+
     public function sell(CocAccount $account)
     {
         $this->authorizeAccount($account);

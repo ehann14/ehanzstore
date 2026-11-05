@@ -3,6 +3,30 @@
 @section('title', 'Kelola Akun')
 
 @section('content')
+<style>
+    /* Checkbox kustom (Kelola Akun): kotak bulat dengan centang animasi, status "sebagian" (strip) untuk pilih semua */
+    .ck { position: relative; display: inline-flex; align-items: center; }
+    .ck-input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+    .ck-box { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 1.5rem; height: 1.5rem;
+              border-radius: .5rem; border: 2px solid #475569; background: rgba(15, 23, 42, .6); color: transparent;
+              transition: background-color .15s, border-color .15s, box-shadow .15s, transform .15s; }
+    .ck-box svg { width: 1rem; height: 1rem; }
+    .ck:hover .ck-box { border-color: rgba(59, 130, 246, .85); }
+    .ck-input:focus-visible + .ck-box { box-shadow: 0 0 0 3px rgba(59, 130, 246, .45); }
+    .ck-input:checked + .ck-box,
+    .ck-input:indeterminate + .ck-box { background: #3b82f6; border-color: #3b82f6; color: #fff; box-shadow: 0 4px 14px -2px rgba(59, 130, 246, .55); }
+    .ck-input:checked + .ck-box { transform: scale(1.06); }
+    .ck-box .ck-tick { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset .2s ease .03s; }
+    .ck-input:checked + .ck-box .ck-tick { stroke-dashoffset: 0; }
+    .ck-box .ck-dash { display: none; }
+    .ck-input:indeterminate + .ck-box .ck-tick { display: none; }
+    .ck-input:indeterminate + .ck-box .ck-dash { display: block; }
+
+    /* Kartu akun yang sedang dicentang */
+    .bulk-card.is-selected { border-color: rgba(59, 130, 246, .6); background: rgba(59, 130, 246, .07);
+                             box-shadow: 0 0 0 1px rgba(59, 130, 246, .45), 0 10px 28px -14px rgba(59, 130, 246, .5); }
+    @media (prefers-reduced-motion: reduce) { .ck-box, .ck-box .ck-tick { transition: none; } }
+</style>
 <div class="max-w-6xl mx-auto pb-20">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
@@ -81,17 +105,24 @@
 
         @if($tab === 'ready')
             {{-- Toolbar centang: pilih semua untuk diskon massal (Last Clash Sale, dll) --}}
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 px-1">
-                <label class="inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none">
-                    <input type="checkbox" id="bulk-check-all" class="w-5 h-5 rounded border-white/20 bg-brand-950/50 text-electric focus:ring-electric">
-                    Pilih semua di halaman ini
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                <label class="ck gap-3 cursor-pointer select-none">
+                    <input type="checkbox" id="bulk-check-all" class="ck-input">
+                    <span class="ck-box">
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path class="ck-tick" d="M4 10.5l4 4 8-9"/>
+                            <path class="ck-dash" d="M5 10h10"/>
+                        </svg>
+                    </span>
+                    <span class="text-sm font-semibold text-slate-200">Pilih semua di halaman ini</span>
                 </label>
+                <span id="bulk-sel-label" class="hidden px-2.5 py-1 rounded-full bg-electric/15 border border-electric/30 text-[11px] font-bold text-blue-300"></span>
                 @if($accounts->total() > $accounts->count())
                     <button type="button" id="bulk-all-pages" class="hidden text-xs font-semibold text-electric hover:underline">
                         Pilih semua {{ $accounts->total() }} akun{{ $search !== '' ? ' hasil pencarian' : '' }} (semua halaman)
                     </button>
                 @endif
-                <span class="text-[11px] text-slate-500">Centang akun untuk mengatur diskon sekaligus.</span>
+                <span class="basis-full sm:basis-auto sm:ml-auto text-[11px] text-slate-500">Centang akun untuk mengatur diskon atau Booking ON/OFF sekaligus.</span>
             </div>
         @endif
 
@@ -123,7 +154,7 @@
                     $hold = $account->sale_status === 'available' ? ($holds[$account->id] ?? null) : null;
                 @endphp
 
-                <div class="glass-panel rounded-2xl border border-white/5 hover:border-electric/30 transition-colors overflow-hidden">
+                <div class="bulk-card glass-panel rounded-2xl border border-white/5 hover:border-electric/30 transition-colors overflow-hidden">
 
                     {{-- ===== Info akun ===== --}}
                     <div class="p-3 sm:p-4 flex items-start gap-3 sm:gap-4">
@@ -131,11 +162,17 @@
                             @php
                                 $bulkBase = $account->hasDiscount() ? (float) $account->original_price : (float) $account->price;
                             @endphp
-                            <label class="shrink-0 pt-1 cursor-pointer" title="Pilih untuk diskon massal">
+                            <label class="ck shrink-0 pt-1 cursor-pointer" title="Pilih untuk diskon massal / Booking ON-OFF">
                                 <input type="checkbox" name="ids[]" value="{{ $account->id }}" form="bulk-form" data-bulk-check
                                        data-code="{{ $account->account_code }}" data-base="{{ (int) $bulkBase }}"
                                        data-cost="{{ $account->isConsignment() ? 0 : (int) $account->cost_price }}"
-                                       class="w-5 h-5 rounded border-white/20 bg-brand-950/50 text-electric focus:ring-electric">
+                                       class="ck-input">
+                                <span class="ck-box">
+                                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path class="ck-tick" d="M4 10.5l4 4 8-9"/>
+                                        <path class="ck-dash" d="M5 10h10"/>
+                                    </svg>
+                                </span>
                             </label>
                         @endif
                         <div class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden bg-midnight border border-white/10 relative">
@@ -203,6 +240,13 @@
                                     </span>
                                 @endif
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $saleBadge[1] }}">{{ $saleBadge[0] }}</span>
+
+                                @if($account->sale_status === 'available' && ! $account->isConsignment())
+                                    <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $account->bookingEnabled() ? 'bg-sky-500/15 text-sky-300 border-sky-500/30' : 'bg-slate-500/15 text-slate-400 border-slate-500/30' }}"
+                                          title="{{ $account->bookingEnabled() ? 'Pembeli bisa booking dengan DP' : 'Booking dimatikan: pembeli tidak bisa booking akun ini' }}">
+                                        Booking {{ $account->bookingEnabled() ? 'ON' : 'OFF' }}
+                                    </span>
+                                @endif
 
                                 @if($account->submission_status === 'submitted' && ! $published)
                                     <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
@@ -315,11 +359,25 @@
                                    class="{{ $btn }} border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">Terjual (Lunas)</a>
                                 {{-- Akun titipan tidak punya sistem DP: wajib lunas.
                                      DP juga hanya untuk akun yang Gmail-nya belum bisa diganti. --}}
-                                @if(! $account->isConsignment() && \App\Models\Booking::allowsDp($account))
+                                @if(! $account->isConsignment() && $account->bookingEnabled() && \App\Models\Booking::allowsDp($account))
                                     <a href="{{ route('admin.accounts.booking', $account) }}"
                                        class="{{ $btn }} border-amber-500/30 text-amber-300 hover:bg-amber-500/10">Booking / DP</a>
                                 @endif
                             </div>
+                        @endif
+
+                        {{-- Saklar booking (DP) per akun: ON = pembeli bisa booking, OFF = booking ditutup.
+                             Akun titipan tidak punya sistem DP, jadi tidak ada saklar. --}}
+                        @if($account->sale_status === 'available' && ! $account->isConsignment())
+                            <form action="{{ route('admin.accounts.booking-toggle', $account) }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="enabled" value="{{ $account->bookingEnabled() ? 0 : 1 }}">
+                                <button type="submit"
+                                        title="{{ $account->bookingEnabled() ? 'Klik untuk mematikan booking akun ini' : 'Klik untuk menyalakan booking akun ini' }}"
+                                        class="{{ $btn }} {{ $account->bookingEnabled() ? 'border-sky-500/30 text-sky-300 hover:bg-sky-500/10' : 'border-slate-500/30 text-slate-400 hover:bg-white/5' }}">
+                                    Booking: {{ $account->bookingEnabled() ? 'ON' : 'OFF' }}
+                                </button>
+                            </form>
                         @endif
 
                         {{-- Pendorong: aksi umum rata kanan di layar lebar --}}
@@ -360,6 +418,11 @@
             <button type="button" id="bulk-open" class="px-4 py-2 rounded-xl bg-electric hover:bg-blue-500 text-white text-sm font-semibold transition">Atur Diskon</button>
             <button type="submit" form="bulk-form" name="action" value="end" id="bulk-end"
                     class="px-3 py-2 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 text-sm font-medium transition">Akhiri Diskon</button>
+            {{-- Booking ON/OFF massal: memakai centang & "pilih semua" yang sama, dikirim ke route lain lewat formaction --}}
+            <button type="submit" form="bulk-form" formaction="{{ route('admin.accounts.bulk-booking') }}" name="booking_state" value="on" data-booking-bulk
+                    class="px-3 py-2 rounded-xl border border-sky-500/30 text-sky-300 hover:bg-sky-500/10 text-sm font-medium transition">Booking ON</button>
+            <button type="submit" form="bulk-form" formaction="{{ route('admin.accounts.bulk-booking') }}" name="booking_state" value="off" data-booking-bulk
+                    class="px-3 py-2 rounded-xl border border-slate-500/30 text-slate-300 hover:bg-white/5 text-sm font-medium transition">Booking OFF</button>
             <button type="button" id="bulk-clear" class="px-3 py-2 rounded-xl text-slate-500 hover:text-white text-sm transition">Batal</button>
         </div>
     </div>
@@ -473,6 +536,10 @@
             bar.classList.toggle('hidden', n === 0);
             const all = checks();
             allBox.checked = all.length > 0 && all.every(c => c.checked);
+            allBox.indeterminate = !allBox.checked && all.some(c => c.checked);
+            all.forEach(c => { const card = c.closest('.bulk-card'); if (card) card.classList.toggle('is-selected', c.checked); });
+            const selLabel = document.getElementById('bulk-sel-label');
+            if (selLabel) { selLabel.textContent = n + ' dipilih'; selLabel.classList.toggle('hidden', n === 0); }
             if (allPages) allPages.classList.toggle('hidden', !(allBox.checked && flag.value !== '1'));
             renderPreview();
         }
@@ -544,6 +611,13 @@
             const act = e.submitter ? e.submitter.value : 'apply';
             const n = count();
             if (n === 0) { e.preventDefault(); alert('Centang minimal satu akun dulu.'); return; }
+            if (e.submitter && e.submitter.hasAttribute('data-booking-bulk')) {
+                const on = e.submitter.value === 'on';
+                const msg = (on ? 'Nyalakan' : 'Matikan') + ' booking untuk ' + n + ' akun yang dipilih? Akun titipan dan arsip dilewati.'
+                    + (on ? '' : ' Pembeli tidak bisa booking akun ini lagi, booking yang sudah berjalan tetap lanjut.');
+                if (!confirm(msg)) e.preventDefault();
+                return;
+            }
             if (act === 'apply') {
                 const v = parseFloat(valueIn.value);
                 if (isNaN(v) || v <= 0) { e.preventDefault(); alert('Isi besar potongan dulu.'); return; }

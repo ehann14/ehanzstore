@@ -23,6 +23,7 @@ class CocAccount extends Model
         'publication_status', 'publish_at', 'sale_status', 'created_by',
         'is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok', 'consignor_phone_ok',
         'submission_token', 'submission_status', 'submission_expires_at', 'submitted_at',
+        'booking_enabled',
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class CocAccount extends Model
         'commission_value' => 'decimal:2',
         'submission_expires_at' => 'datetime',
         'submitted_at' => 'datetime',
+        'booking_enabled' => 'boolean',
     ];
 
     /** Link titip penjual: menunggu diisi penjual / sudah diisi (menunggu ditinjau admin). */
@@ -532,6 +534,17 @@ class CocAccount extends Model
     public function bookings()
     {
         return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Saklar booking (DP) per akun, diatur admin di Kelola Akun.
+     * OFF = pembeli tidak bisa booking akun ini (tombol booking diganti keterangan) dan admin tidak bisa
+     * mencatat booking baru. Booking yang sudah berjalan tetap lanjut. Bawaan ON.
+     * Kolom belum ada (migrasi belum dijalankan) dianggap ON supaya situs tetap jalan seperti biasa.
+     */
+    public function bookingEnabled(): bool
+    {
+        return (bool) ($this->booking_enabled ?? true);
     }
 
     /** Akun ini sedang ditahan booking (menunggu DP / DP diterima)? Memakai cache satu query per request. */
