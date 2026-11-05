@@ -61,9 +61,7 @@
                     @csrf
 
                     {{-- Jebakan bot, jangan diisi --}}
-                    <div class="hidden" aria-hidden="true">
-                        <input type="text" name="website" tabindex="-1" autocomplete="off">
-                    </div>
+                    <x-honeypot />
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Penilaian</label>
@@ -96,6 +94,10 @@
                         <p class="text-[11px] text-slate-500 mt-1">Minimal 10 karakter, maksimal 500.</p>
                         @error('comment') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+
+                    @error('rate_limit')
+                        <div class="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs">{{ $message }}</div>
+                    @enderror
 
                     <button type="submit" class="w-full bg-electric hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition active:scale-[0.98]">
                         Kirim Ulasan

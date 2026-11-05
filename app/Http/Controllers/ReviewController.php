@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Review;
 use App\Models\Sale;
 use App\Support\AdminNotifier;
+use App\Support\SpamGuard;
 use Illuminate\Http\Request;
 
 /**
@@ -30,7 +31,10 @@ class ReviewController extends Controller
         $sale = $this->findSale($token);
 
         // Jebakan bot: kolom ini disembunyikan dari manusia, jadi harus kosong.
-        if ($request->filled('website')) {
+        // Bot dibuat "mengira berhasil": tidak ada ulasan, tidak ada notifikasi ke admin.
+        if (SpamGuard::honeypotTripped($request)) {
+            SpamGuard::logBot($request, 'review');
+
             return redirect()->route('review.form', $token);
         }
 
@@ -52,6 +56,13 @@ class ReviewController extends Controller
             'comment.max'            => 'Ulasan maksimal 500 karakter.',
         ]);
 
+        // Batas kiriman per IP (per jam & per hari). Salah ketik tidak dihitung: hanya ulasan yang jadi.
+        if ($wait = SpamGuard::blockedFor($request, 'review')) {
+            return back()
+                ->withInput()
+                ->withErrors(['rate_limit' => 'Terlalu banyak ulasan dari jaringan ini. Coba lagi dalam ' . SpamGuard::waitText($wait) . '.']);
+        }
+
         $review = Review::create([
             'sale_id'        => $sale->id,
             'coc_account_id' => $sale->coc_account_id,
@@ -60,6 +71,8 @@ class ReviewController extends Controller
             'comment'        => trim(strip_tags($data['comment'])),
             'status'         => 'pending',
         ]);
+
+        SpamGuard::hit($request, 'review');
 
         // Beri tahu admin lewat lonceng notifikasi
         AdminNotifier::newReview($review);

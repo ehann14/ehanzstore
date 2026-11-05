@@ -77,6 +77,9 @@
                 <form method="POST" action="{{ route('booking.store', $account->account_code) }}" class="space-y-4">
                     @csrf
 
+                    {{-- Jebakan bot, jangan diisi --}}
+                    <x-honeypot />
+
                     <div>
                         <label for="bk_name" class="block text-xs font-semibold text-slate-400 mb-1.5">Nama kamu</label>
                         <input id="bk_name" type="text" name="buyer_name" required minlength="2" maxlength="100" value="{{ old('buyer_name') }}" placeholder="Nama lengkap / panggilan" class="{{ $fieldCls }}">

@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Sale;
 use App\Support\AdminNotifier;
 use App\Support\PaymentSettings;
+use App\Support\SpamGuard;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -19,6 +20,14 @@ class BookingController extends Controller
     /** Pembeli membuat booking dari halaman detail akun. */
     public function store(Request $request, string $account_code)
     {
+        // Jebakan bot: kolom ini disembunyikan dari manusia, jadi harus kosong.
+        // Bot dibuat "mengira berhasil": tidak ada booking, tidak ada notifikasi ke admin.
+        if (SpamGuard::honeypotTripped($request)) {
+            SpamGuard::logBot($request, 'booking');
+
+            return redirect()->route('account.detail', $account_code);
+        }
+
         $data = $request->validateWithBag('booking', [
             'buyer_name'  => ['required', 'string', 'min:2', 'max:100'],
             'buyer_phone' => [
@@ -39,6 +48,14 @@ class BookingController extends Controller
             'terms.accepted'       => 'Kamu harus menyetujui syarat & ketentuan booking DP.',
         ]);
 
+        // Batas booking per IP (per jam & per hari). Salah ketik atau akun yang sudah laku tidak dihitung.
+        if ($wait = SpamGuard::blockedFor($request, 'booking')) {
+            return redirect()
+                ->route('account.detail', $account_code)
+                ->withInput($request->only('buyer_name', 'buyer_phone'))
+                ->withErrors(['booking' => 'Terlalu banyak booking dari jaringan ini. Coba lagi dalam ' . SpamGuard::waitText($wait) . ', atau hubungi admin lewat WhatsApp.'], 'booking');
+        }
+
         [$booking, $error] = Booking::place(
             $account_code,
             trim($data['buyer_name']),
@@ -52,6 +69,8 @@ class BookingController extends Controller
                 ->withInput($request->only('buyer_name', 'buyer_phone'))
                 ->withErrors(['booking' => $error], 'booking');
         }
+
+        SpamGuard::hit($request, 'booking');
 
         // Beri tahu admin lewat lonceng notifikasi
         AdminNotifier::newBooking($booking);
