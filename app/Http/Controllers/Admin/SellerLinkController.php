@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\CocAccount;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 /**
  * Link titip untuk penjual (tanpa login).
@@ -56,7 +56,7 @@ class SellerLinkController extends Controller
             'name.max'      => 'Nama maksimal 100 karakter.',
         ]);
 
-        $account = CocAccount::create([
+        $account = $this->createWithFreshCode([
             'account_code'          => $this->newCode(),
             'name'                  => trim($data['name']),
             'listing_type'          => 'account',
@@ -116,14 +116,26 @@ class SellerLinkController extends Controller
         return back()->with('success', 'Link "' . $name . '" dibatalkan.');
     }
 
-    /** Kode sementara, mis. TTP-7K3QX2. Admin boleh menggantinya saat menerbitkan. */
+    /** Kode otomatis untuk titipan: EHZ-T1, EHZ-T2, dst. */
     private function newCode(): string
     {
-        do {
-            $code = 'TTP-' . strtoupper(Str::random(6));
-        } while (CocAccount::withTrashed()->where('account_code', $code)->exists());
+        return CocAccount::nextCode('account', true);
+    }
 
-        return $code;
+    /** Simpan akun; bila nomor kode keburu dipakai orang lain, ambil nomor berikutnya lalu coba lagi. */
+    private function createWithFreshCode(array $attributes): CocAccount
+    {
+        for ($try = 1; ; $try++) {
+            try {
+                return CocAccount::create($attributes);
+            } catch (QueryException $e) {
+                if ($try >= 5 || ! str_contains($e->getMessage(), 'account_code')) {
+                    throw $e;
+                }
+
+                $attributes['account_code'] = $this->newCode();
+            }
+        }
     }
 
     private function authorizeAccount(CocAccount $account): void

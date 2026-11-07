@@ -83,9 +83,10 @@
 
             <div>
                 <label class="block text-xs font-semibold text-slate-400 mb-2">Kode Akun <span class="text-red-400">*</span></label>
-                <input type="text" name="account_code" value="{{ old('account_code') }}" required maxlength="30" placeholder="Contoh: EHZ-001"
-                       class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white font-mono uppercase focus:border-brand-500 outline-none transition @error('account_code') border-red-500 @enderror">
-                <p class="text-[11px] text-slate-500 mt-1">Isi manual. Hanya huruf, angka, tanda minus (-) dan underscore (_). Kode harus unik karena dipakai di link akun.</p>
+                <input type="text" name="account_code" value="{{ $nextCodes['account'] }}" required maxlength="30" readonly
+                       data-codes='@json($nextCodes)'
+                       class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white font-mono uppercase opacity-80 cursor-not-allowed focus:border-brand-500 outline-none transition @error('account_code') border-red-500 @enderror">
+                <p class="text-[11px] text-slate-500 mt-1">Terisi otomatis: akun <span class="font-mono text-slate-300">EHZ-{nomor}</span>, clan <span class="font-mono text-slate-300">EHZ-C{nomor}</span>, titipan <span class="font-mono text-slate-300">EHZ-T{nomor}</span>. Nomor pasti dikunci saat disimpan.</p>
                 @error('account_code') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
@@ -177,7 +178,9 @@
         const radios = document.querySelectorAll('input[name="listing_type"]');
         const nameLabel = document.querySelector('[data-noun-label]');
         const nameInput = document.querySelector('input[name="name"]');
-        const codeHint = document.querySelector('input[name="account_code"]');
+        const codeInput = document.querySelector('input[name="account_code"]');
+        const codes = JSON.parse(codeInput?.dataset.codes || '{}');
+        const consignToggle = document.querySelector('[data-consign-toggle]');
 
         function apply() {
             const type = document.querySelector('input[name="listing_type"]:checked')?.value || 'account';
@@ -188,10 +191,15 @@
             });
             if (nameLabel) nameLabel.textContent = type === 'clan' ? 'Nama Clan' : 'Nama Akun';
             if (nameInput) nameInput.placeholder = type === 'clan' ? nameInput.dataset.placeholderClan : nameInput.dataset.placeholderAccount;
-            if (codeHint) codeHint.placeholder = type === 'clan' ? 'Contoh: EHZ-CLAN-001' : 'Contoh: EHZ-001';
+            // Kode otomatis: titipan = EHZ-T, clan = EHZ-C, akun biasa = EHZ-
+            if (codeInput) {
+                const next = consignToggle && consignToggle.checked ? codes.consignment : (type === 'clan' ? codes.clan : codes.account);
+                if (next) codeInput.value = next;
+            }
         }
 
         radios.forEach((r) => r.addEventListener('change', apply));
+        if (consignToggle) consignToggle.addEventListener('change', apply);
         apply();
     })();
 </script>

@@ -87,6 +87,54 @@ class CocAccount extends Model
         return $token;
     }
 
+    /**
+     * Awalan kode otomatis:
+     *  - titipan  => EHZ-T  (EHZ-T1, EHZ-T2, ...)
+     *  - clan     => EHZ-C  (EHZ-C1, EHZ-C2, ...)
+     *  - akun     => EHZ-   (EHZ-1, EHZ-2, ... EHZ-17)
+     * Titipan didahulukan: akun/clan titipan selalu memakai EHZ-T.
+     */
+    public static function codePrefix(string $type = 'account', bool $consignment = false): string
+    {
+        if ($consignment) {
+            return 'EHZ-T';
+        }
+
+        return $type === 'clan' ? 'EHZ-C' : 'EHZ-';
+    }
+
+    /**
+     * Kode berikutnya = nomor terbesar yang pernah dipakai + 1 (per awalan).
+     * Akun yang sudah dihapus (soft delete) ikut dihitung supaya kode lama tidak dipakai ulang.
+     */
+    public static function nextCode(string $type = 'account', bool $consignment = false): string
+    {
+        $prefix  = static::codePrefix($type, $consignment);
+        $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)$/';
+        $max     = 0;
+
+        static::withTrashed()
+            ->where('account_code', 'like', $prefix . '%')
+            ->pluck('account_code')
+            ->each(function ($code) use ($pattern, &$max) {
+                if (preg_match($pattern, (string) $code, $m)) {
+                    $max = max($max, (int) $m[1]);
+                }
+            });
+
+        return $prefix . ($max + 1);
+    }
+
+    /** Kode berikutnya untuk semua jenis (dipakai preview di form tambah akun). */
+    public static function nextCodes(): array
+    {
+        return [
+            'account'     => static::nextCode('account', false),
+            'clan'        => static::nextCode('clan', false),
+            'consignment' => static::nextCode('account', true),
+        ];
+    }
+
     /** Jenis komisi titip jual: kunci => label. */
     public const COMMISSION_TYPES = [
         'percent' => 'Persen (%)',

@@ -8,6 +8,7 @@ use App\Models\CocAccount;
 use App\Models\CocAccountImage;
 use App\Models\Booking;
 use App\Models\Sale;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -72,7 +73,7 @@ class AccountController extends Controller
 
     public function create()
     {
-        return view('admin.accounts.create');
+        return view('admin.accounts.create', ['nextCodes' => CocAccount::nextCodes()]);
     }
 
     public function store(Request $request)
@@ -80,6 +81,12 @@ class AccountController extends Controller
         $this->normalizeCode($request);
 
         $type = $request->input('listing_type') === 'clan' ? 'clan' : 'account';
+
+        // Kode akun dibuat otomatis: EHZ-17 (akun), EHZ-C6 (clan), EHZ-T1 (titipan).
+        // Isian dari form diabaikan supaya nomor tidak bisa bentrok / loncat.
+        $request->merge([
+            'account_code' => CocAccount::nextCode($type, $request->boolean('is_consignment')),
+        ]);
 
         $rules = $this->rules(null, $type);
         $rules['listing_type'] = 'required|in:account,clan';
@@ -109,12 +116,25 @@ class AccountController extends Controller
             $validated['town_hall'] = 0;
         }
 
-        $account = CocAccount::create([
-            'created_by'         => Auth::id(),
-            'sale_status'        => 'available',
-            'publication_status' => 'draft', // draft dulu agar admin bisa cek
-            ...$validated,
-        ]);
+        // Bila dua admin menyimpan bersamaan dan nomornya sama, ambil nomor berikutnya lalu coba lagi.
+        $account = null;
+        for ($try = 1; $try <= 5; $try++) {
+            try {
+                $account = CocAccount::create([
+                    'created_by'         => Auth::id(),
+                    'sale_status'        => 'available',
+                    'publication_status' => 'draft', // draft dulu agar admin bisa cek
+                    ...$validated,
+                ]);
+                break;
+            } catch (QueryException $e) {
+                if ($try === 5 || ! str_contains($e->getMessage(), 'account_code')) {
+                    throw $e;
+                }
+
+                $validated['account_code'] = CocAccount::nextCode($type, (bool) ($validated['is_consignment'] ?? false));
+            }
+        }
 
         $failed = $this->storeImages($request, $account);
 
