@@ -33,3 +33,23 @@
         @error('cn_information') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
     </div>
 </div>
+
+{{-- Email (Gmail) yang dipakai akun game. HANYA admin yang melihat, tidak pernah tampil ke pembeli. --}}
+<div class="mt-4">
+    <label class="{{ $lblCls }}">
+        Email Akun (Gmail)
+        <span class="ml-1 normal-case font-semibold text-amber-300">&#128274; Hanya admin, tidak tampil ke pembeli</span>
+    </label>
+    <div class="flex gap-2">
+        <input type="email" name="account_email" id="accountEmail" value="{{ $val('account_email') }}" maxlength="191"
+               autocomplete="off" inputmode="email" placeholder="Contoh: namaakun@gmail.com"
+               class="{{ $inputCls }} @error('account_email') border-red-500 @enderror">
+        <button type="button" id="copyAccountEmail"
+                onclick="(function(b){var v=document.getElementById('accountEmail').value.trim();if(!v)return;navigator.clipboard&&navigator.clipboard.writeText(v).then(function(){var t=b.textContent;b.textContent='Tersalin';setTimeout(function(){b.textContent=t},1200)})})(this)"
+                class="shrink-0 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 transition">
+            Salin
+        </button>
+    </div>
+    <p class="text-[11px] text-slate-500 mt-1">Dicatat supaya tidak lupa Gmail mana yang dipakai akun ini. Beda dengan status &quot;Bisa / Tidak Bisa Ganti&quot; yang tampil ke pembeli.</p>
+    @error('account_email') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+</div>

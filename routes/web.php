@@ -170,6 +170,12 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
             'destroyImage'
         ])->name('accounts.images.destroy');
 
+        // Jadikan salah satu foto sebagai foto utama
+        Route::post('accounts/{account}/images/{image}/primary', [
+            AccountController::class,
+            'setPrimary'
+        ])->name('accounts.images.primary');
+
         // Banner beranda (slider)
         Route::resource('banners', BannerController::class)->except(['show']);
 

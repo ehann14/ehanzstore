@@ -9,6 +9,16 @@
         <span class="text-xs text-slate-500"><span id="photoCount">{{ $existing->count() }}</span>/{{ $maxPhotos }} foto</span>
     </div>
 
+    {{-- Urutan foto BARU yang dipilih jadi foto utama (diisi script). Kosong = ikut aturan bawaan. --}}
+    <input type="hidden" name="primary_new" id="primaryNew" value="">
+
+    <p class="text-[11px] text-slate-500">
+        Foto <span class="font-semibold text-slate-300">Utama</span> tampil paling depan di katalog.
+        Klik <span class="font-semibold text-slate-300">Jadikan utama</span> pada foto mana pun, termasuk foto yang baru dipilih sebelum disimpan.
+        Bila foto utama dihapus, foto pertama yang tersisa otomatis jadi utama.
+        @if($account)<br>Tombol &quot;Jadikan utama&quot; pada foto yang sudah tersimpan langsung diproses, jadi simpan dulu perubahan lain sebelum menekannya.@endif
+    </p>
+
     @if($existing->isNotEmpty())
         {{-- Toolbar: pilih semua + hapus terpilih --}}
         <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-midnight/60 px-3 py-2">
@@ -32,7 +42,12 @@
                            class="photo-check absolute top-1 left-1"
                            style="width:20px;height:20px;accent-color:#ef4444;cursor:pointer">
                     @if($img->is_primary)
-                        <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-electric text-[10px] font-bold text-white">Utama</span>
+                        <span class="existing-primary-badge absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-electric text-[10px] font-bold text-white">Utama</span>
+                    @else
+                        <button type="submit" form="primaryImg{{ $img->id }}" title="Jadikan foto utama"
+                                class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 hover:bg-electric text-[10px] font-bold text-white transition">
+                            Jadikan utama
+                        </button>
                     @endif
                     <button type="submit" form="deleteImg{{ $img->id }}" title="Hapus foto"
                             onclick="return confirm('Hapus foto ini?')"
@@ -75,6 +90,11 @@
             <form id="deleteImg{{ $img->id }}" action="{{ route('admin.accounts.images.destroy', [$account, $img]) }}" method="POST" class="hidden">
                 @csrf @method('DELETE')
             </form>
+            @unless($img->is_primary)
+                <form id="primaryImg{{ $img->id }}" action="{{ route('admin.accounts.images.primary', [$account, $img]) }}" method="POST" class="hidden">
+                    @csrf
+                </form>
+            @endunless
         @endforeach
     @endpush
 @endif
@@ -98,6 +118,66 @@
     let busy = false;
 
     const fmt = b => (b / 1024 / 1024).toFixed(2) + ' MB';
+
+    // ---- Pilihan foto utama untuk foto BARU ----
+    const primaryInput = document.getElementById('primaryNew');
+    let primaryNew = null;   // urutan foto baru yang dipilih jadi utama (null = tidak dipilih)
+
+    function refreshPrimary() {
+        const cards = Array.from(preview.children);
+        // Form tambah (belum ada foto lama): foto pertama otomatis jadi utama bila tidak ada pilihan lain
+        const effective = primaryNew !== null ? primaryNew : (existing === 0 && cards.length ? 0 : null);
+        if (primaryInput) primaryInput.value = primaryNew === null ? '' : String(primaryNew);
+
+        cards.forEach((card, i) => {
+            const btn = card.querySelector('.primary-btn');
+            if (!btn) return;
+            const isPrimary = effective === i;
+            btn.textContent = isPrimary ? 'Utama' : 'Jadikan utama';
+            btn.className = 'primary-btn absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white transition '
+                + (isPrimary ? 'bg-electric' : 'bg-black/70 hover:bg-electric');
+            card.style.outline = isPrimary ? '3px solid #3b82f6' : '';
+            card.style.outlineOffset = '-3px';
+        });
+
+        // Foto utama lama tidak lagi berlabel "Utama" selama foto baru dipilih menggantikannya
+        document.querySelectorAll('.existing-primary-badge').forEach(b => b.classList.toggle('hidden', primaryNew !== null));
+    }
+
+    function renderPreview(files) {
+        preview.innerHTML = '';
+        files.forEach((f, i) => {
+            const d = document.createElement('div');
+            d.className = 'aspect-square rounded-xl overflow-hidden border border-white/10 relative bg-midnight';
+
+            const img = document.createElement('img');
+            img.className = 'w-full h-full object-cover';
+            d.appendChild(img);
+
+            const size = document.createElement('span');
+            size.className = 'absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] text-slate-200';
+            size.textContent = fmt(f.size);
+            d.appendChild(size);
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'primary-btn';
+            btn.addEventListener('click', () => {
+                // Form edit: klik lagi pada foto yang sudah dipilih = batal. Form tambah: foto pertama selalu ada yang utama.
+                primaryNew = (primaryNew === i && existing > 0) ? null : i;
+                refreshPrimary();
+            });
+            d.appendChild(btn);
+
+            preview.appendChild(d);
+
+            // Kartu dibuat berurutan di atas, gambar menyusul saat selesai dibaca (urutan tidak tertukar)
+            const r = new FileReader();
+            r.onload = ev => { img.src = ev.target.result; };
+            r.readAsDataURL(f);
+        });
+        refreshPrimary();
+    }
 
     function compress(file) {
         return new Promise(resolve => {
@@ -129,7 +209,8 @@
         let files = Array.from(input.files);
         preview.innerHTML = '';
         statusEl.classList.add('hidden');
-        if (!files.length) { countEl.textContent = existing; return; }
+        primaryNew = null;
+        if (!files.length) { countEl.textContent = existing; refreshPrimary(); return; }
 
         let note = '';
         if (files.length > allowed) {
@@ -154,17 +235,7 @@
         out.forEach(f => dt.items.add(f));
         input.files = dt.files;
 
-        out.forEach(f => {
-            const r = new FileReader();
-            r.onload = ev => {
-                const d = document.createElement('div');
-                d.className = 'aspect-square rounded-xl overflow-hidden border border-white/10 relative bg-midnight';
-                d.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">
-                    <span class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] text-slate-200">${fmt(f.size)}</span>`;
-                preview.appendChild(d);
-            };
-            r.readAsDataURL(f);
-        });
+        renderPreview(out);
 
         countEl.textContent = existing + out.length;
         statusEl.textContent = `${out.length} foto siap diunggah (${fmt(before)} → ${fmt(after)}).` + note;

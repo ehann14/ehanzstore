@@ -24,6 +24,16 @@ class CocAccount extends Model
         'is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok', 'consignor_phone_ok',
         'submission_token', 'submission_status', 'submission_expires_at', 'submitted_at',
         'booking_enabled',
+        'account_email',
+    ];
+
+    /**
+     * Email akun hanya untuk admin. Disembunyikan dari toArray()/toJson() supaya
+     * tidak ikut keluar bila suatu saat model dikirim sebagai JSON ke halaman publik.
+     * Di Blade admin tetap bisa dibaca lewat $account->account_email.
+     */
+    protected $hidden = [
+        'account_email',
     ];
 
     protected $casts = [

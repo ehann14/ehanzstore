@@ -22,6 +22,9 @@ class AccountController extends Controller
 {
     private const MAX_IMAGES = 10;
 
+    /** id foto yang baru disimpan pada request ini, menurut urutan upload (index file => id foto). */
+    private array $newImageIds = [];
+
     public function index(Request $request)
     {
         // Admin biasa hanya melihat akun miliknya; super admin melihat semua.
@@ -92,7 +95,7 @@ class AccountController extends Controller
         $rules['listing_type'] = 'required|in:account,clan';
 
         $validated = $request->validate($rules, $this->messages());
-        unset($validated['images']);
+        unset($validated['images'], $validated['primary_new']);
 
         if ($errors = array_merge(
             $this->consignmentEmailErrors($request, $type),
@@ -137,6 +140,7 @@ class AccountController extends Controller
         }
 
         $failed = $this->storeImages($request, $account);
+        $this->applyNewPrimary($request, $account);
 
         ActivityLog::record('create_account', $account, 'Akun ' . $account->account_code);
 
@@ -174,7 +178,7 @@ class AccountController extends Controller
         $rules['sale_status']        = 'required|in:available,sold,archived';
 
         $validated = $request->validate($rules, $this->messages());
-        unset($validated['images']);
+        unset($validated['images'], $validated['primary_new']);
 
         // Link titip yang belum diisi penjual: datanya masih kosong, jangan diterbitkan / dijadwalkan dulu
         if ($account->submission_status === CocAccount::SUBMISSION_PENDING
@@ -240,6 +244,7 @@ class AccountController extends Controller
         ]);
 
         $failed = $this->storeImages($request, $account);
+        $this->applyNewPrimary($request, $account);
 
         if ($goingToSold) {
             return $this->withUploadWarning(
@@ -650,6 +655,19 @@ class AccountController extends Controller
         );
     }
 
+    /** Jadikan satu foto (yang sudah tersimpan) sebagai foto utama. Foto utama lama otomatis dilepas. */
+    public function setPrimary(CocAccount $account, CocAccountImage $image)
+    {
+        $this->authorizeAccount($account);
+        abort_if((int) $image->coc_account_id !== (int) $account->id, 404);
+
+        $this->makePrimary($account, $image->id);
+
+        ActivityLog::record('set_primary_image', $account, 'Akun ' . $account->account_code);
+
+        return back()->with('success', 'Foto utama diganti.');
+    }
+
     public function destroyImage(CocAccount $account, CocAccountImage $image)
     {
         $this->authorizeAccount($account);
@@ -744,6 +762,13 @@ class AccountController extends Controller
             'player_tag'   => CocAccount::normalizeTag($request->input('player_tag')),
             'clan_tag'     => CocAccount::normalizeTag($request->input('clan_tag')),
         ]);
+
+        // Email akun: rapikan (spasi dibuang, huruf kecil). Kosong -> null.
+        // Hanya disentuh bila field-nya memang dikirim form (clan tidak punya email akun).
+        if ($request->has('account_email')) {
+            $email = strtolower(trim((string) $request->input('account_email')));
+            $request->merge(['account_email' => $email === '' ? null : $email]);
+        }
     }
 
     private function rules(?CocAccount $account = null, string $type = 'account'): array
@@ -824,6 +849,8 @@ class AccountController extends Controller
             'publish_hour'         => ['nullable', 'required_with:publish_date', 'integer', 'between:0,23'],
             'publish_minute'       => ['nullable', 'integer', 'between:0,59'],
             'description'          => 'nullable|string|max:5000',
+            // urutan foto BARU (mulai 0) yang dijadikan foto utama; kosong = ikut aturan bawaan
+            'primary_new'          => 'nullable|integer|min:0|max:' . (self::MAX_IMAGES - 1),
             'images'               => 'nullable|array|max:' . self::MAX_IMAGES,
             // 5 MB per foto; foto dari browser sudah dikompres otomatis (~0.5 MB)
             'images.*'             => 'image|mimes:jpeg,png,jpg,webp|max:5120',
@@ -857,6 +884,8 @@ class AccountController extends Controller
             'protection_status'    => 'nullable|in:Protected,Unprotected',
             'email_change_status'  => 'nullable|in:Changeable,Unchangeable',
             'email_change_days'    => 'nullable|integer|min:0|max:365',
+            // email (Gmail) yang dipakai akun: hanya admin yang melihat, tidak pernah tampil di publik
+            'account_email'        => 'nullable|string|email|max:191',
         ];
     }
 
@@ -984,6 +1013,8 @@ class AccountController extends Controller
             'account_code.regex'    => 'Kode akun hanya boleh huruf, angka, minus (-) dan underscore (_), tanpa spasi.',
             'account_code.unique'   => 'Kode akun sudah dipakai, gunakan kode lain.',
             'account_code.max'      => 'Kode akun maksimal 30 karakter.',
+            'account_email.email'       => 'Format email akun tidak valid. Contoh: namaakun@gmail.com.',
+            'account_email.max'         => 'Email akun maksimal 191 karakter.',
             'email_change_days.integer' => 'Jumlah hari harus berupa angka bulat.',
             'email_change_days.max'     => 'Jumlah hari maksimal 365.',
             'price.max'         => 'Harga terlalu besar (maksimal Rp 999.999.999).',
@@ -1143,7 +1174,9 @@ class AccountController extends Controller
         $order      = (int) $account->images()->max('sort_order');
         $failed     = 0;
 
-        foreach ($request->file('images') as $file) {
+        $this->newImageIds = [];
+
+        foreach (array_values($request->file('images')) as $index => $file) {
             try {
                 $path = Watermark::store($file, 'accounts');
             } catch (\Throwable $e) {
@@ -1153,16 +1186,51 @@ class AccountController extends Controller
             }
 
             $order++;
-            CocAccountImage::create([
+            $image = CocAccountImage::create([
                 'coc_account_id' => $account->id,
                 'image_path'     => $path,
                 'is_primary'     => !$hasPrimary,
                 'sort_order'     => $order,
             ]);
             $hasPrimary = true;
+
+            // Simpan id menurut urutan upload, supaya pilihan "jadikan utama" di form bisa dicocokkan
+            $this->newImageIds[$index] = $image->id;
         }
 
         return $failed;
+    }
+
+    /**
+     * Bila admin memilih salah satu foto BARU sebagai foto utama (primary_new = urutan upload),
+     * jadikan foto itu yang utama. Dipanggil setelah storeImages().
+     */
+    private function applyNewPrimary(Request $request, CocAccount $account): void
+    {
+        $choice = $request->input('primary_new');
+
+        if ($choice === null || $choice === '' || ! is_numeric($choice)) {
+            return;
+        }
+
+        $imageId = $this->newImageIds[(int) $choice] ?? null;
+
+        if ($imageId) {
+            $this->makePrimary($account, $imageId);
+        }
+    }
+
+    /** Hanya satu foto yang boleh utama: lepas semua, lalu set foto yang dipilih (milik akun ini). */
+    private function makePrimary(CocAccount $account, int $imageId): void
+    {
+        DB::transaction(function () use ($account, $imageId) {
+            if (! $account->images()->where('id', $imageId)->exists()) {
+                return;
+            }
+
+            CocAccountImage::where('coc_account_id', $account->id)->update(['is_primary' => false]);
+            CocAccountImage::where('coc_account_id', $account->id)->where('id', $imageId)->update(['is_primary' => true]);
+        });
     }
 
     /** Tambahkan pesan error ke redirect bila ada foto yang gagal disimpan. */
