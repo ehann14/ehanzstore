@@ -34,22 +34,46 @@
     </div>
 </div>
 
-{{-- Email (Gmail) yang dipakai akun game. HANYA admin yang melihat, tidak pernah tampil ke pembeli. --}}
+{{-- Email (Gmail) yang dipakai akun game, dipilih dari daftar Email Akun. HANYA admin yang melihat, tidak pernah tampil ke pembeli. --}}
+@php
+    $emailOptions  = $emailOptions ?? collect();
+    $selectedEmail = (string) old('account_email_id', $account->account_email_id ?? '');
+    $isSold        = $account && $account->sale_status === 'sold';
+@endphp
 <div class="mt-4">
     <label class="{{ $lblCls }}">
         Email Akun (Gmail)
         <span class="ml-1 normal-case font-semibold text-amber-300">&#128274; Hanya admin, tidak tampil ke pembeli</span>
     </label>
-    <div class="flex gap-2">
-        <input type="email" name="account_email" id="accountEmail" value="{{ $val('account_email') }}" maxlength="191"
-               autocomplete="off" inputmode="email" placeholder="Contoh: namaakun@gmail.com"
-               class="{{ $inputCls }} @error('account_email') border-red-500 @enderror">
-        <button type="button" id="copyAccountEmail"
-                onclick="(function(b){var v=document.getElementById('accountEmail').value.trim();if(!v)return;navigator.clipboard&&navigator.clipboard.writeText(v).then(function(){var t=b.textContent;b.textContent='Tersalin';setTimeout(function(){b.textContent=t},1200)})})(this)"
-                class="shrink-0 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 transition">
-            Salin
-        </button>
-    </div>
-    <p class="text-[11px] text-slate-500 mt-1">Dicatat supaya tidak lupa Gmail mana yang dipakai akun ini. Beda dengan status &quot;Bisa / Tidak Bisa Ganti&quot; yang tampil ke pembeli.</p>
-    @error('account_email') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+
+    @if($isSold)
+        <div class="rounded-lg border border-white/10 bg-brand-950/30 px-3 py-2.5 text-sm text-slate-400">
+            Akun sudah terjual, jadi email otomatis dilepas dan bisa dipakai akun lain.
+        </div>
+    @else
+        <div class="flex gap-2">
+            <select name="account_email_id" id="accountEmailSelect"
+                    class="{{ $inputCls }} @error('account_email_id') border-red-500 @enderror">
+                <option value="">- Belum dipilih -</option>
+                @foreach($emailOptions as $opt)
+                    <option value="{{ $opt->id }}" {{ $selectedEmail === (string) $opt->id ? 'selected' : '' }}>
+                        {{ $opt->email }}{{ $opt->note ? ' (' . $opt->note . ')' : '' }}
+                    </option>
+                @endforeach
+            </select>
+            <button type="button"
+                    onclick="(function(){var s=document.getElementById('accountEmailSelect');var o=s&&s.options[s.selectedIndex];if(!o||!o.value)return;var v=o.text.split(' (')[0].trim();navigator.clipboard&&navigator.clipboard.writeText(v)})()"
+                    class="shrink-0 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 transition">
+                Salin
+            </button>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-1">
+            Satu email hanya untuk satu akun. Email akun yang sudah terjual otomatis dilepas dan muncul lagi di sini.
+            @if($emailOptions->isEmpty())
+                <span class="text-amber-300">Belum ada email tersedia.</span>
+            @endif
+            <a href="{{ route('admin.account-emails.index') }}" target="_blank" class="text-electric hover:underline">Kelola daftar email</a>
+        </p>
+    @endif
+    @error('account_email_id') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
 </div>

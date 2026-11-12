@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountEmail;
 use App\Models\ActivityLog;
 use App\Models\CocAccount;
 use App\Models\CocAccountImage;
@@ -76,7 +77,10 @@ class AccountController extends Controller
 
     public function create()
     {
-        return view('admin.accounts.create', ['nextCodes' => CocAccount::nextCodes()]);
+        return view('admin.accounts.create', [
+            'nextCodes'    => CocAccount::nextCodes(),
+            'emailOptions' => $this->emailOptions(),
+        ]);
     }
 
     public function store(Request $request)
@@ -131,6 +135,10 @@ class AccountController extends Controller
                 ]);
                 break;
             } catch (QueryException $e) {
+                if (str_contains($e->getMessage(), 'account_email_id')) {
+                    return back()->withInput()->withErrors(['account_email_id' => 'Email itu baru saja dipakai akun lain. Pilih email lain.']);
+                }
+
                 if ($try === 5 || ! str_contains($e->getMessage(), 'account_code')) {
                     throw $e;
                 }
@@ -161,9 +169,12 @@ class AccountController extends Controller
     public function edit(CocAccount $account)
     {
         $this->authorizeAccount($account);
-        $account->load('images');
+        $account->load(['images', 'accountEmail']);
 
-        return view('admin.accounts.edit', compact('account'));
+        return view('admin.accounts.edit', [
+            'account'      => $account,
+            'emailOptions' => $this->emailOptions($account),
+        ]);
     }
 
     public function update(Request $request, CocAccount $account)
@@ -216,7 +227,20 @@ class AccountController extends Controller
 
         $this->applyEmailDelay($validated, $account);
 
-        $account->update($validated);
+        // Akun terjual sudah melepas emailnya: jangan sampai terpasang lagi lewat form.
+        if ($account->sale_status === 'sold') {
+            unset($validated['account_email_id']);
+        }
+
+        try {
+            $account->update($validated);
+        } catch (QueryException $e) {
+            if (str_contains($e->getMessage(), 'account_email_id')) {
+                return back()->withInput()->withErrors(['account_email_id' => 'Email itu baru saja dipakai akun lain. Pilih email lain.']);
+            }
+
+            throw $e;
+        }
 
         // Akun yang sudah terjual: modal pada transaksinya ikut diperbarui. Daftar akun, laporan
         // dan laba membaca modal dari transaksi (snapshot), bukan dari akun, jadi tanpa ini
@@ -655,6 +679,37 @@ class AccountController extends Controller
         );
     }
 
+    /**
+     * Simpan urutan foto hasil geser (drag) di form edit. Dipanggil lewat fetch (JSON).
+     * Foto yang tidak ikut terkirim tetap di belakang menurut urutan lamanya.
+     */
+    public function reorderImages(Request $request, CocAccount $account)
+    {
+        $this->authorizeAccount($account);
+
+        $request->validate([
+            'order'   => 'required|array|max:' . self::MAX_IMAGES,
+            'order.*' => 'integer',
+        ]);
+
+        $owned = $account->images()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $sent  = array_values(array_unique(array_map('intval', $request->input('order', []))));
+        $sent  = array_values(array_intersect($sent, $owned));   // hanya foto milik akun ini
+        $final = array_merge($sent, array_values(array_diff($owned, $sent)));
+
+        DB::transaction(function () use ($final, $account) {
+            foreach ($final as $index => $imageId) {
+                CocAccountImage::where('coc_account_id', $account->id)
+                    ->where('id', $imageId)
+                    ->update(['sort_order' => $index + 1]);
+            }
+        });
+
+        ActivityLog::record('reorder_images', $account, 'Akun ' . $account->account_code);
+
+        return response()->json(['ok' => true]);
+    }
+
     /** Jadikan satu foto (yang sudah tersimpan) sebagai foto utama. Foto utama lama otomatis dilepas. */
     public function setPrimary(CocAccount $account, CocAccountImage $image)
     {
@@ -762,13 +817,6 @@ class AccountController extends Controller
             'player_tag'   => CocAccount::normalizeTag($request->input('player_tag')),
             'clan_tag'     => CocAccount::normalizeTag($request->input('clan_tag')),
         ]);
-
-        // Email akun: rapikan (spasi dibuang, huruf kecil). Kosong -> null.
-        // Hanya disentuh bila field-nya memang dikirim form (clan tidak punya email akun).
-        if ($request->has('account_email')) {
-            $email = strtolower(trim((string) $request->input('account_email')));
-            $request->merge(['account_email' => $email === '' ? null : $email]);
-        }
     }
 
     private function rules(?CocAccount $account = null, string $type = 'account'): array
@@ -884,9 +932,53 @@ class AccountController extends Controller
             'protection_status'    => 'nullable|in:Protected,Unprotected',
             'email_change_status'  => 'nullable|in:Changeable,Unchangeable',
             'email_change_days'    => 'nullable|integer|min:0|max:365',
-            // email (Gmail) yang dipakai akun: hanya admin yang melihat, tidak pernah tampil di publik
-            'account_email'        => 'nullable|string|email|max:191',
+            // email (Gmail) yang dipakai akun, dipilih dari daftar Email Akun. Hanya admin yang melihat.
+            // Satu email hanya boleh dipakai satu akun; email akun terjual otomatis dilepas.
+            'account_email_id'     => [
+                'nullable', 'integer',
+                function (string $attribute, mixed $value, \Closure $fail) use ($account) {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+
+                    $email = AccountEmail::visibleTo(Auth::user())->find($value);
+
+                    // Email yang sudah dipegang akun ini sendiri tetap sah walau tidak lagi masuk daftar pilihan
+                    if (! $email) {
+                        if (! ($account && (int) $account->account_email_id === (int) $value)) {
+                            $fail('Email yang dipilih tidak ditemukan.');
+                        }
+
+                        return;
+                    }
+
+                    if ($holder = $email->holder($account?->id)) {
+                        $fail("Email {$email->email} sedang dipakai akun {$holder->account_code}. Pilih email lain.");
+                    }
+                },
+            ],
         ];
+    }
+
+    /**
+     * Email yang boleh dipilih di form akun: yang belum dipakai akun lain (plus yang sedang dipakai akun ini).
+     * Admin biasa hanya melihat email yang ia daftarkan sendiri.
+     */
+    private function emailOptions(?CocAccount $account = null)
+    {
+        $options = AccountEmail::visibleTo(Auth::user())
+            ->free($account?->id)
+            ->orderBy('email')
+            ->get();
+
+        // Email yang sudah terpasang di akun ini harus tetap tampil walau didaftarkan admin lain
+        if ($account?->account_email_id && ! $options->contains('id', $account->account_email_id)) {
+            if ($current = AccountEmail::find($account->account_email_id)) {
+                $options->prepend($current);
+            }
+        }
+
+        return $options;
     }
 
     /**
@@ -1013,8 +1105,7 @@ class AccountController extends Controller
             'account_code.regex'    => 'Kode akun hanya boleh huruf, angka, minus (-) dan underscore (_), tanpa spasi.',
             'account_code.unique'   => 'Kode akun sudah dipakai, gunakan kode lain.',
             'account_code.max'      => 'Kode akun maksimal 30 karakter.',
-            'account_email.email'       => 'Format email akun tidak valid. Contoh: namaakun@gmail.com.',
-            'account_email.max'         => 'Email akun maksimal 191 karakter.',
+            'account_email_id.integer'  => 'Pilihan email akun tidak valid.',
             'email_change_days.integer' => 'Jumlah hari harus berupa angka bulat.',
             'email_change_days.max'     => 'Jumlah hari maksimal 365.',
             'price.max'         => 'Harga terlalu besar (maksimal Rp 999.999.999).',

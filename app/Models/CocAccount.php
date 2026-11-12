@@ -24,15 +24,17 @@ class CocAccount extends Model
         'is_consignment', 'consignor_name', 'consignor_phone', 'commission_type', 'commission_value', 'consignor_email_ok', 'consignor_phone_ok',
         'submission_token', 'submission_status', 'submission_expires_at', 'submitted_at',
         'booking_enabled',
-        'account_email',
+        'account_email_id',
     ];
 
     /**
      * Email akun hanya untuk admin. Disembunyikan dari toArray()/toJson() supaya
      * tidak ikut keluar bila suatu saat model dikirim sebagai JSON ke halaman publik.
-     * Di Blade admin tetap bisa dibaca lewat $account->account_email.
+     * Di Blade admin tetap bisa dibaca lewat $account->accountEmail?->email.
      */
     protected $hidden = [
+        'account_email_id',
+        'accountEmail',
         'account_email',
     ];
 
@@ -514,6 +516,11 @@ class CocAccount extends Model
             }
         });
 
+        // Akun dihapus (soft delete): email dilepas supaya bisa dipakai akun lain.
+        static::deleted(function (CocAccount $account) {
+            $account->releaseEmail();
+        });
+
         // Sinkronkan tabel transaksi dengan status penjualan akun.
         static::updated(function (CocAccount $account) {
             if (! $account->wasChanged('sale_status')) {
@@ -526,6 +533,9 @@ class CocAccount extends Model
 
                 // Booking DP milik akun ini ikut diselesaikan (DP dihitung sebagai bagian pembayaran)
                 Booking::settleForSoldAccount($account);
+
+                // Akun terjual: email dilepas dari data akun supaya bisa dipakai akun lain
+                $account->releaseEmail();
             } elseif ($account->getOriginal('sale_status') === 'sold') {
                 // Status terjual dibatalkan -> transaksi lama dibatalkan
                 // agar pendapatan tidak dihitung dua kali
@@ -582,6 +592,24 @@ class CocAccount extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** Email (Gmail) yang dipakai akun ini. Hanya untuk admin, tidak pernah tampil ke pembeli. Null bila belum dipilih / sudah dilepas. */
+    public function accountEmail()
+    {
+        return $this->belongsTo(AccountEmail::class, 'account_email_id');
+    }
+
+    /**
+     * Lepas email dari akun ini (kolom jadi NULL) supaya email bisa dipakai akun lain.
+     * Dipanggil otomatis saat akun terjual atau dihapus. Memakai query langsung agar tidak memicu event model lagi.
+     */
+    public function releaseEmail(): void
+    {
+        DB::table('coc_accounts')->where('id', $this->id)->update(['account_email_id' => null]);
+
+        $this->forceFill(['account_email_id' => null])->syncOriginalAttribute('account_email_id');
+        $this->unsetRelation('accountEmail');
     }
 
     public function sales()

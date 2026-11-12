@@ -16,6 +16,7 @@
         Foto <span class="font-semibold text-slate-300">Utama</span> tampil paling depan di katalog.
         Klik <span class="font-semibold text-slate-300">Jadikan utama</span> pada foto mana pun, termasuk foto yang baru dipilih sebelum disimpan.
         Bila foto utama dihapus, foto pertama yang tersisa otomatis jadi utama.
+        @if($account && $existing->count() > 1)<br><span class="font-semibold text-slate-300">Ubah urutan galeri:</span> tahan ikon titik-titik di tengah atas foto, lalu geser. Urutan langsung tersimpan.@endif
         @if($account)<br>Tombol &quot;Jadikan utama&quot; pada foto yang sudah tersimpan langsung diproses, jadi simpan dulu perubahan lain sebelum menekannya.@endif
     </p>
 
@@ -34,10 +35,16 @@
             </button>
         </div>
 
-        <div class="grid grid-cols-3 sm:grid-cols-5 gap-3" id="existingGrid">
+        <div class="grid grid-cols-3 sm:grid-cols-5 gap-3" id="existingGrid" data-reorder-url="{{ route('admin.accounts.images.reorder', $account) }}">
             @foreach($existing as $img)
-                <div class="photo-item relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-midnight group cursor-pointer">
-                    <img src="{{ upload_url($img->image_path) }}" alt="" class="w-full h-full object-cover">
+                <div class="photo-item relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-midnight group cursor-pointer" data-id="{{ $img->id }}">
+                    <img src="{{ upload_url($img->image_path) }}" alt="" class="w-full h-full object-cover" draggable="false">
+                    <button type="button" class="drag-handle absolute top-1 left-1/2 -translate-x-1/2 w-8 h-7 rounded-lg bg-black/70 hover:bg-electric text-white flex items-center justify-center transition"
+                            style="touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none"
+                            title="Tahan lalu geser untuk mengubah urutan" aria-label="Geser untuk mengubah urutan foto">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+                    </button>
+                    <span class="order-no absolute bottom-1 right-1 min-w-[18px] text-center px-1 rounded bg-black/70 text-[10px] font-bold text-slate-200">{{ $loop->iteration }}</span>
                     <input type="checkbox" name="image_ids[]" value="{{ $img->id }}" form="bulkDeleteImages"
                            class="photo-check absolute top-1 left-1"
                            style="width:20px;height:20px;accent-color:#ef4444;cursor:pointer">
@@ -57,6 +64,7 @@
                 </div>
             @endforeach
         </div>
+        <p id="orderStatus" class="text-xs min-h-[1rem]"></p>
     @endif
 
     <div class="border-2 border-dashed border-white/10 rounded-2xl p-6 text-center hover:border-brand-500/50 transition-colors bg-brand-950/30">
@@ -292,6 +300,121 @@
     });
 
     refreshSelection();
+
+    // ---- Geser (drag) untuk mengubah urutan foto yang sudah tersimpan ----
+    const grid        = document.getElementById('existingGrid');
+    const orderStatus = document.getElementById('orderStatus');
+
+    if (grid && grid.dataset.reorderUrl) {
+        const tokenInput = form ? form.querySelector('input[name="_token"]') : null;
+        let dragging = null;
+        let changed  = false;
+        let saveTimer = null;
+
+        const items = () => Array.from(grid.querySelectorAll(':scope > .photo-item'));
+
+        function renumber() {
+            items().forEach((el, i) => {
+                const n = el.querySelector('.order-no');
+                if (n) n.textContent = i + 1;
+            });
+        }
+
+        function say(msg, kind) {
+            if (!orderStatus) return;
+            orderStatus.textContent = msg;
+            orderStatus.className = 'text-xs min-h-[1rem] ' + (kind === 'err' ? 'text-red-400' : kind === 'ok' ? 'text-emerald-400' : 'text-slate-400');
+        }
+
+        function save() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(async () => {
+                say('Menyimpan urutan...', 'info');
+                try {
+                    const res = await fetch(grid.dataset.reorderUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': tokenInput ? tokenInput.value : '',
+                        },
+                        body: JSON.stringify({ order: items().map(el => parseInt(el.dataset.id, 10)) }),
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    say('Urutan foto tersimpan.', 'ok');
+                } catch (err) {
+                    say('Urutan gagal disimpan. Muat ulang halaman lalu coba lagi.', 'err');
+                }
+            }, 250);
+        }
+
+        // Pindahkan foto ke posisi baru TANPA memindahkan elemen yang sedang digeser
+        // (yang dipindah adalah foto lainnya), supaya pointer yang sedang menahan tidak terlepas.
+        function moveTo(item, newIndex) {
+            const list = items();
+            const from = list.indexOf(item);
+            if (from === -1 || newIndex === from || newIndex < 0 || newIndex >= list.length) return false;
+
+            const desired = list.filter(el => el !== item);
+            desired.splice(newIndex, 0, item);
+
+            for (let i = 0; i < newIndex; i++) grid.insertBefore(desired[i], item);
+            let prev = item;
+            for (let i = newIndex + 1; i < desired.length; i++) {
+                grid.insertBefore(desired[i], prev.nextSibling);
+                prev = desired[i];
+            }
+            return true;
+        }
+
+        function finish() {
+            if (!dragging) return;
+            dragging.style.opacity = '';
+            dragging.style.transform = '';
+            dragging.style.zIndex = '';
+            dragging = null;
+            if (changed) { changed = false; renumber(); save(); }
+        }
+
+        grid.addEventListener('pointerdown', e => {
+            const handle = e.target.closest('.drag-handle');
+            if (!handle || (e.pointerType === 'mouse' && e.button !== 0)) return;
+            dragging = handle.closest('.photo-item');
+            changed = false;
+            try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+            dragging.style.opacity = '.65';
+            dragging.style.transform = 'scale(1.05)';
+            dragging.style.zIndex = '5';
+            e.preventDefault();
+        });
+
+        window.addEventListener('pointermove', e => {
+            if (!dragging) return;
+            const over   = document.elementFromPoint(e.clientX, e.clientY);
+            const target = over ? over.closest('.photo-item') : null;
+            if (!target || target === dragging || target.parentElement !== grid) return;
+            if (moveTo(dragging, items().indexOf(target))) { changed = true; renumber(); }
+        });
+
+        window.addEventListener('pointerup', finish);
+        window.addEventListener('pointercancel', finish);
+
+        // Cadangan tanpa mouse / layar sentuh: fokus ke ikon geser lalu tekan tombol panah
+        grid.addEventListener('keydown', e => {
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) return;
+            const item = handle.closest('.photo-item');
+            const idx  = items().indexOf(item);
+            let target = null;
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') target = idx - 1;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') target = idx + 1;
+            if (target === null) return;
+            e.preventDefault();
+            if (moveTo(item, target)) { renumber(); save(); handle.focus(); }
+        });
+    }
 
     if (form) form.addEventListener('submit', e => {
         if (busy) { e.preventDefault(); return; }

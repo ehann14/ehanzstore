@@ -21,6 +21,7 @@ use App\Http\Controllers\SuperAdmin\PaymentController;
 use App\Http\Controllers\SuperAdmin\ReviewModerationController;
 use App\Http\Controllers\SuperAdmin\ReportController;
 use App\Http\Controllers\Admin\AccountController;
+use App\Http\Controllers\Admin\AccountEmailController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\StaleStockController;
 use App\Http\Controllers\Admin\ConsignmentController;
@@ -175,6 +176,17 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
             AccountController::class,
             'setPrimary'
         ])->name('accounts.images.primary');
+
+        // Simpan urutan foto hasil geser (drag)
+        Route::post('accounts/{account}/images/reorder', [
+            AccountController::class,
+            'reorderImages'
+        ])->name('accounts.images.reorder');
+
+        // Email akun: daftar Gmail yang dipakai di akun (khusus admin, tidak tampil ke pembeli)
+        Route::resource('account-emails', AccountEmailController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->parameters(['account-emails' => 'accountEmail']);
 
         // Banner beranda (slider)
         Route::resource('banners', BannerController::class)->except(['show']);
