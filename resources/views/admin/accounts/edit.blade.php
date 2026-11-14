@@ -76,6 +76,18 @@
                 <input type="number" name="price" value="{{ old('price', (int) $account->price) }}" required min="0" max="999999999" placeholder="500000"
                        class="w-full bg-brand-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none transition @error('price') border-red-500 @enderror">
                 @error('price') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+
+                @php $soldSale = $account->sale_status === 'sold' ? $account->latestCompletedSale : null; @endphp
+                @if($soldSale)
+                    <p class="text-[11px] text-amber-300 mt-1.5 leading-relaxed">
+                        Akun ini sudah terjual seharga Rp {{ number_format((float) $soldSale->sale_price, 0, ',', '.') }} (harga jual di transaksi, dipakai daftar akun dan laporan).
+                        @if($account->isConsignment())
+                            Untuk mengubah harga jual akun titipan, buka <a href="{{ route('admin.sales.buyer', $soldSale) }}" class="underline">Data Pembeli</a> supaya komisi dan setoran pemilik ikut dihitung ulang.
+                        @else
+                            Mengubah harga di sini ikut memperbarui harga jual transaksi. Bisa juga lewat <a href="{{ route('admin.sales.buyer', $soldSale) }}" class="underline">Data Pembeli</a>.
+                        @endif
+                    </p>
+                @endif
             </div>
 
             @include('admin.accounts._discount-field', ['account' => $account])

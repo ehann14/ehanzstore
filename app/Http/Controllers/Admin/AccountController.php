@@ -232,6 +232,10 @@ class AccountController extends Controller
             unset($validated['account_email_id']);
         }
 
+        // Harga sebelum disimpan: pembanding numerik (kolom price bertipe decimal, jadi wasChanged() bisa
+        // menganggap 35000 vs 35000.00 sebagai perubahan dan menimpa harga nego tanpa sengaja).
+        $priceBefore = (float) $account->price;
+
         try {
             $account->update($validated);
         } catch (QueryException $e) {
@@ -247,6 +251,8 @@ class AccountController extends Controller
         // modal yang baru diisi di form akun terlihat "tidak tersimpan".
         // Disinkronkan juga bila modal akun > 0 tapi transaksinya masih 0 (data lama yang belum sinkron).
         // Akun titipan dilewati: bagian pemilik di transaksinya dihitung dari harga jual akhir, bukan dari form akun.
+        $priceNote = '';
+
         if ($account->sale_status === 'sold' && ! $account->isConsignment()) {
             $sale = $account->sales()
                 ->where('transaction_status', 'completed')
@@ -260,7 +266,19 @@ class AccountController extends Controller
                 if ($account->wasChanged('cost_price') || ($accountCost > 0 && $saleCost !== $accountCost)) {
                     $sale->update(['cost_price' => $accountCost]);
                 }
+
+                // Harga: daftar akun, laporan, dan invoice membaca harga jual dari transaksi, bukan dari akun.
+                // Jadi bila harga diubah di form ini, harga jual transaksinya ikut diperbarui. Hanya saat harga
+                // memang diubah (bukan selisih listing vs nego), supaya harga nego tidak tertimpa harga listing.
+                if ((float) $account->price !== $priceBefore && (float) $sale->sale_price !== (float) $account->price) {
+                    $sale->update(['sale_price' => $account->price]);
+
+                    $priceNote = ' Harga jual transaksi ikut diubah menjadi Rp ' . number_format((float) $account->price, 0, ',', '.') . '.';
+                }
             }
+        } elseif ($account->sale_status === 'sold' && $account->isConsignment() && (float) $account->price !== $priceBefore) {
+            // Titip jual: komisi dan setoran pemilik dihitung dari harga jual akhir, jadi diubah lewat form Data Pembeli.
+            $priceNote = ' Harga jual transaksi akun titipan tidak ikut berubah; ubah lewat Data Pembeli supaya komisi dan setoran pemilik dihitung ulang.';
         }
 
         ActivityLog::record('update_account', $account, 'Akun ' . $account->account_code, [
@@ -280,7 +298,7 @@ class AccountController extends Controller
         }
 
         return $this->withUploadWarning(
-            redirect()->route('admin.accounts.index')->with('success', 'Data akun diperbarui.'),
+            redirect()->route('admin.accounts.index')->with('success', 'Data akun diperbarui.' . $priceNote),
             $failed
         );
     }
