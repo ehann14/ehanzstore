@@ -39,7 +39,6 @@ Route::get('/maintenance/exit', function () {
 Route::get('/', [PublicController::class, 'home'])->name('home');
 Route::get('/katalog', [PublicController::class, 'catalog'])->name('catalog');
 Route::get('/akun/{account_code}', [PublicController::class, 'detail'])->name('account.detail');
-Route::post('/track/event', [PublicController::class, 'trackEvent'])->name('track.event');
 // Klik "Beli via WhatsApp" per akun (dipanggil JS di halaman detail, dipakai untuk social proof & analitik)
 Route::post('/akun/{account_code}/klik-wa', [PublicController::class, 'trackWhatsappClick'])
     ->middleware('throttle:20,1')
