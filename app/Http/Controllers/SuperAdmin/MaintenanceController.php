@@ -9,6 +9,7 @@ use App\Support\Maintenance;
 use App\Support\Uploads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 class MaintenanceController extends Controller
 {
@@ -26,13 +27,16 @@ class MaintenanceController extends Controller
         $untilMinute = $until?->format('i') ?? '';
         $untilLabel  = $until ? $until->format('d M Y, H:i') . ' WIB' : null;
 
-        return view('super-admin.maintenance', compact('settings', 'untilDate', 'untilHour', 'untilMinute', 'untilLabel'));
+        $themes = Maintenance::THEMES;
+
+        return view('super-admin.maintenance', compact('settings', 'themes', 'untilDate', 'untilHour', 'untilMinute', 'untilLabel'));
     }
 
     public function update(Request $request)
     {
         $data = $request->validate([
             'active'       => ['nullable', 'boolean'],
+            'theme'        => ['nullable', Rule::in(array_keys(Maintenance::THEMES))],
             'title'        => ['nullable', 'string', 'max:80'],
             'message'      => ['nullable', 'string', 'max:500'],
             'until_date'   => ['nullable', 'date_format:Y-m-d'],
@@ -41,6 +45,7 @@ class MaintenanceController extends Controller
             'image'        => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:3072'],
             'remove_image' => ['nullable', 'boolean'],
         ], [
+            'theme.in'       => 'Tema halaman maintenance tidak dikenal.',
             'title.max'      => 'Judul maksimal 80 karakter.',
             'message.max'    => 'Pesan maksimal 500 karakter.',
             'until_date.date_format'  => 'Tanggal perkiraan selesai tidak valid.',
@@ -89,7 +94,7 @@ class MaintenanceController extends Controller
             $oldImage = $current;
         }
 
-        Maintenance::save($active, $data['title'] ?? '', $data['message'] ?? '', $until, $imageArg);
+        Maintenance::save($active, $data['title'] ?? '', $data['message'] ?? '', $until, $imageArg, $data['theme'] ?? null);
 
         // Hapus file lama hanya setelah pengaturan baru tersimpan
         if ($oldImage) {
@@ -98,6 +103,7 @@ class MaintenanceController extends Controller
 
         ActivityLog::record('toggle_maintenance', null, $active ? 'Mode maintenance dinyalakan' : 'Mode maintenance dimatikan', [
             'maintenance' => $active,
+            'theme'       => Maintenance::settings()['theme'],
             'image'       => $imageArg === null ? 'tidak berubah' : ($imageArg === '' ? 'dihapus' : 'diganti'),
         ]);
 
@@ -116,12 +122,15 @@ class MaintenanceController extends Controller
      * Pratinjau halaman maintenance untuk Super Admin (HTTP 200, tidak mengubah status mode maintenance).
      * Perlu karena admin yang login selalu melihat website normal.
      */
-    public function preview()
+    public function preview(Request $request)
     {
-        $settings = Maintenance::settings();
+        // ?theme=dev|promo melihat contoh tema lain tanpa menyimpan apa pun.
+        $themeParam = $request->query('theme');
+        $settings   = Maintenance::forTheme(is_string($themeParam) ? $themeParam : null);
 
         return response()
             ->view('maintenance', [
+                'theme'   => $settings['theme'],
                 'title'   => $settings['title'],
                 'message' => $settings['message'],
                 'until'   => $settings['until'],

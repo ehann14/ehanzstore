@@ -41,6 +41,7 @@ class CheckMaintenanceMode
 
         return response()
             ->view('maintenance', [
+                'theme'   => $settings['theme'],
                 'title'   => $settings['title'],
                 'message' => $settings['message'],
                 'until'   => $settings['until'],

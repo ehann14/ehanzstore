@@ -7,6 +7,8 @@
     $fieldClass = 'w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-electric';
     $isOn = old('active', $settings['active'] ? '1' : '0') == '1';
     $hasImage = $settings['image_url'] !== '';
+    $selTheme = old('theme', $settings['theme']);
+    $themeTexts = array_map(fn ($th) => ['title' => $th['title'], 'message' => $th['message']], $themes);
 @endphp
 
 <div class="max-w-3xl mx-auto pb-16">
@@ -33,7 +35,7 @@
                 <span class="{{ $settings['active'] ? 'text-amber-300' : 'text-emerald-300' }}">{{ $settings['active'] ? 'MAINTENANCE AKTIF' : 'Website normal' }}</span>
             </p>
             <p class="text-xs text-slate-400 mt-0.5">
-                {{ $settings['active'] ? 'Pengunjung umum melihat halaman maintenance (HTTP 503).' : 'Semua pengunjung bisa membuka website.' }}
+                {{ $settings['active'] ? 'Pengunjung umum melihat halaman maintenance (HTTP 503), tema ' . $themes[$settings['theme']]['label'] . '.' : 'Semua pengunjung bisa membuka website.' }}
             </p>
         </div>
         <a href="{{ route('super-admin.maintenance.preview') }}" target="_blank" rel="noopener"
@@ -53,6 +55,27 @@
                 <span class="block text-xs text-slate-400 mt-0.5">Centang lalu simpan untuk menutup website sementara. Hilangkan centang untuk membukanya lagi.</span>
             </span>
         </label>
+
+        {{-- Tema halaman --}}
+        <div>
+            <p class="block text-xs font-semibold text-slate-400 mb-2">Tema halaman</p>
+            <div class="grid sm:grid-cols-2 gap-3">
+                @foreach($themes as $key => $th)
+                    <div>
+                        <label class="flex items-start gap-3 p-4 rounded-2xl border border-white/10 bg-white/[0.03] cursor-pointer has-[:checked]:border-amber-500/40 has-[:checked]:bg-amber-500/5 transition">
+                            <input type="radio" name="theme" value="{{ $key }}" @checked($selTheme === $key) class="theme-radio mt-1 w-4 h-4 accent-amber-500">
+                            <span>
+                                <span class="block font-semibold text-white text-sm">{{ $th['label'] }}</span>
+                                <span class="block text-[11px] text-slate-400 mt-0.5 leading-relaxed">{{ $th['hint'] }}</span>
+                            </span>
+                        </label>
+                        <a href="{{ route('super-admin.maintenance.preview', ['theme' => $key]) }}" target="_blank" rel="noopener"
+                           class="inline-block mt-1.5 ml-1 text-[11px] text-electric hover:underline">Lihat contoh tema ini</a>
+                    </div>
+                @endforeach
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2">Ganti tema ikut mengganti judul dan pesan bawaan. Judul atau pesan yang kamu tulis sendiri tidak ditimpa.</p>
+        </div>
 
         <div>
             <label for="m_title" class="block text-xs font-semibold text-slate-400 mb-2">Judul halaman</label>
@@ -174,6 +197,32 @@
                 preview.style.opacity = remove.checked ? '.35' : '';
             });
         }
+    })();
+</script>
+@endpush
+
+@push('scripts')
+<script>
+    (function () {
+        var themes = @json($themeTexts);
+        var title  = document.getElementById('m_title');
+        var msg    = document.getElementById('m_message');
+        if (!title || !msg) { return; }
+
+        // Teks kosong atau masih teks bawaan salah satu tema boleh diganti; tulisan sendiri tidak disentuh.
+        function isDefault(value, field) {
+            value = (value || '').trim();
+            if (value === '') { return true; }
+            return Object.keys(themes).some(function (k) { return themes[k][field] === value; });
+        }
+
+        document.querySelectorAll('.theme-radio').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                if (!radio.checked) { return; }
+                if (isDefault(title.value, 'title'))   { title.value = themes[radio.value].title; }
+                if (isDefault(msg.value, 'message'))   { msg.value   = themes[radio.value].message; }
+            });
+        });
     })();
 </script>
 @endpush
