@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Support\BandwidthSaver;
 use App\Support\Housekeeping;
 use App\Support\ImageOptimizer;
+use App\Support\OrphanCleaner;
 use Illuminate\Http\Request;
 
 class BandwidthController extends Controller
@@ -24,6 +25,7 @@ class BandwidthController extends Controller
             'saverOn'   => BandwidthSaver::enabled(),
             'saverX'    => BandwidthSaver::FACTOR,
             'visitorDays' => Housekeeping::visitorDays(),
+            'orphans'   => OrphanCleaner::scan(),
         ]);
     }
 
@@ -75,6 +77,43 @@ class BandwidthController extends Controller
         }
 
         return back()->with('success', 'Pembersihan selesai. ' . implode(' | ', $lines));
+    }
+
+    /** Hapus file di uploads/ yang tidak lagi dipakai database (sisa akun / banner yang dihapus). */
+    public function orphans(Request $request)
+    {
+        $data = $request->validate([
+            'paths'   => ['required', 'array', 'min:1', 'max:500'],
+            'paths.*' => ['string', 'max:255'],
+        ], [
+            'paths.required' => 'Pilih minimal satu file untuk dihapus.',
+            'paths.min'      => 'Pilih minimal satu file untuk dihapus.',
+        ]);
+
+        $r = OrphanCleaner::delete($data['paths']);
+
+        if (! $r['ok']) {
+            return back()->with('error', $r['error']);
+        }
+
+        ActivityLog::record('clean_orphan_uploads', null, 'Bersihkan file yatim di uploads', [
+            'deleted' => $r['deleted'],
+            'bytes'   => $r['bytes'],
+            'skipped' => $r['skipped'],
+            'failed'  => count($r['failed']),
+        ]);
+
+        $msg = $r['deleted'] . ' file yatim dihapus, ' . Housekeeping::bytes($r['bytes']) . ' dibebaskan.';
+
+        if ($r['skipped'] > 0) {
+            $msg .= ' ' . $r['skipped'] . ' file dilewati karena sudah dipakai lagi atau baru diunggah.';
+        }
+
+        if ($r['failed']) {
+            return back()->with('error', $msg . ' ' . count($r['failed']) . ' file gagal dihapus, periksa izin tulis folder uploads.');
+        }
+
+        return back()->with('success', $msg);
     }
 
     /** Nyalakan / matikan Mode Hemat Bandwidth. */

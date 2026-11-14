@@ -90,6 +90,76 @@
         </p>
     </div>
 
+    {{-- 2b. File yatim --}}
+    <div class="glass-panel rounded-3xl p-5 sm:p-6 {{ $orphans['ok'] && $orphans['count'] > 0 ? 'border-amber-500/30' : '' }}">
+        <p class="font-display font-bold text-white text-lg">File yatim (sisa akun &amp; banner yang dihapus)</p>
+        <p class="text-xs text-slate-400 mt-1 mb-4">
+            File di folder uploads yang sudah tidak dipakai database lagi. Menghapusnya membebaskan ruang hosting dan tidak mengubah tampilan website.
+            Yang dicek: foto akun, banner, gambar maintenance, dan QRIS, termasuk thumbnail dan salinan lamanya.
+        </p>
+
+        @if(! $orphans['ok'])
+            <p class="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs leading-relaxed">{{ $orphans['error'] }}</p>
+        @elseif($orphans['count'] === 0)
+            <p class="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs">
+                Tidak ada file yatim. Semua file di folder uploads masih dipakai ({{ number_format($orphans['referenced']) }} gambar terdaftar di database).
+            </p>
+        @else
+            <form method="POST" action="{{ route('super-admin.bandwidth.orphans') }}"
+                  onsubmit="return confirm('Hapus file yang dicentang secara permanen? Tindakan ini tidak bisa dibatalkan.')">
+                @csrf
+
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <p class="text-sm text-white">
+                        <span class="font-semibold">{{ number_format($orphans['count']) }} file</span>
+                        <span class="text-slate-400">&middot; {{ $fmt($orphans['bytes']) }} bisa dibebaskan</span>
+                    </p>
+                    <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                        <input type="checkbox" checked
+                               onchange="var on=this.checked;document.querySelectorAll('.orphan-cb').forEach(function(c){c.checked=on;});">
+                        Pilih semua
+                    </label>
+                </div>
+
+                <ul class="space-y-1.5 max-h-72 overflow-y-auto pr-1 mb-4">
+                    @foreach(array_slice($orphans['files'], 0, 500) as $f)
+                        <li>
+                            <label class="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 cursor-pointer text-xs">
+                                <input type="checkbox" name="paths[]" value="{{ $f['path'] }}" class="orphan-cb shrink-0" checked>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-slate-200 truncate">{{ $f['path'] }}</span>
+                                    <span class="block text-[11px] text-slate-500">
+                                        {{ $dirLabels[$f['dir']] ?? $f['dir'] }}
+                                        &middot; {{ \Carbon\Carbon::createFromTimestamp($f['mtime'], 'Asia/Jakarta')->format('d/m/Y H:i') }} WIB
+                                        @if($f['legacy']) &middot; ada salinan lama @endif
+                                        @if($f['thumbs'] > 0) &middot; {{ $f['thumbs'] }} thumbnail @endif
+                                    </span>
+                                </span>
+                                <a href="{{ upload_url($f['path']) }}" target="_blank" rel="noopener"
+                                   class="shrink-0 text-[11px] text-electric hover:underline" onclick="event.stopPropagation()">lihat</a>
+                                <span class="shrink-0 font-semibold text-slate-400">{{ $fmt($f['bytes']) }}</span>
+                            </label>
+                        </li>
+                    @endforeach
+                </ul>
+
+                @if($orphans['count'] > 500)
+                    <p class="mb-3 text-[11px] text-amber-300">Hanya 500 file pertama yang ditampilkan. Setelah dihapus, buka halaman ini lagi untuk sisanya.</p>
+                @endif
+
+                <button type="submit" class="{{ $btn }} bg-red-500 hover:bg-red-400 text-white">
+                    Hapus file yang dicentang
+                </button>
+            </form>
+        @endif
+
+        <p class="mt-4 text-[11px] text-slate-500 leading-relaxed">
+            Aman: file yang diunggah dalam 1 jam terakhir tidak ikut dihitung{{ $orphans['recent'] > 0 ? ' (' . $orphans['recent'] . ' file dilewati sekarang)' : '' }},
+            dan sebelum menghapus daftar dicek ulang ke database. Pemindaian otomatis berhenti bila database dan folder uploads tampak tidak cocok.
+            Lewat terminal: <span class="text-slate-300">php artisan uploads:clean-orphans --dry-run</span>
+        </p>
+    </div>
+
     {{-- 3. Cache & sampah --}}
     <div class="glass-panel rounded-3xl p-5 sm:p-6">
         <p class="font-display font-bold text-white text-lg">Bersihkan cache &amp; data sampah</p>

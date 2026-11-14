@@ -348,6 +348,9 @@ Route::middleware(['auth', 'role:super_admin', 'two-factor'])
         Route::post('/bandwidth/clean', [BandwidthController::class, 'clean'])
             ->middleware('throttle:10,1')
             ->name('bandwidth.clean');
+        Route::post('/bandwidth/orphans', [BandwidthController::class, 'orphans'])
+            ->middleware('throttle:10,1')
+            ->name('bandwidth.orphans');
         Route::post('/bandwidth/saver', [BandwidthController::class, 'saver'])->name('bandwidth.saver');
 
         // Konfirmasi penjualan oleh Super Admin
