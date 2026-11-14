@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\SuperAdmin\ActivityLogController;
 use App\Http\Controllers\SuperAdmin\CustomerController;
 use App\Http\Controllers\SuperAdmin\MaintenanceController;
+use App\Http\Controllers\SuperAdmin\BandwidthController;
 use App\Http\Controllers\SuperAdmin\PaymentController;
 use App\Http\Controllers\SuperAdmin\ReviewModerationController;
 use App\Http\Controllers\SuperAdmin\ReportController;
@@ -328,6 +329,16 @@ Route::middleware(['auth', 'role:super_admin', 'two-factor'])
         Route::get('/maintenance', [MaintenanceController::class, 'edit'])->name('maintenance');
         Route::post('/maintenance', [MaintenanceController::class, 'update'])->name('maintenance.update');
         Route::get('/maintenance/preview', [MaintenanceController::class, 'preview'])->name('maintenance.preview');
+
+        // Hemat bandwidth: kecilkan gambar, bersihkan cache, mode hemat auto-update
+        Route::get('/bandwidth', [BandwidthController::class, 'index'])->name('bandwidth');
+        Route::post('/bandwidth/optimize', [BandwidthController::class, 'optimize'])
+            ->middleware('throttle:10,1')
+            ->name('bandwidth.optimize');
+        Route::post('/bandwidth/clean', [BandwidthController::class, 'clean'])
+            ->middleware('throttle:10,1')
+            ->name('bandwidth.clean');
+        Route::post('/bandwidth/saver', [BandwidthController::class, 'saver'])->name('bandwidth.saver');
 
         // Konfirmasi penjualan oleh Super Admin
         Route::post('/sales/confirm', [

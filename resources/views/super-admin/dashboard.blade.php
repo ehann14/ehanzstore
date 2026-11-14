@@ -310,7 +310,7 @@
     });
     // ---- Auto-update dashboard tanpa refresh halaman ----------------------------
     (function () {
-        const INTERVAL = 20000; // 20 detik
+        const INTERVAL = {{ \App\Support\BandwidthSaver::pollMs(20000) }}; // 20 detik (6x lebih jarang saat Mode Hemat Bandwidth aktif)
         const dot = document.getElementById('liveDot');
         const label = document.getElementById('liveLabel');
         const stamp = document.getElementById('liveUpdated');

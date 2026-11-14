@@ -185,7 +185,13 @@ class Uploads
             : null;
     }
 
-    /** Isi .htaccess untuk folder uploads: tanpa daftar folder & tanpa eksekusi script. */
+    /** Isi .htaccess untuk folder uploads (dipakai juga oleh tombol pembersihan di Super Admin). */
+    public static function htaccessContents(): string
+    {
+        return self::htaccess();
+    }
+
+    /** Isi .htaccess untuk folder uploads: tanpa daftar folder, tanpa eksekusi script, gambar di-cache lama. */
     private static function htaccess(): string
     {
         return <<<'HTACCESS'
@@ -204,6 +210,14 @@ Options -Indexes
 
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
+    # Nama file upload acak & unik (file baru = nama baru), jadi aman disimpan browser 1 tahun.
+    # Pengunjung yang kembali tidak mengunduh ulang gambar yang sama -> hemat bandwidth.
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 year"
 </IfModule>
 
 HTACCESS;

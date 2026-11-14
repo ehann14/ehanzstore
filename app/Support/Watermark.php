@@ -24,7 +24,11 @@ class Watermark
     private const CORNER_RATIO = 0.17;
     private const CENTER_RATIO = 0.42;
 
-    private const JPEG_QUALITY = 86;
+    // Hemat bandwidth: 78 nyaris tak terlihat bedanya dari 86 tapi file ~30% lebih kecil.
+    private const JPEG_QUALITY = 78;
+
+    /** Sisi terpanjang maksimal (px). Foto HP 4000 px tidak perlu dikirim utuh ke pembeli. */
+    private const MAX_SIDE = 1600;
 
     /**
      * Simpan foto ke disk "uploads" (public_html/uploads/...) dengan watermark.
@@ -74,6 +78,21 @@ class Watermark
 
         $w = imagesx($src);
         $h = imagesy($src);
+
+        // Perkecil dulu sebelum diberi watermark (lebih cepat & file lebih ringan).
+        if (max($w, $h) > self::MAX_SIDE) {
+            $scale  = self::MAX_SIDE / max($w, $h);
+            $nw     = max(1, (int) round($w * $scale));
+            $nh     = max(1, (int) round($h * $scale));
+            $scaled = imagecreatetruecolor($nw, $nh);
+            imagefill($scaled, 0, 0, imagecolorallocate($scaled, 255, 255, 255));
+            imagecopyresampled($scaled, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+            imagedestroy($src);
+            $src = $scaled;
+            $w   = $nw;
+            $h   = $nh;
+        }
+
         $short = min($w, $h);
 
         // Foto PNG transparan -> latar putih supaya aman disimpan sebagai JPEG
@@ -94,6 +113,7 @@ class Watermark
         imagedestroy($logo);
 
         ob_start();
+        imageinterlace($canvas, true);
         imagejpeg($canvas, null, self::JPEG_QUALITY);
         $out = ob_get_clean();
         imagedestroy($canvas);

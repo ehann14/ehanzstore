@@ -47,7 +47,7 @@
     var PUSH_KEY = @json($pushKey);
     var PUSH_URL = '{{ url('/admin/notifications/push') }}';
     var READ_URL = '{{ url('/admin/notifications') }}';
-    var POLL_MS  = 20000;
+    var POLL_MS  = {{ \App\Support\BandwidthSaver::pollMs(20000) }};
 
     var panel   = document.getElementById('ntfPanel');
     var list    = document.getElementById('ntfList');

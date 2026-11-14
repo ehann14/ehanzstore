@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Banner;
 use Illuminate\Http\Request;
+use App\Support\ImageOptimizer;
 use App\Support\Uploads;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -33,7 +34,7 @@ class BannerController extends Controller
         $this->applySchedule($data);
 
         try {
-            $data['image_path'] = Uploads::store($request->file('image'), 'banners');
+            $data['image_path'] = ImageOptimizer::storeBanner($request->file('image'));
         } catch (\Throwable $e) {
             report($e);
 
@@ -66,7 +67,7 @@ class BannerController extends Controller
             $oldImage = $banner->image_path;
 
             try {
-                $data['image_path'] = Uploads::store($request->file('image'), 'banners');
+                $data['image_path'] = ImageOptimizer::storeBanner($request->file('image'));
             } catch (\Throwable $e) {
                 report($e);
 

@@ -386,7 +386,7 @@ class PublicController extends Controller
         abort_unless($file, 404);
 
         return response()->file($file, [
-            'Cache-Control'          => 'public, max-age=604800',
+            'Cache-Control'          => 'public, max-age=31536000, immutable',
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
