@@ -126,7 +126,7 @@
 
         $sections = [
             'Menu' => [
-                ['href' => route($isSuper ? 'super-admin.dashboard' : 'admin.dashboard'), 'label' => 'Dashboard', 'active' => request()->routeIs('*.dashboard'),
+                ['href' => route($isSuper ? 'super-admin.dashboard' : 'admin.dashboard'), 'label' => 'Dashboard', 'active' => request()->routeIs('super-admin.dashboard'),
                  'icon' => 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z'],
                 ['href' => route('admin.accounts.index'), 'label' => 'Kelola Akun', 'active' => request()->routeIs('admin.accounts.*'),
                  'icon' => 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'],
@@ -176,6 +176,11 @@
                 ['href' => route('super-admin.security'), 'label' => 'Keamanan', 'active' => request()->routeIs('super-admin.security*'),
                  'icon' => 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'],
             ];
+        }
+
+        // Admin biasa tidak punya halaman Dashboard (beranda mereka = Kelola Akun), jadi menu Dashboard disembunyikan.
+        if (! $isSuper) {
+            $sections['Menu'] = array_values(array_filter($sections['Menu'], fn ($i) => $i['label'] !== 'Dashboard'));
         }
 
         $flatNav = collect($sections)->flatten(1);
@@ -295,7 +300,7 @@
     <!-- Bottom bar (HP) -->
     <nav id="bottomNav" class="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-midnight/90 backdrop-blur-xl border-t border-white/10"
          style="padding-bottom: env(safe-area-inset-bottom, 0px)" aria-label="Navigasi utama">
-        <div class="grid grid-cols-5">
+        <div class="grid" style="grid-template-columns: repeat({{ $bottomNav->count() + 1 }}, minmax(0, 1fr))">
             @foreach($bottomNav as $item)
                 <a href="{{ $item['href'] }}"
                    class="relative flex flex-col items-center justify-center gap-1 py-2.5 text-[10.5px] font-medium transition-colors {{ $item['active'] ? 'text-electric' : 'text-slate-400 active:text-white' }}"

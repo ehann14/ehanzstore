@@ -124,8 +124,13 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::get('/dashboard', [AccountController::class, 'index'])
-            ->name('dashboard');
+        // Pintu masuk panel (juga start_url aplikasi di HP). Halaman ini tidak punya tampilan sendiri:
+        // Super Admin diarahkan ke dashboard-nya, admin biasa ke Kelola Akun.
+        Route::get('/dashboard', function () {
+            return redirect()->route(
+                auth()->user()->isSuperAdmin() ? 'super-admin.dashboard' : 'admin.accounts.index'
+            );
+        })->name('dashboard');
 
         // Diskon / promo massal untuk akun yang dicentang (Last Clash Sale)
         Route::post('accounts/bulk-price', [AccountController::class, 'bulkPrice'])
