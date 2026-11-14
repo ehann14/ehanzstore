@@ -120,7 +120,7 @@
         <div class="space-y-3">
             @foreach($items as $account)
                 @php
-                    $imageUrl = $account->primaryImage?->image_path ? upload_url($account->primaryImage->image_path) : null;
+                    $imageUrl = $account->primaryImage?->image_path ? thumb_url($account->primaryImage->image_path, 320) : null;
                     $commission = $account->commissionFor((float) $account->price);
                     $payout     = $account->payoutFor((float) $account->price);
                 @endphp

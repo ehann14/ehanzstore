@@ -133,6 +133,9 @@ class Uploads
         if (is_file($legacy)) {
             @unlink($legacy);
         }
+
+        // Thumbnail turunan file ini ikut dihapus.
+        Thumbnails::forget($relative);
     }
 
     /**

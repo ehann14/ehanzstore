@@ -35,6 +35,18 @@ if (! function_exists('upload_url')) {
     }
 }
 
+if (! function_exists('thumb_url')) {
+    /**
+     * URL thumbnail foto akun (lebar 320 / 480 / 800 px), dibuat otomatis saat pertama diminta.
+     * Dipakai untuk kartu katalog & daftar admin supaya tidak mengunduh foto asli yang besar.
+     * Path selain foto akun, URL eksternal, atau format tak didukung -> URL asli (upload_url).
+     */
+    function thumb_url(?string $path, int $width = 480): string
+    {
+        return \App\Support\Thumbnails::url($path, $width);
+    }
+}
+
 if (! function_exists('account_wa_url')) {
     /**
      * Link WhatsApp "Beli via WhatsApp" untuk satu akun/clan.

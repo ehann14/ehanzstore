@@ -15,7 +15,7 @@
         'code'  => $a->account_code,
         'name'  => $a->name,
         'type'  => $a->listing_type,
-        'img'   => ($a->primaryImage && ! empty($a->primaryImage->image_path)) ? upload_url($a->primaryImage->image_path) : '',
+        'img'   => ($a->primaryImage && ! empty($a->primaryImage->image_path)) ? thumb_url($a->primaryImage->image_path, 480) : '',
         'price' => (string) (float) $a->price,
     ])->values();
 
@@ -125,7 +125,7 @@
                         <th class="sticky left-0 z-10 bg-[#0a1024] w-24 sm:w-40"></th>
                         @foreach($accounts as $a)
                             @php
-                                $img = ($a->primaryImage && ! empty($a->primaryImage->image_path)) ? upload_url($a->primaryImage->image_path) : null;
+                                $img = ($a->primaryImage && ! empty($a->primaryImage->image_path)) ? thumb_url($a->primaryImage->image_path, 480) : null;
                             @endphp
                             <th class="p-2.5 sm:p-4 align-top text-left font-normal">
                                 <div class="relative aspect-[4/3] rounded-xl overflow-hidden bg-midnight border border-white/10">

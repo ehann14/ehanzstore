@@ -12,7 +12,7 @@
 @php
     $rp        = fn ($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
     $acc       = $booking->account;
-    $img       = $acc?->primaryImage?->image_path ? upload_url($acc->primaryImage->image_path) : null;
+    $img       = $acc?->primaryImage?->image_path ? thumb_url($acc->primaryImage->image_path, 480) : null;
     $payHours  = (int) config('store.booking_pay_hours', 24);
     $holdDays  = \App\Models\Booking::holdDaysText($acc);
     $status    = $booking->status;

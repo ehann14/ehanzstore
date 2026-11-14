@@ -93,7 +93,7 @@
                             class="aspect-square rounded-xl overflow-hidden border-2 {{ $img->id === ($primaryImg->id ?? null) ? 'border-electric' : 'border-transparent hover:border-white/30' }} transition-all thumbnail-btn"
                         >
                             <img
-                                src="{{ upload_url($img->image_path) }}"
+                                src="{{ thumb_url($img->image_path, 320) }}"
                                 alt="Foto {{ $account->name }}"
                                 class="w-full h-full object-cover"
                             >

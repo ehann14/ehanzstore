@@ -5,7 +5,7 @@
 @section('content')
 @php
     /** @var \App\Models\CocAccount $account */
-    $imageUrl   = $account->primaryImage?->image_path ? upload_url($account->primaryImage->image_path) : null;
+    $imageUrl   = $account->primaryImage?->image_path ? thumb_url($account->primaryImage->image_path, 320) : null;
     $price      = (int) $account->price;
     $options    = \App\Models\Booking::holdOptionsFor($account);
     $maxDays    = \App\Models\Booking::maxHoldDaysFor($account);   // null = clan (tanpa batas Gmail)

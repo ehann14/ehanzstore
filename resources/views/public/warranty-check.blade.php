@@ -101,7 +101,7 @@
                     @php
                         $active     = $state === 'active';
                         $account    = $sale->account;
-                        $imageUrl   = $account?->primaryImage?->image_path ? upload_url($account->primaryImage->image_path) : null;
+                        $imageUrl   = $account?->primaryImage?->image_path ? thumb_url($account->primaryImage->image_path, 480) : null;
                         [$badgeText, $badgeCls] = $sale->warrantyBadge();
                         $lowTime    = $active && $progress['remaining'] < 15;
                         $barCls     = $lowTime ? 'bg-amber-400' : 'bg-emerald-400';

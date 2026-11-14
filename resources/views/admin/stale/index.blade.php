@@ -65,7 +65,7 @@
                     $suggestion = $account->priceSuggestion();
                     $timedDeal  = $account->dealEndsAt();
                     $viewCount  = (int) ($views[$account->id] ?? 0);
-                    $imageUrl   = $account->primaryImage?->image_path ? upload_url($account->primaryImage->image_path) : null;
+                    $imageUrl   = $account->primaryImage?->image_path ? thumb_url($account->primaryImage->image_path, 320) : null;
 
                     $ageTone = $listed >= 90 ? 'bg-red-500/15 text-red-300 border-red-500/30'
                              : ($listed >= 60 ? 'bg-orange-500/15 text-orange-300 border-orange-500/30'

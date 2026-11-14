@@ -38,7 +38,7 @@
         <div class="grid grid-cols-3 sm:grid-cols-5 gap-3" id="existingGrid" data-reorder-url="{{ route('admin.accounts.images.reorder', $account) }}">
             @foreach($existing as $img)
                 <div class="photo-item relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-midnight group cursor-pointer" data-id="{{ $img->id }}">
-                    <img src="{{ upload_url($img->image_path) }}" alt="" class="w-full h-full object-cover" draggable="false">
+                    <img src="{{ thumb_url($img->image_path, 320) }}" alt="" class="w-full h-full object-cover" draggable="false">
                     <button type="button" class="drag-handle absolute top-1 left-1/2 -translate-x-1/2 w-8 h-7 rounded-lg bg-black/70 hover:bg-electric text-white flex items-center justify-center transition"
                             style="touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none"
                             title="Tahan lalu geser untuk mengubah urutan" aria-label="Geser untuk mengubah urutan foto">

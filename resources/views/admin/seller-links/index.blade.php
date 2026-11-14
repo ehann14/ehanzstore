@@ -39,7 +39,7 @@
             <div class="glass-panel rounded-2xl p-4 mb-3 border border-emerald-500/20 flex items-start gap-4">
                 <div class="w-16 h-16 rounded-xl overflow-hidden bg-midnight shrink-0 border border-white/10">
                     @if($acc->primaryImage)
-                        <img src="{{ upload_url($acc->primaryImage->image_path) }}" alt="" class="w-full h-full object-cover">
+                        <img src="{{ thumb_url($acc->primaryImage->image_path, 320) }}" alt="" class="w-full h-full object-cover">
                     @endif
                 </div>
                 <div class="min-w-0 flex-1">

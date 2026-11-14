@@ -117,7 +117,7 @@
                     <tbody class="divide-y divide-white/5">
                         @foreach($accounts as $account)
                             @php
-                                $imageUrl = $account->primaryImage?->image_path ? upload_url($account->primaryImage->image_path) : null;
+                                $imageUrl = $account->primaryImage?->image_path ? thumb_url($account->primaryImage->image_path, 320) : null;
                                 $hasCost  = (float) $account->cost_price > 0;
                                 $profit   = $account->estimatedProfit();
                                 $listed   = $account->daysListed();

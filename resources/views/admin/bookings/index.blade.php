@@ -102,7 +102,7 @@
                 @php
                     $acc    = $b->account;
                     $due    = \App\Support\SettlementReminder::daysLeft($b);   // 1 = H-1, 0 = Hari H, null = bukan
-                    $img    = $acc?->primaryImage?->image_path ? upload_url($acc->primaryImage->image_path) : null;
+                    $img    = $acc?->primaryImage?->image_path ? thumb_url($acc->primaryImage->image_path, 320) : null;
                     $waLine = $b->isAwaitingTransfer()
                         ? ' (DP ' . $rp($b->dp_amount) . ') belum kami terima. Mohon transfer DP sebelum batas waktu ya. Detail: '
                         : ($b->status === 'active'

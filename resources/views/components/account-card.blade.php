@@ -25,9 +25,11 @@
     
     // Pastikan path gambar aman
     $imageUrl = null;
+    $imageSet = null;
     if ($account->primaryImage && !empty($account->primaryImage->image_path)) {
-        // Menggunakan asset() lebih stabil daripada Storage::url() di beberapa konfigurasi server
-        $imageUrl = upload_url($account->primaryImage->image_path);
+        // Thumbnail (bukan foto asli) supaya kartu katalog ringan; 800 px hanya diambil layar beresolusi tinggi.
+        $imageUrl = thumb_url($account->primaryImage->image_path, 480);
+        $imageSet = $imageUrl . ' 480w, ' . thumb_url($account->primaryImage->image_path, 800) . ' 800w';
     }
 @endphp
 
@@ -38,7 +40,10 @@
     <div class="relative aspect-[4/3] overflow-hidden rounded-2xl bg-midnight">
         @if($imageUrl)
             <img src="{{ $imageUrl }}"
+                 srcset="{{ $imageSet }}"
+                 sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
                  alt="{{ $account->name }}"
+                 decoding="async"
                  loading="lazy"
                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">

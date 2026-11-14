@@ -96,6 +96,12 @@ Route::post('/ulasan/{token}', [ReviewController::class, 'store'])
     ->middleware('throttle:6,1')
     ->name('review.store');
 
+// Thumbnail foto akun (dibuat otomatis saat pertama diminta, lalu dilayani langsung oleh Apache)
+Route::get('/uploads/thumbs/{width}/{path}', [PublicController::class, 'thumb'])
+    ->where('width', '320|480|800')
+    ->where('path', 'accounts/[A-Za-z0-9._-]+')
+    ->name('uploads.thumb');
+
 // Upload fallback: digunakan jika Apache tidak menemukan file fisiknya
 Route::get('/uploads/{path}', [PublicController::class, 'upload'])
     ->where('path', '(accounts|banners|maintenance|payment)/.*')
@@ -272,6 +278,10 @@ Route::middleware(['auth', 'role:super_admin', 'two-factor'])
     ->group(function () {
         Route::get('/dashboard', [SuperAdminDashboard::class, 'index'])
             ->name('dashboard');
+
+        // Data auto-update dashboard (JSON ringan, bukan seluruh halaman)
+        Route::get('/dashboard/live', [SuperAdminDashboard::class, 'live'])
+            ->name('dashboard.live');
 
         Route::get('/analytics', [SuperAdminDashboard::class, 'analytics'])
             ->name('analytics');

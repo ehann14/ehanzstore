@@ -5,7 +5,7 @@
 @section('content')
 @php
     $inputCls = 'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-electric focus:bg-white/10 outline-none transition';
-    $imageUrl = $account?->primaryImage?->image_path ? upload_url($account->primaryImage->image_path) : null;
+    $imageUrl = $account?->primaryImage?->image_path ? thumb_url($account->primaryImage->image_path, 480) : null;
     $sent     = session('review_sent');
 @endphp
 

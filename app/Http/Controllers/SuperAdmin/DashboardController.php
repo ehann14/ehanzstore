@@ -21,6 +21,51 @@ class DashboardController extends Controller
      */
     public function index(Request $request)
     {
+        $data = $this->liveData();
+
+        // Laporan konversi: pengunjung -> lihat akun -> booking -> terjual, kandidat turun harga, DP hangus per bulan
+        $data['conversion'] = ConversionReport::build(ConversionReport::normalizeRange($request->query('konversi')));
+
+        return view('super-admin.dashboard', $data);
+    }
+
+    /**
+     * Data auto-update dashboard dalam bentuk JSON ringan (hanya potongan yang berubah).
+     * Klien mengirim hash terakhir (?v=...); bila isi sama, balasan cuma {"same":true,"v":"..."}.
+     * Jauh lebih hemat daripada mengunduh ulang seluruh halaman HTML tiap beberapa detik.
+     */
+    public function live(Request $request)
+    {
+        $data = $this->liveData();
+
+        $fragments = [
+            'cards'        => view('super-admin.partials.live-cards', $data)->render(),
+            'warranty'     => view('super-admin.partials.live-warranty', $data)->render(),
+            'top-accounts' => view('super-admin.partials.live-top-accounts', $data)->render(),
+            'recent'       => view('super-admin.partials.live-recent', $data)->render(),
+        ];
+
+        $stats = $data['visitorStats'];
+        $hash  = md5(json_encode([$fragments, $stats]));
+
+        $headers = ['Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0'];
+
+        if ((string) $request->query('v') === $hash) {
+            return response()->json(['same' => true, 'v' => $hash], 200, $headers);
+        }
+
+        return response()->json([
+            'v'            => $hash,
+            'fragments'    => $fragments,
+            'visitorStats' => $stats,
+        ], 200, $headers);
+    }
+
+    /**
+     * Data yang tampil di bagian "live" dashboard (dipakai halaman penuh dan endpoint auto-update).
+     */
+    private function liveData(): array
+    {
         // Pengunjung
         $totalVisitors     = VisitorEvent::distinct()->count('anonymous_session_id');
         $todayVisitors     = VisitorEvent::whereDate('created_at', today())->distinct()->count('anonymous_session_id');
@@ -56,9 +101,6 @@ class DashboardController extends Controller
             ->with('account:id,name,account_code,price,town_hall,listing_type')
             ->get();
 
-        // Laporan konversi: pengunjung -> lihat akun -> booking -> terjual, kandidat turun harga, DP hangus per bulan
-        $conversion = ConversionReport::build(ConversionReport::normalizeRange($request->query('konversi')));
-
         // Transaksi terbaru
         $recentSales = Sale::with('account')->latest()->take(5)->get();
 
@@ -71,7 +113,7 @@ class DashboardController extends Controller
             ->orderBy('warranty_expires_at')
             ->get();
 
-        return view('super-admin.dashboard', compact(
+        return compact(
             'totalVisitors',
             'todayVisitors',
             'yesterdayVisitors',
@@ -85,9 +127,8 @@ class DashboardController extends Controller
             'visitorStats',
             'topAccounts',
             'recentSales',
-            'warrantyAlerts',
-            'conversion'
-        ));
+            'warrantyAlerts'
+        );
     }
 
     /**

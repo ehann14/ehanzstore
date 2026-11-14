@@ -374,6 +374,28 @@ class PublicController extends Controller
      * (mis. foto lama yang masih ada di storage/app/public).
      * Hanya mengizinkan gambar dari folder accounts dan banners.
      */
+    /**
+     * Thumbnail foto akun: dibuat sekali, lalu disimpan di uploads/thumbs/{lebar}/accounts/...
+     * sehingga permintaan berikutnya dilayani Apache langsung (tanpa PHP).
+     */
+    public function thumb(int $width, string $path)
+    {
+        abort_unless(
+            preg_match('#^accounts/[A-Za-z0-9._-]+\.(jpe?g|png|webp)$#i', $path)
+                && in_array($width, \App\Support\Thumbnails::WIDTHS, true),
+            404
+        );
+
+        $file = \App\Support\Thumbnails::make($path, $width) ?? Uploads::locate($path);
+
+        abort_unless($file, 404);
+
+        return response()->file($file, [
+            'Cache-Control'          => 'public, max-age=31536000, immutable',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function upload(string $path)
     {
         abort_unless(

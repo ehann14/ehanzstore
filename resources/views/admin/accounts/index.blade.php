@@ -138,7 +138,7 @@
 
                     $imageUrl = null;
                     if ($account->primaryImage && !empty($account->primaryImage->image_path)) {
-                        $imageUrl = upload_url($account->primaryImage->image_path);
+                        $imageUrl = thumb_url($account->primaryImage->image_path, 320);
                     }
 
                     // Akun terjual: pakai angka transaksi (harga nego & modal saat itu); selain itu estimasi dari listing.

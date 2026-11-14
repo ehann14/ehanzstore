@@ -320,7 +320,7 @@ class ImageOptimizer
         return $data !== false && $data !== '' ? ['data' => $data, 'ext' => $ext] : null;
     }
 
-    private static function load(string $path)
+    public static function load(string $path)
     {
         $info = @getimagesize($path);
 
