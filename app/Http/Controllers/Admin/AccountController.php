@@ -39,7 +39,7 @@ class AccountController extends Controller
 
         $search = trim((string) $request->query('q', ''));
 
-        $query = $base()->with(['primaryImage', 'latestCompletedSale.review']);
+        $query = $base()->with(['primaryImage', 'latestCompletedSale.review', 'accountEmail:id,email']);
 
         if ($tab === 'sold') {
             $query->where('sale_status', 'sold')

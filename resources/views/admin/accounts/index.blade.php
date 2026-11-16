@@ -229,6 +229,29 @@
                                 <span class="font-semibold whitespace-nowrap {{ $profitShown < 0 ? 'text-red-400' : ($profitShown > 0 ? 'text-emerald-400' : 'text-slate-400') }}">{{ $profitShown < 0 ? '-' : '' }}Rp {{ number_format(abs($profitShown), 0, ',', '.') }}</span>
                             </p>
 
+                            {{-- Gmail yang dipakai akun (hanya admin yang melihat halaman ini; tidak pernah tampil ke pembeli).
+                                 Akun terjual melepas Gmail-nya (bisa dipakai akun lain), jadi baris ini hanya untuk akun yang belum terjual. --}}
+                            @if(! $account->isClan() && $account->sale_status !== 'sold')
+                                @php $gmail = $account->accountEmail?->email; @endphp
+                                <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                                    @if($gmail)
+                                        <span class="inline-flex items-center gap-1.5 min-w-0 max-w-full px-2 py-1 rounded-lg border border-white/10 bg-black/20 text-[11px] sm:text-xs text-slate-300"
+                                              title="Gmail yang dipakai akun ini (hanya admin)">
+                                            <svg class="w-3.5 h-3.5 shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 8l9 6 9-6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>
+                                            <span class="font-mono truncate">{{ $gmail }}</span>
+                                        </span>
+                                        <button type="button" data-copy="{{ $gmail }}" data-done="Tersalin!" onclick="copyReviewLink(this)"
+                                                class="px-2 py-1 rounded-lg border border-white/10 text-[11px] sm:text-xs text-slate-300 hover:bg-white/5 transition">Salin</button>
+                                    @else
+                                        <a href="{{ route('admin.accounts.edit', $account) }}"
+                                           class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] sm:text-xs text-amber-300 hover:bg-amber-500/15 transition"
+                                           title="Pilih Gmail akun ini di halaman edit">
+                                            Gmail belum dipilih &middot; atur
+                                        </a>
+                                    @endif
+                                </div>
+                            @endif
+
                             <div class="flex flex-wrap items-center gap-1.5 mt-2">
                                 <span class="px-2 py-0.5 rounded-full border text-[11px] font-medium whitespace-nowrap {{ $published ? 'bg-electric/15 text-blue-300 border-electric/30' : 'bg-amber-500/15 text-amber-300 border-amber-500/30' }}">
                                     {{ $published ? 'Terbit' : 'Draft' }}
