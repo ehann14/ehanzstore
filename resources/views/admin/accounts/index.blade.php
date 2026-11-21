@@ -249,6 +249,36 @@
                                             Gmail belum dipilih &middot; atur
                                         </a>
                                     @endif
+
+                                    {{-- Sisa hari sampai Gmail akun ini bisa diganti ke Gmail pembeli --}}
+                                    @php
+                                        $changeable = $account->email_change_status === 'Changeable';
+                                        $daysLeft   = $account->emailChangeDaysLeft();
+                                        $availAt    = $account->email_change_available_at;
+                                        $secsLeft   = $availAt ? $availAt->getTimestamp() - now()->getTimestamp() : 0;
+                                    @endphp
+                                    @if($changeable && $daysLeft)
+                                        <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-violet-500/30 bg-violet-500/10 text-[11px] sm:text-xs font-semibold text-violet-300 whitespace-nowrap"
+                                              title="Gmail bisa diganti mulai {{ $availAt->copy()->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            @if($secsLeft < 86400)
+                                                Gmail bisa diganti &lt; 1 hari lagi ({{ max(1, (int) ceil($secsLeft / 3600)) }} jam)
+                                            @else
+                                                Gmail bisa diganti {{ $daysLeft }} hari lagi
+                                            @endif
+                                        </span>
+                                        <span class="text-[11px] text-slate-500 whitespace-nowrap">{{ $availAt->copy()->timezone('Asia/Jakarta')->format('d M, H:i') }} WIB</span>
+                                    @elseif($changeable)
+                                        <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-[11px] sm:text-xs font-semibold text-emerald-300 whitespace-nowrap"
+                                              title="Gmail akun ini sudah bisa diganti ke Gmail pembeli">
+                                            Gmail bisa diganti sekarang
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-500/30 bg-slate-500/10 text-[11px] sm:text-xs font-medium text-slate-400 whitespace-nowrap"
+                                              title="Gmail akun ini tidak bisa diganti">
+                                            Gmail tidak bisa diganti
+                                        </span>
+                                    @endif
                                 </div>
                             @endif
 
