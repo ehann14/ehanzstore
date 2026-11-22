@@ -28,6 +28,13 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
+    // API resmi Clash of Clans (isi otomatis spek akun). Token diisi di .env, jangan ditulis di sini.
+    'clash' => [
+        'token'    => env('COC_API_TOKEN'),
+        // Kosongkan untuk API resmi. Isi https://cocproxy.royaleapi.dev/v1 bila memakai proxy RoyaleAPI.
+        'base_url' => env('COC_API_BASE_URL'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

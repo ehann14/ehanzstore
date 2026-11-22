@@ -73,7 +73,11 @@
         }
         function pad(n) { return String(n).padStart(2, '0'); }
 
+        // Time picker dibuat oleh script komponen jam; bila belum siap, lewati dulu
+        function ready() { return !!(picker && picker.timepicker); }
+
         function refresh() {
+            if (!ready()) { return; }
             var t = picker.timepicker.get();
             summary.className = 'text-xs text-slate-400 min-h-[1rem]';
 
@@ -121,7 +125,7 @@
 
         box.querySelector('[data-ps-clear]').addEventListener('click', function () {
             dateIn.value = '';
-            picker.timepicker.clear();
+            if (ready()) { picker.timepicker.clear(); }
             refresh();
         });
 
@@ -131,12 +135,15 @@
             var live = status.value === 'published';
             box.style.opacity = live ? '.45' : '';
             box.inert = live;
-            if (live) { picker.timepicker.close(); }
+            if (live && ready()) { picker.timepicker.close(); }
         }
         if (status) { status.addEventListener('change', syncStatus); }
 
         syncStatus();
-        refresh();
+
+        // Jalankan lagi setelah seluruh script halaman selesai dimuat (time picker sudah terpasang)
+        window.addEventListener('DOMContentLoaded', refresh);
+        if (document.readyState !== 'loading') { refresh(); }
     })();
 </script>
 @endpush

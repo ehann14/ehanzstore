@@ -142,6 +142,11 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
         Route::post('accounts/{account}/booking-toggle', [AccountController::class, 'toggleBooking'])
             ->name('accounts.booking-toggle');
 
+        // Isi otomatis spek akun dari API Clash of Clans (dipanggil JS di form akun)
+        Route::get('accounts/lookup-player', [AccountController::class, 'lookupPlayer'])
+            ->middleware('throttle:20,1')
+            ->name('accounts.lookup-player');
+
         // Export spek akun ke Excel (harus di atas resource supaya tidak dianggap {account})
         Route::match(['get', 'post'], 'accounts/export-spek', [AccountController::class, 'exportSpec'])
             ->name('accounts.export-spec');

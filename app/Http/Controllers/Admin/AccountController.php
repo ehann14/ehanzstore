@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Support\AccountSpecExporter;
+use App\Support\ClashApi;
 use App\Support\Uploads;
 use App\Support\Watermark;
 
@@ -499,6 +500,20 @@ class AccountController extends Controller
         return $changed > 0
             ? $redirect->with('success', "{$label} ke {$changed} akun.")
             : $redirect->with('error', 'Tidak ada akun yang berubah. ' . ($skipped ? '' : 'Tidak ada akun yang cocok.'));
+    }
+
+    /**
+     * Ambil data akun dari API resmi Clash of Clans berdasarkan player tag (untuk tombol "Isi Otomatis"
+     * di form akun). Hanya mengembalikan data; tidak menyimpan apa pun.
+     */
+    public function lookupPlayer(Request $request)
+    {
+        $data   = $request->validate(['tag' => 'required|string|max:20']);
+        $result = ClashApi::player($data['tag']);
+
+        return $result['ok']
+            ? response()->json(['ok' => true, 'data' => $result['data']])
+            : response()->json(['ok' => false, 'message' => $result['message']], 422);
     }
 
     /**
