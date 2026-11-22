@@ -142,6 +142,10 @@ Route::middleware(['auth', 'role:admin', 'two-factor'])
         Route::post('accounts/{account}/booking-toggle', [AccountController::class, 'toggleBooking'])
             ->name('accounts.booking-toggle');
 
+        // Export spek akun ke Excel (harus di atas resource supaya tidak dianggap {account})
+        Route::match(['get', 'post'], 'accounts/export-spek', [AccountController::class, 'exportSpec'])
+            ->name('accounts.export-spec');
+
         Route::resource('accounts', AccountController::class);
 
         Route::post('accounts/{account}/status', [

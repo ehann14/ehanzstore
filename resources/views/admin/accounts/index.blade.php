@@ -38,6 +38,12 @@
            class="inline-flex items-center justify-center gap-2 border border-amber-500/30 text-amber-300 hover:bg-amber-500/10 px-4 py-2.5 rounded-xl text-sm font-semibold transition">
             Link Titip Penjual
         </a>
+        {{-- Export spek akun ke Excel: mengikuti tab & pencarian yang sedang aktif --}}
+        <a href="{{ route('admin.accounts.export-spec', array_filter(['tab' => $tab, 'q' => $search])) }}"
+           class="inline-flex items-center justify-center gap-2 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 px-4 py-2.5 rounded-xl text-sm font-semibold transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/></svg>
+            Export Spek
+        </a>
         <a href="{{ route('admin.accounts.create') }}"
            class="inline-flex items-center justify-center gap-2 bg-electric hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-lg shadow-electric/20">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -476,6 +482,9 @@
                     class="px-3 py-2 rounded-xl border border-sky-500/30 text-sky-300 hover:bg-sky-500/10 text-sm font-medium transition">Booking ON</button>
             <button type="submit" form="bulk-form" formaction="{{ route('admin.accounts.bulk-booking') }}" name="booking_state" value="off" data-booking-bulk
                     class="px-3 py-2 rounded-xl border border-slate-500/30 text-slate-300 hover:bg-white/5 text-sm font-medium transition">Booking OFF</button>
+            {{-- Export spek akun yang dicentang / "pilih semua" ke Excel (tidak mengubah data) --}}
+            <button type="submit" form="bulk-form" formaction="{{ route('admin.accounts.export-spec') }}" data-export-bulk
+                    class="px-3 py-2 rounded-xl border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 text-sm font-medium transition">Export Spek</button>
             <button type="button" id="bulk-clear" class="px-3 py-2 rounded-xl text-slate-500 hover:text-white text-sm transition">Batal</button>
         </div>
     </div>
@@ -664,6 +673,7 @@
             const act = e.submitter ? e.submitter.value : 'apply';
             const n = count();
             if (n === 0) { e.preventDefault(); alert('Centang minimal satu akun dulu.'); return; }
+            if (e.submitter && e.submitter.hasAttribute('data-export-bulk')) return;
             if (e.submitter && e.submitter.hasAttribute('data-booking-bulk')) {
                 const on = e.submitter.value === 'on';
                 const msg = (on ? 'Nyalakan' : 'Matikan') + ' booking untuk ' + n + ' akun yang dipilih? Akun titipan dan arsip dilewati.'

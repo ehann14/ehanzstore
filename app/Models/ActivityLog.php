@@ -43,6 +43,7 @@ class ActivityLog extends Model
         'bulk_price'     => ['label' => 'Diskon massal (Flash Sale)', 'tone' => 'amber'],
         'toggle_booking' => ['label' => 'Booking akun ON/OFF',       'tone' => 'amber'],
         'bulk_booking'   => ['label' => 'Booking massal ON/OFF',     'tone' => 'amber'],
+        'export_account_spec' => ['label' => 'Export spek akun (Excel)', 'tone' => 'slate'],
         // Titip jual
         'pay_consignor'   => ['label' => 'Setor ke pemilik titipan', 'tone' => 'green'],
         'unpay_consignor' => ['label' => 'Batalkan setoran titipan', 'tone' => 'amber'],

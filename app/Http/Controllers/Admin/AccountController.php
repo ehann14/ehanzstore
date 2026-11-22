@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Support\AccountSpecExporter;
 use App\Support\Uploads;
 use App\Support\Watermark;
 
@@ -498,6 +499,76 @@ class AccountController extends Controller
         return $changed > 0
             ? $redirect->with('success', "{$label} ke {$changed} akun.")
             : $redirect->with('error', 'Tidak ada akun yang berubah. ' . ($skipped ? '' : 'Tidak ada akun yang cocok.'));
+    }
+
+    /**
+     * Export spek akun ke Excel (format kotak seperti sheet "SPEK COC").
+     *  - GET  : mengikuti tab (ready / sold / all) dan pencarian yang sedang aktif.
+     *  - POST : dari bar aksi massal; memakai akun yang dicentang, atau "pilih semua" lintas halaman.
+     * Clan tidak ikut (clan tidak punya TH / hero). Admin biasa hanya mendapat akun miliknya.
+     */
+    public function exportSpec(Request $request)
+    {
+        $data = $request->validate([
+            'tab'        => 'nullable|in:ready,sold,all',
+            'q'          => 'nullable|string|max:100',
+            'select_all' => 'nullable|boolean',
+            'ids'        => 'nullable|array|max:500',
+            'ids.*'      => 'integer',
+        ]);
+
+        $tab    = $data['tab'] ?? 'ready';
+        $search = trim((string) ($data['q'] ?? ''));
+        $ids    = array_values(array_unique(array_map('intval', $data['ids'] ?? [])));
+
+        $query = CocAccount::query()
+            ->notAwaitingSeller()
+            ->where(fn ($q) => $q->whereNull('listing_type')->orWhere('listing_type', '!=', 'clan'))
+            ->with('accountEmail:id,email')
+            ->when(! Auth::user()->isSuperAdmin(), fn ($q) => $q->where('created_by', Auth::id()));
+
+        if ($request->isMethod('post') && ! $request->boolean('select_all') && empty($ids)) {
+            return back()->with('error', 'Centang minimal satu akun dulu.');
+        }
+
+        if (! $request->boolean('select_all') && ! empty($ids)) {
+            $query->whereIn('id', $ids);
+            $subtitle = count($ids) . ' akun dipilih';
+        } else {
+            if ($tab === 'ready') {
+                $query->where('sale_status', '!=', 'sold');
+            } elseif ($tab === 'sold') {
+                $query->where('sale_status', 'sold');
+            }
+
+            $query->when($search !== '', fn ($q) => $q->where(function ($w) use ($search) {
+                $w->where('account_code', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            }));
+
+            $subtitle = ['ready' => 'Akun Ready', 'sold' => 'Akun Terjual', 'all' => 'Semua Akun'][$tab]
+                . ($search !== '' ? " (cari: {$search})" : '');
+        }
+
+        // Urut kode secara natural: EHZ-2 sebelum EHZ-10
+        $accounts = $query->limit(1000)->get()
+            ->sort(fn ($a, $b) => strnatcasecmp((string) $a->account_code, (string) $b->account_code))
+            ->values();
+
+        ActivityLog::record('export_account_spec', null, $accounts->count() . ' akun', [
+            'count' => $accounts->count(),
+            'tab'   => $tab,
+        ]);
+
+        $content = AccountSpecExporter::xlsx($accounts, $subtitle);
+        $name    = 'spek-akun-' . now('Asia/Jakarta')->format('Ymd-His') . '.xlsx';
+
+        return response($content, 200, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $name . '"',
+            'Content-Length'      => (string) strlen($content),
+            'Cache-Control'       => 'private, no-store, max-age=0',
+        ]);
     }
 
     /**

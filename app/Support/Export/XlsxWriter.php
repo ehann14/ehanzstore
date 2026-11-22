@@ -7,7 +7,8 @@ namespace App\Support\Export;
  * Mendukung beberapa sheet, lebar kolom, gabung sel, freeze baris, dan beberapa gaya.
  *
  * Isi sel: skalar (string / angka / null) atau [nilai, 'gaya'].
- * Gaya: title, bold, header, text, textBold, int, intBold, money, moneyBold.
+ * Gaya: title, bold, header, text, textBold, int, intBold, money, moneyBold,
+ *       codeReady (hijau), codeSold (merah), codeDp (kuning).
  */
 class XlsxWriter
 {
@@ -22,6 +23,9 @@ class XlsxWriter
         'text'      => 7,
         'textBold'  => 8,
         'intBold'   => 9,
+        'codeReady' => 10,
+        'codeSold'  => 11,
+        'codeDp'    => 12,
     ];
 
     /** @var array<int, array{name:string, rows:array, widths:array, merges:array, freeze:int}> */
@@ -161,6 +165,17 @@ class XlsxWriter
         return '<c r="' . $ref . '"' . $s . ' t="inlineStr"><is><t xml:space="preserve">' . $this->esc((string) $value) . '</t></is></c>';
     }
 
+    /** Nama kolom dari nomor urut (0 -> A, 25 -> Z, 26 -> AA). Dipakai juga untuk menyusun rentang gabung sel. */
+    public static function columnName(int $i): string
+    {
+        $name = '';
+        for ($i++; $i > 0; $i = intdiv($i - 1, 26)) {
+            $name = chr(65 + ($i - 1) % 26) . $name;
+        }
+
+        return $name;
+    }
+
     /** 0 -> A, 25 -> Z, 26 -> AA */
     private function col(int $i): string
     {
@@ -191,18 +206,21 @@ class XlsxWriter
             . '<font><b/><sz val="14"/><name val="Calibri"/></font>'
             . '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
             . '</fonts>'
-            . '<fills count="4">'
+            . '<fills count="7">'
             . '<fill><patternFill patternType="none"/></fill>'
             . '<fill><patternFill patternType="gray125"/></fill>'
             . '<fill><patternFill patternType="solid"><fgColor rgb="FF1F4E79"/><bgColor indexed="64"/></patternFill></fill>'
             . '<fill><patternFill patternType="solid"><fgColor rgb="FFEDEDED"/><bgColor indexed="64"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFC6EFCE"/><bgColor indexed="64"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/><bgColor indexed="64"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFFEB9C"/><bgColor indexed="64"/></patternFill></fill>'
             . '</fills>'
             . '<borders count="2">'
             . '<border><left/><right/><top/><bottom/><diagonal/></border>'
             . '<border><left style="thin"><color rgb="FFBFBFBF"/></left><right style="thin"><color rgb="FFBFBFBF"/></right><top style="thin"><color rgb="FFBFBFBF"/></top><bottom style="thin"><color rgb="FFBFBFBF"/></bottom><diagonal/></border>'
             . '</borders>'
             . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            . '<cellXfs count="10">'
+            . '<cellXfs count="13">'
             . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
             . '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
             . '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
@@ -213,6 +231,9 @@ class XlsxWriter
             . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>'
             . '<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>'
             . '<xf numFmtId="3" fontId="1" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>'
+            . '<xf numFmtId="0" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>'
+            . '<xf numFmtId="0" fontId="1" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>'
+            . '<xf numFmtId="0" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>'
             . '</cellXfs>'
             . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
             . '</styleSheet>';
