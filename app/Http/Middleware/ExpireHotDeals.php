@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Booking;
 use App\Models\CocAccount;
+use App\Support\AccountReminders;
 use Closure;
 use Illuminate\Http\Request;
 use Throwable;
@@ -25,6 +26,7 @@ class ExpireHotDeals
             try {
                 CocAccount::expireHotDeals();
                 Booking::expireOverdue(); // booking yang lewat batas waktu dilepas otomatis
+                AccountReminders::runThrottled(); // pengingat ss spek & Gmail bisa diganti (harus sebelum publishDue)
                 CocAccount::publishDue(); // akun draft yang jadwal tayangnya tiba diterbitkan otomatis
             } catch (Throwable $e) {
                 // Mis. kolom belum ada karena migrasi belum dijalankan: jangan sampai situs ikut error.

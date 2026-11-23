@@ -77,6 +77,9 @@ return [
     // Pemilik wajib mengganti Gmail akun ke Gmail pembeli paling lambat sekian jam setelah akun laku.
     'consign_handover_hours' => (int) env('CONSIGN_HANDOVER_HOURS', 24),
 
+    // Pengingat "ss ulang spek": dikirim sekian jam sebelum akun terjadwal tayang otomatis.
+    'publish_reminder_hours' => (int) env('PUBLISH_REMINDER_HOURS', 3),
+
     // Setoran bagian pemilik dikirim paling lambat sekian jam setelah serah terima selesai.
     'consign_payout_hours' => (int) env('CONSIGN_PAYOUT_HOURS', 24),
 

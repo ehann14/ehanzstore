@@ -3,10 +3,13 @@
 namespace App\Support;
 
 use App\Models\Booking;
+use App\Models\CocAccount;
 use App\Models\Review;
 use App\Models\User;
+use App\Notifications\EmailChangeableNotification;
 use App\Notifications\NewBookingNotification;
 use App\Notifications\NewReviewNotification;
+use App\Notifications\ScreenshotReminderNotification;
 use Illuminate\Support\Collection;
 use Throwable;
 
@@ -54,6 +57,35 @@ class AdminNotifier
             }
 
             // Munculkan juga di HP admin (notifikasi push), walau panel tidak sedang dibuka
+            WebPush::notifyUsers($recipients->pluck('id')->all());
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    /** Pengingat: akun terjadwal tayang sebentar lagi, ss ulang spek dulu. */
+    public static function screenshotReminder(CocAccount $account): void
+    {
+        static::notifyAccountOwners($account, fn ($url) => new ScreenshotReminderNotification($account, $url));
+    }
+
+    /** Gmail akun sudah melewati masa tunggu dan bisa diganti. */
+    public static function emailChangeable(CocAccount $account): void
+    {
+        static::notifyAccountOwners($account, fn ($url) => new EmailChangeableNotification($account, $url));
+    }
+
+    /** Kirim ke Super Admin + admin pemilik akun, lengkap dengan push ke HP. */
+    protected static function notifyAccountOwners(CocAccount $account, \Closure $make): void
+    {
+        try {
+            $url        = route('admin.accounts.edit', $account->id, false);
+            $recipients = static::recipients($account->created_by);
+
+            foreach ($recipients as $user) {
+                $user->notify($make($url));
+            }
+
             WebPush::notifyUsers($recipients->pluck('id')->all());
         } catch (Throwable $e) {
             report($e);
