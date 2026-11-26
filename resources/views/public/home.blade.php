@@ -105,7 +105,7 @@
                 <div class="mt-3 sm:mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-xl bg-white/[0.03] border border-white/5 px-4 py-3 text-sm">
                     @if($stats['average'] !== null)
                         <x-stars :rating="round($stats['average'])" size="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span class="font-semibold text-white">{{ number_format($stats['average'], 1, ',', '.') }} <span class="font-normal text-slate-400">dari 5</span></span>
+                        <span class="font-semibold text-white">{{ number_format($stats['average'], 1, ',', '.') }} <span class="font-normal text-slate-400">dari {{ number_format($stats['reviews_count'], 0, ',', '.') }} pembeli</span></span>
                         <span class="text-slate-600" aria-hidden="true">&middot;</span>
                     @endif
                     <span class="font-semibold text-white">{{ number_format($stats['sold_accounts'], 0, ',', '.') }} <span class="font-normal text-slate-400">akun terjual</span></span>
@@ -217,7 +217,7 @@
                 </h2>
                 <p class="text-sm text-slate-500 mt-1">
                     @if($stats['average'] !== null)
-                        Rating {{ number_format($stats['average'], 1, ',', '.') }} dari 5 &middot;
+                        Rating {{ number_format($stats['average'], 1, ',', '.') }} dari {{ number_format($stats['reviews_count'], 0, ',', '.') }} pembeli &middot;
                     @endif
                     {{ number_format($stats['sold_accounts'], 0, ',', '.') }} akun
                     @if($stats['sold_clans'] > 0)
