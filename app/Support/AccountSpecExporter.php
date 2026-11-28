@@ -11,10 +11,12 @@ use Illuminate\Support\Collection;
 /**
  * Membuat file Excel (.xlsx) "Spek Akun" untuk dibagikan / diposting.
  *
- * Tata letak mengikuti contoh TRX_AKUN_OTOMATIS.xlsx (sheet "SPEK COC"):
+ * Tata letak & tampilan mengikuti contoh TRX_AKUN_OTOMATIS.xlsx (sheet "SPEK COC"):
  * satu akun = satu kotak (label + isi), 6 kotak per baris, tiap kotak berisi
  * KODE, email, SPEK AKUN (tag), TH, LEVEL, HERO, TUKANG, GEMS, CN,
  * KEAMANAN AKUN (protek, ganti gmail) dan Harga.
+ * Semua sel kotak bergaris tabel (termasuk baris kosong), teks rata kiri,
+ * dan baris KODE berwarna biru seperti contoh.
  *
  * Mengembalikan isi file (string biner), sama seperti SalesExporter.
  */
@@ -46,7 +48,7 @@ class AccountSpecExporter
         $grid = [];
 
         $grid[0][0] = ['Spek Akun - EHANZSTORE.ID' . ($subtitle !== '' ? ' - ' . $subtitle : '') . ' (' . $accounts->count() . ' akun, dibuat ' . $stamp . ')', 'bold'];
-        $grid[1][0] = ['1. KOTA UTAMA, 2. Profile, 3. Aula Pahlawan, 4. GEAR, 5. CN, 6. Latar', 'default'];
+        $grid[1][0] = ['1. KOTA UTAMA, 2. Profile, 3. Aula Pahlawan, 4. GEAR, 5. CN, 6. Latar', 'specNote'];
 
         if ($accounts->isEmpty()) {
             $grid[self::FIRST_ROW][0] = ['Tidak ada akun yang cocok untuk diexport.', 'default'];
@@ -78,7 +80,7 @@ class AccountSpecExporter
 
         $widths = [];
         for ($b = 0; $b < min(max($accounts->count(), 1), self::PER_ROW); $b++) {
-            array_push($widths, 26, 18, 4);
+            array_push($widths, 25.7, 19.7, 8.7);
         }
 
         $lastCol = XlsxWriter::columnName(min($maxCol, 4));
@@ -90,44 +92,44 @@ class AccountSpecExporter
 
     /**
      * Satu kotak akun: [offset baris => [kolom 0 (label), kolom 1 (isi)]].
+     * Setiap baris 0-14 selalu terisi (walau kosong) supaya garis tabelnya utuh.
      */
     private static function block(CocAccount $a): array
     {
-        [$statusText, $statusStyle] = self::status($a);
+        $statusText = self::status($a);
+        $blank      = ['', 'specText'];
 
         return [
-            0  => [['KODE :', 'textBold'], [$a->account_code . ' (' . $statusText . ')', $statusStyle]],
-            1  => [[$a->accountEmail?->email ?? '', 'text'], ['', 'text']],
-            2  => [['SPEK AKUN :', 'textBold'], [$a->player_tag ?? '', 'text']],
-            3  => [['TH', 'text'], [self::num($a->town_hall), 'int']],
-            4  => [['LEVEL AKUN', 'text'], [self::num($a->account_level), 'int']],
-            5  => [['HERO', 'text'], [self::heroes($a), 'text']],
-            6  => [['TUKANG', 'text'], [self::num($a->builder_count), 'int']],
-            7  => [['GEMS', 'text'], [self::num($a->gems), 'int']],
-            8  => [['CN', 'text'], [self::cn($a->cn_information), 'text']],
-            10 => [['KEAMANAN AKUN :', 'textBold'], ['', 'textBold']],
-            11 => [['Protek on/off', 'text'], [$a->protection_status === 'Protected' ? 'on' : 'off', 'text']],
-            12 => [['change gmail/Take sgmail', 'text'], [self::emailChange($a), 'text']],
-            14 => [['Harga Akun :', 'textBold'], [self::num($a->price), 'int']],
+            0  => [['KODE :', 'specHead'], [$a->account_code . ' (' . $statusText . ')', 'specHead']],
+            1  => [[$a->accountEmail?->email ?? '', 'specText'], $blank],
+            2  => [['SPEK AKUN :', 'specText'], [$a->player_tag ?? '', 'specText']],
+            3  => [['TH', 'specText'], [self::num($a->town_hall), 'specNum']],
+            4  => [['LEVEL AKUN', 'specText'], [self::num($a->account_level), 'specNum']],
+            5  => [['HERO', 'specText'], [self::heroes($a), 'specText']],
+            6  => [['TUKANG', 'specText'], [self::num($a->builder_count), 'specNum']],
+            7  => [['GEMS', 'specText'], [self::num($a->gems), 'specNum']],
+            8  => [['CN', 'specText'], [self::cn($a->cn_information), 'specNum']],
+            9  => [$blank, $blank],
+            10 => [['KEAMANAN AKUN :', 'specText'], $blank],
+            11 => [['Protek on/off', 'specText'], [$a->protection_status === 'Protected' ? 'on' : 'off', 'specText']],
+            12 => [['change gmail/Take sgmail', 'specText'], [self::emailChange($a), 'specText']],
+            13 => [$blank, $blank],
+            14 => [['Harga Akun :', 'specText'], [self::num($a->price), 'specInt']],
         ];
     }
 
-    /** @return array{0:string,1:string} teks status + gaya sel */
-    private static function status(CocAccount $a): array
+    /** Teks status di sebelah kode: Sold / Arsip / DP / Ready. */
+    private static function status(CocAccount $a): string
     {
         if ($a->sale_status === 'sold') {
-            return ['Sold', 'codeSold'];
+            return 'Sold';
         }
 
         if ($a->sale_status === 'archived') {
-            return ['Arsip', 'textBold'];
+            return 'Arsip';
         }
 
-        if ($a->isBooked()) {
-            return ['DP', 'codeDp'];
-        }
-
-        return ['Ready', 'codeReady'];
+        return $a->isBooked() ? 'DP' : 'Ready';
     }
 
     /** Level hero dipisah "/", urut BK/AQ/MP/GW/RC/DD; hero yang belum ada dilewati. Contoh: 76/66/55/45/28/10 */

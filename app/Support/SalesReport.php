@@ -218,10 +218,12 @@ class SalesReport
 
             return [
                 'time'       => $time->translatedFormat('d M Y H:i'),
+                'date'       => $time->format('Y-m-d'),
                 'code'       => $s->transaction_code,
                 'acc_code'   => $s->account_code_snapshot,
                 'name'       => $account?->name ?? '(akun dihapus)',
                 'type'       => $isClan ? 'Clan' : 'Akun',
+                'clan_level' => $isClan ? $account?->clan_level : null,
                 'th'         => ($account && ! $isClan && $account->town_hall) ? 'TH ' . $account->town_hall : '-',
                 'buyer'      => $s->buyer_name ?: '-',
                 'price'      => (float) $s->sale_price,

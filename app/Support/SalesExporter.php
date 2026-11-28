@@ -27,40 +27,80 @@ class SalesExporter
     // ==================================================================
 
     /**
-     * @param array $rows   hasil SalesReport::rows()
-     * @param string $subtitle contoh: "Periode: 01 Okt 2026 - 31 Okt 2026 | Status: Selesai"
+     * Export transaksi dengan tampilan sama persis seperti sheet "Trx" di TRX_AKUN_OTOMATIS.xlsx:
+     * Tanggal | Jenis Akun | Spek akun | Beli | Jual | saldo, header biru tua, semua sel bergaris,
+     * rata tengah, saldo berjalan memakai rumus Excel, dan filter di header.
+     *
+     * Beli = modal, Jual = harga jual. Urutan dari transaksi terlama agar saldo berjalan benar.
+     * Transaksi yang belum selesai (menunggu / batal) tetap tampil dengan keterangan status di
+     * kolom Spek akun, tetapi tidak menambah saldo.
+     *
+     * @param array  $rows     hasil SalesReport::rows()
+     * @param string $subtitle tidak dipakai (sheet Trx tidak punya baris judul); dipertahankan agar pemanggil tidak berubah
      */
-    public static function transactionsXlsx(array $rows, string $subtitle): string
+    public static function transactionsXlsx(array $rows, string $subtitle = ''): string
     {
-        $totals = SalesReport::totals($rows);
-
         $data = [
-            [['Daftar Transaksi - EHANZSTORE.ID', 'title']],
-            [[$subtitle, 'bold']],
-            [['Dibuat: ' . self::stamp(), 'default']],
-            [],
-            self::headerRow(['No', 'Tanggal (WIB)', 'Kode Transaksi', 'Kode Akun', 'Nama Akun/Clan', 'Jenis', 'TH', 'Pembeli', 'Harga Jual', 'Modal', 'Laba', 'Status', 'Pembayaran', 'Metode', 'Diproses Oleh']),
+            array_map(fn ($t) => [$t, 'trxHead'], ['Tanggal', 'Jenis Akun', 'Spek akun', 'Beli', 'Jual', 'saldo']),
         ];
 
-        foreach ($rows as $i => $r) {
+        $balance = 0.0;
+
+        foreach (array_values($rows) as $i => $r) {
+            $n    = $i + 2; // nomor baris di Excel (baris 1 = header)
+            $done = (bool) $r['completed'];
+
+            if ($done) {
+                $balance += $r['price'] - $r['cost'];
+            }
+
+            // Pola rumus sama dengan contoh: baris pertama =SUM(E2)-SUM(D2), berikutnya =SUM(F2,E3)-SUM(D3)
+            if (! $done) {
+                $formula = $i === 0 ? '=0' : '=F' . ($n - 1);
+            } elseif ($i === 0) {
+                $formula = '=SUM(E' . $n . ')-SUM(D' . $n . ')';
+            } else {
+                $formula = '=SUM(F' . ($n - 1) . ',E' . $n . ')-SUM(D' . $n . ')';
+            }
+
             $data[] = [
-                [$i + 1, 'int'], [$r['time'], 'text'], [$r['code'], 'text'], [$r['acc_code'], 'text'],
-                [$r['name'], 'text'], [$r['type'], 'text'], [$r['th'], 'text'], [$r['buyer'], 'text'],
-                [$r['price'], 'money'], [$r['cost'], 'money'], [$r['profit'], 'money'],
-                [$r['status'], 'text'], [$r['payment'], 'text'], [$r['method'], 'text'], [$r['processor'], 'text'],
+                [$r['date'], 'trxDate', 'd'],
+                [self::trxType($r), 'trxText'],
+                [($r['acc_code'] ?? '') . ($done ? '' : ' (' . $r['status'] . ')'), 'trxText'],
+                [self::trxAmount($r['cost']), 'trxNum'],
+                [self::trxAmount($r['price']), 'trxNum'],
+                [$formula, 'trxNum', 'f', self::trxAmount($balance) ?? 0],
             ];
         }
 
-        $data[] = [
-            ['', 'textBold'], ['', 'textBold'], ['', 'textBold'], ['', 'textBold'],
-            ['TOTAL (' . $totals['count'] . ' transaksi selesai)', 'textBold'], ['', 'textBold'], ['', 'textBold'], ['', 'textBold'],
-            [$totals['price'], 'moneyBold'], [$totals['cost'], 'moneyBold'], [$totals['profit'], 'moneyBold'],
-            ['', 'textBold'], ['', 'textBold'], ['', 'textBold'], ['', 'textBold'],
-        ];
+        $lastRow = max(2, count($data));
 
         return (new XlsxWriter())
-            ->addSheet('Transaksi', $data, [5, 18, 16, 12, 28, 8, 8, 20, 16, 16, 16, 12, 13, 14, 16], ['A1:O1'], 5)
+            ->addSheet('Trx', $data, [16, 24, 20, 14, 14, 16], [], 1, [
+                'autofilter' => 'A1:F' . $lastRow,
+                'rowHeight'  => 15.75,
+            ])
             ->output();
+    }
+
+    /** Jenis Akun seperti di contoh: "Akun coc" atau "Clan coc LVL 14". */
+    private static function trxType(array $r): string
+    {
+        if (($r['type'] ?? '') === 'Clan') {
+            return ! empty($r['clan_level']) ? 'Clan coc LVL ' . (int) $r['clan_level'] : 'Clan coc';
+        }
+
+        return 'Akun coc';
+    }
+
+    /** Angka bulat rupiah; 0 / kosong jadi sel kosong (seperti kolom Beli di contoh). */
+    private static function trxAmount(float|int|null $n): int|float|null
+    {
+        if ($n === null || (float) $n === 0.0) {
+            return null;
+        }
+
+        return (float) $n == floor((float) $n) ? (int) $n : round((float) $n, 2);
     }
 
     public static function transactionsPdf(array $rows, string $subtitle): string
